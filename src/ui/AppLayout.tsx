@@ -1,5 +1,5 @@
 import { LogOut, PanelsTopLeft, Stethoscope } from "lucide-react";
-import { NavLink, Outlet, useNavigate } from "react-router-dom";
+import { Navigate, NavLink, Outlet, useNavigate } from "react-router-dom";
 import { clearSession, getToken } from "../api";
 
 export function AppLayout() {
@@ -7,8 +7,7 @@ export function AppLayout() {
   const token = getToken();
 
   if (!token) {
-    navigate("/login", { replace: true });
-    return null;
+    return <Navigate to="/login" replace />;
   }
 
   function logout() {
