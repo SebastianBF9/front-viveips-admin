@@ -1,5 +1,6 @@
 export type EstadoServicioIps = "habilitado" | "proximo";
 export type EstadoRelacion = "pendiente" | "en_revision" | "cumple" | "no_cumple" | "no_aplica";
+export type EstadoCumplimiento = EstadoRelacion;
 
 export interface ServicioIps {
   id: number;
@@ -66,4 +67,46 @@ export interface RelacionPayload {
   requiere_reps: boolean;
   estado: EstadoRelacion;
   observaciones?: string | null;
+}
+
+export interface CriterioCumplimiento {
+  criterio_id: number;
+  criterio_codigo: string;
+  descripcion: string;
+  tipo_respuesta: string;
+  obligatorio: number;
+  requiere_evidencia: number;
+  norma_referencia: string | null;
+  estandar_codigo: string;
+  estandar: string;
+  estandar_orden: number;
+  cumplimiento_id: number | null;
+  estado_cumplimiento: EstadoCumplimiento | null;
+  respuesta: string | null;
+  observacion: string | null;
+  fecha_evaluacion: string | null;
+  evidencia_id: number | null;
+  evidencia_nombre: string | null;
+  evidencia_archivo: string | null;
+  evidencia_estado: string | null;
+}
+
+export interface CumplimientoServicio {
+  success: boolean;
+  servicio: ServicioIps;
+  criterios: CriterioCumplimiento[];
+  resumen: {
+    total: number;
+    cumple: number;
+    no_cumple: number;
+    pendiente: number;
+    en_revision: number;
+    no_aplica: number;
+  };
+}
+
+export interface CumplimientoPayload {
+  estado_cumplimiento: EstadoCumplimiento;
+  respuesta?: string | null;
+  observacion?: string | null;
 }

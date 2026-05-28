@@ -152,6 +152,27 @@ td small { display: block; color: var(--muted); margin-top: 4px; }
 .pill.no_aplica { background: #e5e7eb; color: #374151; }
 .meta-row { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 12px; }
 
+.tabs {
+  display: flex;
+  gap: 8px;
+  overflow-x: auto;
+  border-bottom: 1px solid var(--border);
+}
+.tabs button {
+  border: 0;
+  border-bottom: 3px solid transparent;
+  background: transparent;
+  color: var(--muted);
+  cursor: pointer;
+  font-weight: 900;
+  padding: 12px 14px;
+  white-space: nowrap;
+}
+.tabs button.active {
+  border-bottom-color: var(--teal);
+  color: var(--navy);
+}
+
 .primary-btn, .secondary-btn {
   border: 0;
   border-radius: 8px;
@@ -184,6 +205,10 @@ td small { display: block; color: var(--muted); margin-top: 4px; }
 .standard-card { padding: 16px; }
 .standard-card strong { display: block; color: var(--navy); margin-bottom: 6px; }
 .standard-card span { color: var(--muted); font-size: 13px; }
+.criteria-stack { display: grid; gap: 16px; }
+.criteria-stack textarea { width: 100%; min-width: 220px; }
+.criteria-stack select { min-width: 150px; }
+.actions button:disabled { opacity: .5; cursor: not-allowed; }
 
 .empty-state, .error-box {
   background: #fff;

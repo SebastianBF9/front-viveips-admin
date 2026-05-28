@@ -1,15 +1,37 @@
-import { Edit2, Plus, Trash2 } from "lucide-react";
+import { Edit2, Plus, Save, Trash2 } from "lucide-react";
 import { FormEvent, useEffect, useMemo, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import {
+  actualizarCumplimiento,
   actualizarRelacion,
   crearRelacion,
   eliminarRelacion,
   listarServiciosIps,
+  obtenerCumplimientoServicio,
   obtenerDetalleServicio,
 } from "../api";
-import type { EstadoRelacion, RelacionPayload, ServicioDetalle, ServicioIps, ServicioRelacion } from "../types";
+import type {
+  CriterioCumplimiento,
+  CumplimientoPayload,
+  CumplimientoServicio,
+  EstadoCumplimiento,
+  EstadoRelacion,
+  RelacionPayload,
+  ServicioDetalle,
+  ServicioIps,
+  ServicioRelacion,
+} from "../types";
 import { Loading } from "../ui/Loading";
+
+type TabKey = "resumen" | "relaciones" | "estandares" | "cumplimiento" | "evidencias";
+
+const tabs: Array<{ key: TabKey; label: string }> = [
+  { key: "resumen", label: "Resumen" },
+  { key: "relaciones", label: "Relaciones" },
+  { key: "estandares", label: "Estandares" },
+  { key: "cumplimiento", label: "Cumplimiento" },
+  { key: "evidencias", label: "Evidencias" },
+];
 
 const estados: EstadoRelacion[] = ["pendiente", "en_revision", "cumple", "no_cumple", "no_aplica"];
 const tiposRelacion = [
@@ -22,12 +44,12 @@ const tiposRelacion = [
 
 const estadoLabel: Record<string, string> = {
   pendiente: "Pendiente",
-  en_revision: "En revisión",
+  en_revision: "En revision",
   cumple: "Cumple",
   no_cumple: "No cumple",
   no_aplica: "No aplica",
   habilitado: "Habilitado",
-  proximo: "Próximo",
+  proximo: "Proximo",
 };
 
 const formInicial: RelacionPayload = {
@@ -43,12 +65,24 @@ const formInicial: RelacionPayload = {
   observaciones: "",
 };
 
+function agruparPorEstandar(criterios: CriterioCumplimiento[]) {
+  return criterios.reduce<Record<string, CriterioCumplimiento[]>>((acc, criterio) => {
+    const key = criterio.estandar || "Sin estandar";
+    acc[key] = acc[key] || [];
+    acc[key].push(criterio);
+    return acc;
+  }, {});
+}
+
 export function ServicioDetallePage() {
   const { codigo = "" } = useParams();
   const [detalle, setDetalle] = useState<ServicioDetalle | null>(null);
+  const [cumplimiento, setCumplimiento] = useState<CumplimientoServicio | null>(null);
   const [servicios, setServicios] = useState<ServicioIps[]>([]);
+  const [tabActiva, setTabActiva] = useState<TabKey>("resumen");
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [savingCumplimiento, setSavingCumplimiento] = useState<number | null>(null);
   const [error, setError] = useState("");
   const [modalOpen, setModalOpen] = useState(false);
   const [editando, setEditando] = useState<ServicioRelacion | null>(null);
@@ -58,12 +92,14 @@ export function ServicioDetallePage() {
     setLoading(true);
     setError("");
     try {
-      const [detalleData, serviciosData] = await Promise.all([
+      const [detalleData, serviciosData, cumplimientoData] = await Promise.all([
         obtenerDetalleServicio(codigo),
         listarServiciosIps(),
+        obtenerCumplimientoServicio(codigo),
       ]);
       setDetalle(detalleData);
       setServicios(serviciosData.servicios || []);
+      setCumplimiento(cumplimientoData);
     } catch (err) {
       setError(err instanceof Error ? err.message : "No fue posible cargar el servicio");
     } finally {
@@ -78,6 +114,10 @@ export function ServicioDetallePage() {
   const serviciosSoporte = useMemo(() => {
     return servicios.filter((servicio) => servicio.codigo !== codigo);
   }, [codigo, servicios]);
+
+  const criteriosPorEstandar = useMemo(() => {
+    return agruparPorEstandar(cumplimiento?.criterios || []);
+  }, [cumplimiento]);
 
   function abrirNuevo() {
     setEditando(null);
@@ -115,16 +155,35 @@ export function ServicioDetallePage() {
       setModalOpen(false);
       await cargar();
     } catch (err) {
-      setError(err instanceof Error ? err.message : "No fue posible guardar la relación");
+      setError(err instanceof Error ? err.message : "No fue posible guardar la relacion");
     } finally {
       setSaving(false);
     }
   }
 
   async function borrar(relacion: ServicioRelacion) {
-    if (!confirm(`¿Eliminar la relación con ${relacion.servicio_soporte_nombre}?`)) return;
+    if (!confirm(`Eliminar la relacion con ${relacion.servicio_soporte_nombre}?`)) return;
     await eliminarRelacion(relacion.id);
     await cargar();
+  }
+
+  async function guardarCumplimiento(criterio: CriterioCumplimiento, payload: CumplimientoPayload) {
+    if (!criterio.cumplimiento_id) {
+      setError("Este criterio aun no tiene registro de cumplimiento creado en base de datos.");
+      return;
+    }
+
+    setSavingCumplimiento(criterio.cumplimiento_id);
+    setError("");
+    try {
+      await actualizarCumplimiento(criterio.cumplimiento_id, payload);
+      const cumplimientoData = await obtenerCumplimientoServicio(codigo);
+      setCumplimiento(cumplimientoData);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "No fue posible actualizar el cumplimiento");
+    } finally {
+      setSavingCumplimiento(null);
+    }
   }
 
   if (loading) return <Loading text="Cargando detalle del servicio..." />;
@@ -132,6 +191,7 @@ export function ServicioDetallePage() {
   if (!detalle) return <Loading text="Servicio no encontrado." />;
 
   const { servicio, resumen } = detalle;
+  const resumenCumplimiento = cumplimiento?.resumen;
 
   return (
     <section className="page">
@@ -140,7 +200,7 @@ export function ServicioDetallePage() {
           <Link className="back-link" to="/servicios">Servicios</Link>
           <span className="eyebrow">Servicio {servicio.codigo}</span>
           <h1>{servicio.nombre}</h1>
-          <p>{servicio.observaciones || "Dashboard independiente de habilitación."}</p>
+          <p>{servicio.observaciones || "Dashboard independiente de habilitacion."}</p>
           <div className="meta-row">
             <span className={`pill ${servicio.estado}`}>{estadoLabel[servicio.estado] || servicio.estado}</span>
             <span className="tag">{servicio.grupo}</span>
@@ -150,71 +210,169 @@ export function ServicioDetallePage() {
         </div>
         <button className="primary-btn" type="button" onClick={abrirNuevo}>
           <Plus size={18} />
-          Agregar relación
+          Agregar relacion
         </button>
       </header>
 
       {error && <div className="error-box">{error}</div>}
 
-      <div className="kpi-grid five">
-        <article className="kpi-card"><strong>{resumen.relaciones_total}</strong><span>Relaciones</span></article>
-        <article className="kpi-card"><strong>{resumen.componentes_propios}</strong><span>Componentes propios</span></article>
-        <article className="kpi-card"><strong>{resumen.interdependencias}</strong><span>Interdependencias</span></article>
-        <article className="kpi-card"><strong>{resumen.relaciones_pendientes}</strong><span>Pendientes</span></article>
-        <article className="kpi-card"><strong>{resumen.relaciones_en_revision}</strong><span>En revisión</span></article>
-      </div>
-
-      <section className="table-card">
-        <div className="section-heading">
-          <h2>Componentes e interdependencias</h2>
-          <p>Las relaciones no cierran cumplimiento automáticamente; deben validarse con evidencia.</p>
-        </div>
-        <table>
-          <thead>
-            <tr>
-              <th>Servicio relacionado</th>
-              <th>Tipo</th>
-              <th>Propiedad</th>
-              <th>Estado</th>
-              <th>Modalidad</th>
-              <th>Acciones</th>
-            </tr>
-          </thead>
-          <tbody>
-            {detalle.relaciones.map((relacion) => (
-              <tr key={relacion.id}>
-                <td>
-                  <strong>{relacion.servicio_soporte_codigo} {relacion.servicio_soporte_nombre}</strong>
-                  <small>{relacion.observaciones || "Sin observaciones"}</small>
-                </td>
-                <td>{relacion.tipo_relacion}</td>
-                <td>{relacion.propio_o_contratado}</td>
-                <td><span className={`pill ${relacion.estado}`}>{estadoLabel[relacion.estado] || relacion.estado}</span></td>
-                <td>{[relacion.modalidad_compatible, relacion.complejidad_compatible].filter(Boolean).join(" / ") || "Por definir"}</td>
-                <td className="actions">
-                  <button type="button" onClick={() => abrirEditar(relacion)}><Edit2 size={16} /></button>
-                  <button type="button" className="danger" onClick={() => borrar(relacion)}><Trash2 size={16} /></button>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-        {detalle.relaciones.length === 0 && <Loading text="No hay relaciones configuradas." />}
-      </section>
-
-      <section className="standards-grid">
-        {detalle.estandares.map((estandar) => (
-          <article className="standard-card" key={estandar.id}>
-            <strong>{estandar.nombre}</strong>
-            <span>{estandar.descripcion || "Pendiente de checklist específico."}</span>
-          </article>
+      <nav className="tabs" aria-label="Secciones del servicio">
+        {tabs.map((tab) => (
+          <button
+            key={tab.key}
+            className={tabActiva === tab.key ? "active" : ""}
+            type="button"
+            onClick={() => setTabActiva(tab.key)}
+          >
+            {tab.label}
+          </button>
         ))}
-      </section>
+      </nav>
+
+      {tabActiva === "resumen" && (
+        <>
+          <div className="kpi-grid five">
+            <article className="kpi-card"><strong>{resumen.relaciones_total}</strong><span>Relaciones</span></article>
+            <article className="kpi-card"><strong>{resumen.componentes_propios}</strong><span>Componentes propios</span></article>
+            <article className="kpi-card"><strong>{resumen.interdependencias}</strong><span>Interdependencias</span></article>
+            <article className="kpi-card"><strong>{resumen.relaciones_pendientes}</strong><span>Pendientes</span></article>
+            <article className="kpi-card"><strong>{resumen.relaciones_en_revision}</strong><span>En revision</span></article>
+          </div>
+
+          {resumenCumplimiento && (
+            <div className="kpi-grid five">
+              <article className="kpi-card"><strong>{resumenCumplimiento.total}</strong><span>Criterios</span></article>
+              <article className="kpi-card"><strong>{resumenCumplimiento.cumple}</strong><span>Cumple</span></article>
+              <article className="kpi-card"><strong>{resumenCumplimiento.no_cumple}</strong><span>No cumple</span></article>
+              <article className="kpi-card"><strong>{resumenCumplimiento.pendiente}</strong><span>Pendiente</span></article>
+              <article className="kpi-card"><strong>{resumenCumplimiento.en_revision}</strong><span>En revision</span></article>
+            </div>
+          )}
+        </>
+      )}
+
+      {tabActiva === "relaciones" && (
+        <section className="table-card">
+          <div className="section-heading">
+            <h2>Componentes e interdependencias</h2>
+            <p>Las relaciones no cierran cumplimiento automaticamente; deben validarse con evidencia.</p>
+          </div>
+          <table>
+            <thead>
+              <tr>
+                <th>Servicio relacionado</th>
+                <th>Tipo</th>
+                <th>Propiedad</th>
+                <th>Estado</th>
+                <th>Modalidad</th>
+                <th>Acciones</th>
+              </tr>
+            </thead>
+            <tbody>
+              {detalle.relaciones.map((relacion) => (
+                <tr key={relacion.id}>
+                  <td>
+                    <strong>{relacion.servicio_soporte_codigo} {relacion.servicio_soporte_nombre}</strong>
+                    <small>{relacion.observaciones || "Sin observaciones"}</small>
+                  </td>
+                  <td>{relacion.tipo_relacion}</td>
+                  <td>{relacion.propio_o_contratado}</td>
+                  <td><span className={`pill ${relacion.estado}`}>{estadoLabel[relacion.estado] || relacion.estado}</span></td>
+                  <td>{[relacion.modalidad_compatible, relacion.complejidad_compatible].filter(Boolean).join(" / ") || "Por definir"}</td>
+                  <td className="actions">
+                    <button type="button" onClick={() => abrirEditar(relacion)}><Edit2 size={16} /></button>
+                    <button type="button" className="danger" onClick={() => borrar(relacion)}><Trash2 size={16} /></button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+          {detalle.relaciones.length === 0 && <Loading text="No hay relaciones configuradas." />}
+        </section>
+      )}
+
+      {tabActiva === "estandares" && (
+        <section className="standards-grid">
+          {detalle.estandares.map((estandar) => (
+            <article className="standard-card" key={estandar.id}>
+              <strong>{estandar.nombre}</strong>
+              <span>{estandar.descripcion || "Pendiente de checklist especifico."}</span>
+            </article>
+          ))}
+        </section>
+      )}
+
+      {tabActiva === "cumplimiento" && (
+        <section className="criteria-stack">
+          {Object.entries(criteriosPorEstandar).map(([estandar, criterios]) => (
+            <article className="table-card" key={estandar}>
+              <div className="section-heading">
+                <h2>{estandar}</h2>
+                <p>{criterios.length} criterios normativos asociados a este estandar.</p>
+              </div>
+              <table>
+                <thead>
+                  <tr>
+                    <th>Criterio</th>
+                    <th>Estado</th>
+                    <th>Respuesta</th>
+                    <th>Observacion</th>
+                    <th>Guardar</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {criterios.map((criterio) => (
+                    <CumplimientoRow
+                      criterio={criterio}
+                      key={criterio.criterio_id}
+                      onSave={guardarCumplimiento}
+                      saving={savingCumplimiento === criterio.cumplimiento_id}
+                    />
+                  ))}
+                </tbody>
+              </table>
+            </article>
+          ))}
+          {(cumplimiento?.criterios.length || 0) === 0 && (
+            <div className="empty-state">Este servicio aun no tiene criterios configurados.</div>
+          )}
+        </section>
+      )}
+
+      {tabActiva === "evidencias" && (
+        <section className="table-card">
+          <div className="section-heading">
+            <h2>Evidencias</h2>
+            <p>Base preparada para asociar soportes por criterio. La carga de archivos entra en la siguiente iteracion.</p>
+          </div>
+          <table>
+            <thead>
+              <tr>
+                <th>Criterio</th>
+                <th>Evidencia</th>
+                <th>Estado</th>
+              </tr>
+            </thead>
+            <tbody>
+              {(cumplimiento?.criterios || []).filter((criterio) => criterio.requiere_evidencia).map((criterio) => (
+                <tr key={criterio.criterio_id}>
+                  <td>
+                    <strong>{criterio.criterio_codigo}</strong>
+                    <small>{criterio.descripcion}</small>
+                  </td>
+                  <td>{criterio.evidencia_nombre || "Pendiente de cargar"}</td>
+                  <td><span className={`pill ${criterio.evidencia_estado || "pendiente"}`}>{criterio.evidencia_estado || "pendiente"}</span></td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </section>
+      )}
 
       {modalOpen && (
         <div className="modal-backdrop" onMouseDown={() => setModalOpen(false)}>
           <form className="modal" onSubmit={guardar} onMouseDown={(event) => event.stopPropagation()}>
-            <h2>{editando ? "Editar relación" : "Agregar relación"}</h2>
+            <h2>{editando ? "Editar relacion" : "Agregar relacion"}</h2>
 
             <label>
               Servicio Vive IPS relacionado
@@ -237,7 +395,7 @@ export function ServicioDetallePage() {
             {!form.servicio_soporte_ips_id && (
               <div className="form-grid">
                 <label>
-                  Código soporte
+                  Codigo soporte
                   <input value={form.servicio_soporte_codigo || ""} onChange={(event) => setForm({ ...form, servicio_soporte_codigo: event.target.value })} />
                 </label>
                 <label>
@@ -249,7 +407,7 @@ export function ServicioDetallePage() {
 
             <div className="form-grid">
               <label>
-                Tipo relación
+                Tipo relacion
                 <select value={form.tipo_relacion} onChange={(event) => setForm({ ...form, tipo_relacion: event.target.value })}>
                   {tiposRelacion.map((tipo) => <option key={tipo} value={tipo}>{tipo}</option>)}
                 </select>
@@ -300,5 +458,55 @@ export function ServicioDetallePage() {
         </div>
       )}
     </section>
+  );
+}
+
+function CumplimientoRow({
+  criterio,
+  onSave,
+  saving,
+}: {
+  criterio: CriterioCumplimiento;
+  onSave: (criterio: CriterioCumplimiento, payload: CumplimientoPayload) => Promise<void>;
+  saving: boolean;
+}) {
+  const [estado, setEstado] = useState<EstadoCumplimiento>(criterio.estado_cumplimiento || "pendiente");
+  const [respuesta, setRespuesta] = useState(criterio.respuesta || "");
+  const [observacion, setObservacion] = useState(criterio.observacion || "");
+
+  useEffect(() => {
+    setEstado(criterio.estado_cumplimiento || "pendiente");
+    setRespuesta(criterio.respuesta || "");
+    setObservacion(criterio.observacion || "");
+  }, [criterio]);
+
+  return (
+    <tr>
+      <td>
+        <strong>{criterio.criterio_codigo}</strong>
+        <small>{criterio.descripcion}</small>
+        {criterio.norma_referencia && <small>{criterio.norma_referencia}</small>}
+      </td>
+      <td>
+        <select value={estado} onChange={(event) => setEstado(event.target.value as EstadoCumplimiento)}>
+          {estados.map((item) => <option key={item} value={item}>{estadoLabel[item]}</option>)}
+        </select>
+      </td>
+      <td>
+        <textarea value={respuesta} onChange={(event) => setRespuesta(event.target.value)} rows={3} />
+      </td>
+      <td>
+        <textarea value={observacion} onChange={(event) => setObservacion(event.target.value)} rows={3} />
+      </td>
+      <td className="actions">
+        <button
+          type="button"
+          disabled={saving || !criterio.cumplimiento_id}
+          onClick={() => onSave(criterio, { estado_cumplimiento: estado, respuesta, observacion })}
+        >
+          <Save size={16} />
+        </button>
+      </td>
+    </tr>
   );
 }

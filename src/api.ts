@@ -1,4 +1,4 @@
-import type { RelacionPayload, ServicioDetalle, ServicioIps } from "./types";
+import type { CumplimientoPayload, CumplimientoServicio, RelacionPayload, ServicioDetalle, ServicioIps } from "./types";
 
 const API_URL = import.meta.env.VITE_API_URL || "https://api-pruebas.viveips.com.co";
 const TOKEN_KEY = "viveips_token";
@@ -67,6 +67,10 @@ export async function obtenerDetalleServicio(codigo: string) {
   return apiCall<ServicioDetalle>("GET", `/servicios-ips/${encodeURIComponent(codigo)}/detalle`);
 }
 
+export async function obtenerCumplimientoServicio(codigo: string) {
+  return apiCall<CumplimientoServicio>("GET", `/servicios-ips/${encodeURIComponent(codigo)}/cumplimiento`);
+}
+
 export async function crearRelacion(codigo: string, payload: RelacionPayload) {
   return apiCall("POST", `/servicios-ips/${encodeURIComponent(codigo)}/relaciones`, payload);
 }
@@ -77,4 +81,8 @@ export async function actualizarRelacion(id: number, payload: RelacionPayload) {
 
 export async function eliminarRelacion(id: number) {
   return apiCall("DELETE", `/servicios-relaciones/${id}`);
+}
+
+export async function actualizarCumplimiento(id: number, payload: CumplimientoPayload) {
+  return apiCall("PATCH", `/servicios-cumplimientos/${id}`, payload);
 }
