@@ -25,15 +25,13 @@ import type {
 } from "../types";
 import { Loading } from "../ui/Loading";
 
-type TabKey = "resumen" | "talento" | "relaciones" | "estandares" | "cumplimiento" | "evidencias";
+type TabKey = "resumen" | "relaciones" | "estandares" | "cumplimiento";
 
 const tabs: Array<{ key: TabKey; label: string }> = [
   { key: "resumen", label: "Resumen" },
-  { key: "talento", label: "Talento humano" },
   { key: "relaciones", label: "Relaciones" },
   { key: "estandares", label: "Estandares" },
   { key: "cumplimiento", label: "Cumplimiento" },
-  { key: "evidencias", label: "Evidencias" },
 ];
 
 const estados: EstadoRelacion[] = ["pendiente", "en_revision", "cumple", "no_cumple", "no_aplica"];
@@ -96,6 +94,7 @@ export function ServicioDetallePage() {
   const [talento, setTalento] = useState<TalentoHumanoServicio | null>(null);
   const [servicios, setServicios] = useState<ServicioIps[]>([]);
   const [tabActiva, setTabActiva] = useState<TabKey>("resumen");
+  const [estandarActivo, setEstandarActivo] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [savingTalento, setSavingTalento] = useState(false);
@@ -128,6 +127,7 @@ export function ServicioDetallePage() {
   }
 
   useEffect(() => {
+    setEstandarActivo(null);
     cargar();
   }, [codigo]);
 
@@ -243,7 +243,7 @@ export function ServicioDetallePage() {
             {servicio.distintivo && <span className="tag">{servicio.distintivo}</span>}
           </div>
         </div>
-        {tabActiva === "talento" ? (
+        {tabActiva === "estandares" && estandarActivo === "talento_humano" ? (
           <button className="primary-btn" type="button" onClick={abrirAsignarTalento}>
             <UserPlus size={18} />
             Asignar profesional
@@ -264,7 +264,10 @@ export function ServicioDetallePage() {
             key={tab.key}
             className={tabActiva === tab.key ? "active" : ""}
             type="button"
-            onClick={() => setTabActiva(tab.key)}
+            onClick={() => {
+              setTabActiva(tab.key);
+              setEstandarActivo(null);
+            }}
           >
             {tab.label}
           </button>
@@ -293,8 +296,18 @@ export function ServicioDetallePage() {
         </>
       )}
 
-      {tabActiva === "talento" && (
+      {tabActiva === "estandares" && estandarActivo === "talento_humano" && (
         <>
+          <div className="section-heading inline-heading">
+            <div>
+              <h2>Talento humano</h2>
+              <p>Profesionales vinculados a este servicio y estado documental operativo.</p>
+            </div>
+            <button className="secondary-btn" type="button" onClick={() => setEstandarActivo(null)}>
+              Volver a estandares
+            </button>
+          </div>
+
           <div className="kpi-grid four">
             <article className="kpi-card"><strong>{talento?.resumen.total || 0}</strong><span>Asignaciones</span></article>
             <article className="kpi-card"><strong>{talento?.resumen.activos || 0}</strong><span>Activos</span></article>
@@ -388,14 +401,42 @@ export function ServicioDetallePage() {
         </section>
       )}
 
-      {tabActiva === "estandares" && (
-        <section className="standards-grid">
-          {detalle.estandares.map((estandar) => (
-            <article className="standard-card" key={estandar.id}>
-              <strong>{estandar.nombre}</strong>
-              <span>{estandar.descripcion || "Pendiente de checklist especifico."}</span>
-            </article>
-          ))}
+      {tabActiva === "estandares" && !estandarActivo && (
+        <>
+          <section className="standards-grid">
+            {detalle.estandares.map((estandar) => {
+              const resumenEstandar = cumplimiento?.resumen.estandares.find((item) => item.codigo === estandar.codigo);
+              return (
+                <article className="standard-card standard-card-action" key={estandar.id}>
+                  <div className="standard-card-head">
+                    <strong>{estandar.nombre}</strong>
+                    {resumenEstandar && (
+                      <span className={`pill ${resumenEstandar.estado}`}>{resumenEstandar.porcentaje}%</span>
+                    )}
+                  </div>
+                  <span>{estandar.descripcion || "Pendiente de checklist especifico."}</span>
+                  <button className="secondary-btn" type="button" onClick={() => setEstandarActivo(estandar.codigo)}>
+                    Ver detalle
+                  </button>
+                </article>
+              );
+            })}
+          </section>
+        </>
+      )}
+
+      {tabActiva === "estandares" && estandarActivo && estandarActivo !== "talento_humano" && (
+        <section className="table-card">
+          <div className="section-heading inline-heading">
+            <div>
+              <h2>{detalle.estandares.find((item) => item.codigo === estandarActivo)?.nombre || "Estandar"}</h2>
+              <p>Esta vista se conectara con su modulo operativo en la siguiente iteracion.</p>
+            </div>
+            <button className="secondary-btn" type="button" onClick={() => setEstandarActivo(null)}>
+              Volver a estandares
+            </button>
+          </div>
+          <div className="empty-state">Detalle operativo pendiente para este estandar.</div>
         </section>
       )}
 
@@ -463,36 +504,6 @@ export function ServicioDetallePage() {
           {(cumplimiento?.criterios.length || 0) === 0 && (
             <div className="empty-state">Este servicio aun no tiene criterios configurados.</div>
           )}
-        </section>
-      )}
-
-      {tabActiva === "evidencias" && (
-        <section className="table-card">
-          <div className="section-heading">
-            <h2>Evidencias</h2>
-            <p>Base preparada para asociar soportes por criterio. La carga de archivos entra en la siguiente iteracion.</p>
-          </div>
-          <table>
-            <thead>
-              <tr>
-                <th>Criterio</th>
-                <th>Evidencia</th>
-                <th>Estado</th>
-              </tr>
-            </thead>
-            <tbody>
-              {(cumplimiento?.criterios || []).filter((criterio) => criterio.requiere_evidencia).map((criterio) => (
-                <tr key={criterio.criterio_id}>
-                  <td>
-                    <strong>{criterio.criterio_codigo}</strong>
-                    <small>{criterio.descripcion}</small>
-                  </td>
-                  <td>{criterio.evidencia_nombre || "Pendiente de cargar"}</td>
-                  <td><span className={`pill ${criterio.evidencia_estado || "pendiente"}`}>{criterio.evidencia_estado || "pendiente"}</span></td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
         </section>
       )}
 
