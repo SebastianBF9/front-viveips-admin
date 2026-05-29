@@ -144,6 +144,7 @@ export interface ProfesionalServicio extends ProfesionalBasico {
   estado: "activo" | "inactivo" | "pendiente" | string;
   observaciones: string | null;
   documentos_requeridos: number;
+  documentos_cargados: number;
   documentos_cumplidos: number;
   documentos_pendientes: number;
   total_documentos: number;

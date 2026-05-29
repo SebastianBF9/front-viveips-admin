@@ -343,7 +343,7 @@ export function ServicioDetallePage() {
                   <th>Rol</th>
                   <th>Relacion</th>
                   <th>Disponibilidad</th>
-                  <th>Documentos</th>
+                  <th>Documentos cargados</th>
                   <th>Estado</th>
                   <th>Acciones</th>
                 </tr>
@@ -360,13 +360,13 @@ export function ServicioDetallePage() {
                     <td>{profesional.disponibilidad || "Por definir"}</td>
                     <td>
                       <strong>
-                        {profesional.documentos_cumplidos ?? profesional.documentos_aprobados ?? 0}/
+                        {profesional.documentos_cargados ?? profesional.documentos_aprobados ?? 0}/
                         {profesional.documentos_requeridos ?? profesional.total_documentos ?? 0}
                       </strong>
                       <small>
                         {profesional.documentos_vencidos
                           ? `${profesional.documentos_vencidos} vencidos`
-                          : `${profesional.documentos_pendientes ?? 0} pendientes`}
+                          : `${profesional.documentos_pendientes ?? 0} requeridos generales pendientes`}
                       </small>
                     </td>
                     <td><span className={`pill ${profesional.estado}`}>{profesional.estado}</span></td>
@@ -379,7 +379,11 @@ export function ServicioDetallePage() {
                 ))}
               </tbody>
             </table>
-            {(talento?.profesionales.length || 0) === 0 && <Loading text="No hay profesionales asignados a este servicio." />}
+            {(talento?.profesionales.length || 0) === 0 && (
+              <div className="empty-state">
+                No hay profesionales asignados directamente a este servicio. Los profesionales de servicios relacionados no se heredan automaticamente.
+              </div>
+            )}
           </section>
         </>
       )}
