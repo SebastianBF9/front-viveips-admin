@@ -663,26 +663,26 @@ export function TalentoHumanoPage() {
 
       {seleccionado && (
         <div className="modal-backdrop" onMouseDown={() => setSeleccionado(null)}>
-          <div className="modal wide-modal" onMouseDown={(event) => event.stopPropagation()}>
-            <div className="modal-profile-header">
-              <div className="avatar-circle"><UserRound size={24} /></div>
+          <div className="modal wide-modal professional-detail-modal" onMouseDown={(event) => event.stopPropagation()}>
+            <div className="professional-detail-title">
+              <h2><UserRound size={22} /> Detalle del profesional</h2>
+              <button type="button" onClick={() => setSeleccionado(null)} aria-label="Cerrar modal">
+                <X size={22} />
+              </button>
+            </div>
+
+            <div className="modal-profile-header legacy-profile-header">
+              <div className="avatar-circle">{iniciales(seleccionado.nombre)}</div>
               <div>
                 <h2>{seleccionado.nombre}</h2>
-                <p>{seleccionado.especialidad || "Sin cargo"} - CC {seleccionado.cedula || "Sin cedula"}</p>
+                <p>{seleccionado.especialidad || "Sin cargo"}</p>
+                <p>CC: {seleccionado.cedula || "Sin cedula"} - {seleccionado.email || "Sin correo"} - {seleccionado.telefono || "Sin telefono"}</p>
               </div>
             </div>
 
-            <div className="detail-grid">
-              <article><span>Correo</span><strong>{seleccionado.email || "Sin dato"}</strong></article>
-              <article><span>Telefono</span><strong>{seleccionado.telefono || "Sin dato"}</strong></article>
-              <article><span>Contrato</span><strong>{seleccionado.estado_contrato || "Sin contrato"}</strong></article>
-              <article><span>Estado</span><strong>{seleccionado.activo ? "Activo" : "Inactivo"}</strong></article>
-            </div>
-
-            <section className="table-card flat-card">
-              <div className="section-heading">
+            <section className="flat-card legacy-section">
+              <div className="legacy-section-heading">
                 <h2>Servicios asignados</h2>
-                <p>Servicios habilitados donde participa este profesional.</p>
               </div>
 
               {serviciosLoading ? (
@@ -725,10 +725,9 @@ export function TalentoHumanoPage() {
               )}
             </section>
 
-            <section className="table-card flat-card">
-              <div className="section-heading">
+            <section className="flat-card legacy-section">
+              <div className="legacy-section-heading">
                 <h2>Estado de documentos</h2>
-                <p>Documentos esperados segun el cargo registrado.</p>
               </div>
               <div className="modal-docs-grid">
                 {checklistProfesional(seleccionado).map((item) => (
