@@ -176,3 +176,47 @@ export interface ProfesionalServicioPayload {
   estado: "activo" | "inactivo" | "pendiente";
   observaciones?: string | null;
 }
+
+export interface DocumentoProfesional {
+  id: number;
+  tipo_documento_id: number;
+  tipo_codigo: string;
+  tipo_nombre: string;
+  nombre_archivo: string;
+  fecha_vencimiento: string | null;
+  estado: string;
+  aprobado: number;
+}
+
+export interface FormacionAcademica {
+  id: number;
+  profesional_id: number;
+  tipo: string;
+  institucion: string;
+  titulo: string | null;
+  nivel: string | null;
+  anio_grado: number | null;
+  ciudad: string | null;
+  nombre_archivo: string | null;
+  ruta_archivo: string | null;
+  diploma_nombre_archivo: string | null;
+  diploma_ruta_archivo: string | null;
+  acta_nombre_archivo: string | null;
+  acta_ruta_archivo: string | null;
+}
+
+export interface ProfesionalAdmin {
+  id: number;
+  nombre: string;
+  cedula: string | null;
+  email: string | null;
+  telefono: string | null;
+  especialidad: string | null;
+  ciudad?: string | null;
+  activo: number;
+  estado_contrato?: string | null;
+  fecha_contrato?: string | null;
+  fecha_firma_contrato?: string | null;
+  documentos?: DocumentoProfesional[];
+  formaciones?: FormacionAcademica[];
+}

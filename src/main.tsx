@@ -5,6 +5,7 @@ import { AppLayout } from "./ui/AppLayout";
 import { LoginPage } from "./pages/LoginPage";
 import { ServicioDetallePage } from "./pages/ServicioDetallePage";
 import { ServiciosPage } from "./pages/ServiciosPage";
+import { TalentoHumanoPage } from "./pages/TalentoHumanoPage";
 import "./styles.css";
 
 const router = createBrowserRouter([
@@ -16,6 +17,7 @@ const router = createBrowserRouter([
       { index: true, element: <Navigate to="/servicios" replace /> },
       { path: "servicios", element: <ServiciosPage /> },
       { path: "servicios/:codigo", element: <ServicioDetallePage /> },
+      { path: "talento-humano", element: <TalentoHumanoPage /> },
     ],
   },
 ]);

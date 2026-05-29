@@ -1,4 +1,4 @@
-import { LogOut, PanelsTopLeft, Stethoscope } from "lucide-react";
+import { LogOut, Stethoscope, UsersRound } from "lucide-react";
 import { Navigate, NavLink, Outlet, useNavigate } from "react-router-dom";
 import { clearSession, getToken } from "../api";
 
@@ -31,15 +31,15 @@ export function AppLayout() {
             <Stethoscope size={18} />
             Servicios
           </NavLink>
-          <button className="nav-link disabled" type="button">
-            <PanelsTopLeft size={18} />
-            Próximamente
-          </button>
+          <NavLink to="/talento-humano" className={({ isActive }) => `nav-link ${isActive ? "active" : ""}`}>
+            <UsersRound size={18} />
+            Talento Humano
+          </NavLink>
         </nav>
 
         <button className="logout" type="button" onClick={logout}>
           <LogOut size={17} />
-          Cerrar sesión
+          Cerrar sesion
         </button>
       </aside>
 

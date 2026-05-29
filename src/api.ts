@@ -16,6 +16,12 @@ export function getToken() {
   return sessionStorage.getItem(TOKEN_KEY);
 }
 
+export function downloadUrl(endpoint: string) {
+  const token = getToken();
+  const glue = endpoint.includes("?") ? "&" : "?";
+  return `${API_URL}${endpoint}${token ? `${glue}token=${encodeURIComponent(token)}` : ""}`;
+}
+
 export function clearSession() {
   sessionStorage.removeItem(TOKEN_KEY);
   sessionStorage.removeItem(ROL_KEY);
@@ -100,4 +106,16 @@ export async function asignarProfesionalServicio(codigo: string, payload: Profes
 
 export async function quitarProfesionalServicio(id: number) {
   return apiCall("DELETE", `/servicios-profesionales/${id}`);
+}
+
+export async function listarProfesionales() {
+  return apiCall<{ success: boolean; profesionales: any[] }>("GET", "/profesionales/");
+}
+
+export async function obtenerProfesional(id: number) {
+  return apiCall<{ success: boolean; perfil: any; documentos: any[] }>("GET", `/profesionales/${id}`);
+}
+
+export async function obtenerFormacionProfesional(id: number) {
+  return apiCall<{ success: boolean; formaciones: any[] }>("GET", `/formacion/${id}`);
 }
