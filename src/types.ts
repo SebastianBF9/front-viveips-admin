@@ -213,7 +213,13 @@ export interface ProfesionalAdmin {
   telefono: string | null;
   especialidad: string | null;
   ciudad?: string | null;
+  banco?: string | null;
+  num_cuenta?: string | null;
+  titular_cuenta?: string | null;
   activo: number;
+  fecha_creacion?: string | null;
+  ultimo_acceso?: string | null;
+  fecha_deshabilitacion?: string | null;
   estado_contrato?: string | null;
   fecha_contrato?: string | null;
   fecha_firma_contrato?: string | null;

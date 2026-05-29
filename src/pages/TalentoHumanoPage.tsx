@@ -300,6 +300,19 @@ function nombreArchivoSeguro(valor: string) {
   return normalizar(valor).replace(/[^a-z0-9]+/g, "_").replace(/^_+|_+$/g, "") || "profesional";
 }
 
+function formatearFechaSistema(valor?: string | null) {
+  if (!valor) return "-";
+  const fecha = new Date(valor);
+  if (Number.isNaN(fecha.getTime())) return valor;
+  return new Intl.DateTimeFormat("es-CO", {
+    day: "2-digit",
+    month: "2-digit",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+  }).format(fecha);
+}
+
 function normalizarEstadoContrato(valor?: string | null) {
   return normalizar(valor).replace(/[\s-]+/g, "_");
 }
@@ -402,6 +415,7 @@ export function TalentoHumanoPage() {
             ]);
             return {
               ...profesional,
+              ...detalle.perfil,
               documentos: (detalle.documentos || []) as DocumentoProfesional[],
               formaciones: (formacion.formaciones || []) as FormacionAcademica[],
             };
@@ -895,12 +909,41 @@ export function TalentoHumanoPage() {
               </div>
             </section>
 
-            <div className="modal-actions">
-              <button className="secondary-btn" type="button" onClick={() => descargarHojaVida(seleccionado)}>
+            <section className="legacy-extra-section">
+              <div className="bank-info-box">
+                <strong>Datos bancarios:</strong>
+                <span>{seleccionado.banco || "-"} - Cuenta Ahorros: {seleccionado.num_cuenta || "-"}</span>
+              </div>
+
+              <div className="system-info-box">
+                <h2>Informacion del sistema</h2>
+                <div className="system-info-grid">
+                  <div>
+                    <span>Fecha de creacion</span>
+                    <strong>{formatearFechaSistema(seleccionado.fecha_creacion)}</strong>
+                  </div>
+                  <div>
+                    <span>Ultimo ingreso</span>
+                    <strong>{formatearFechaSistema(seleccionado.ultimo_acceso)}</strong>
+                  </div>
+                  <div>
+                    <span>Fecha deshabilitacion</span>
+                    <strong>{formatearFechaSistema(seleccionado.fecha_deshabilitacion)}</strong>
+                  </div>
+                  <div>
+                    <span>Estado contrato</span>
+                    <strong>{infoContrato(seleccionado).detalle}</strong>
+                  </div>
+                </div>
+              </div>
+            </section>
+
+            <div className="modal-actions professional-modal-actions">
+              <button className="brand-action-btn" type="button" onClick={() => descargarHojaVida(seleccionado)}>
                 <Download size={16} />
                 Descargar hoja de vida
               </button>
-              <button className="primary-btn" type="button" onClick={() => setSeleccionado(null)}>Cerrar</button>
+              <button className="primary-btn close-detail-btn" type="button" onClick={() => setSeleccionado(null)}>Cerrar</button>
             </div>
           </div>
         </div>

@@ -651,6 +651,81 @@ td small { display: block; color: var(--muted); margin-top: 4px; }
   gap: 7px;
   min-width: 116px;
 }
+.legacy-extra-section {
+  display: grid;
+  gap: 14px;
+  padding: 0 28px 24px;
+}
+.bank-info-box {
+  border-radius: 18px;
+  background: #f3f8fc;
+  color: #08243a;
+  padding: 16px 22px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+  font-size: 15px;
+}
+.bank-info-box::before {
+  content: "🏦";
+}
+.bank-info-box strong {
+  font-family: "Nunito", sans-serif;
+  font-weight: 900;
+}
+.system-info-box {
+  border: 1px solid #dbe6f0;
+  border-radius: 18px;
+  background: #f8fbfe;
+  padding: 20px 22px;
+}
+.system-info-box h2 {
+  color: #08243a;
+  font-family: "Nunito", sans-serif;
+  font-size: 17px;
+  font-weight: 900;
+  margin-bottom: 16px;
+}
+.system-info-box h2::before {
+  content: "🧭 ";
+}
+.system-info-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 18px 26px;
+}
+.system-info-grid span {
+  display: block;
+  color: #405973;
+  font-size: 14px;
+  margin-bottom: 3px;
+}
+.system-info-grid strong {
+  display: block;
+  color: #08243a;
+  font-family: "Nunito", sans-serif;
+  font-size: 16px;
+  font-weight: 900;
+}
+.professional-modal-actions {
+  position: sticky;
+  bottom: 0;
+  background: linear-gradient(180deg, rgba(255,255,255,.88), #fff 42%);
+  padding: 18px 28px 24px;
+  justify-content: flex-end;
+  gap: 14px;
+  z-index: 2;
+}
+.professional-modal-actions .brand-action-btn {
+  box-shadow: none;
+  min-width: 260px;
+}
+.professional-modal-actions .close-detail-btn {
+  border-radius: 12px;
+  min-width: 100px;
+  background: var(--teal);
+}
 .contract-modal {
   width: min(800px, 100%);
   padding: 0;
@@ -775,6 +850,10 @@ td small { display: block; color: var(--muted); margin-top: 4px; }
 .check-row { align-content: center; grid-template-columns: auto 1fr; display: grid !important; }
 .check-row input { min-height: 0; }
 .modal-actions { display: flex; justify-content: flex-end; gap: 10px; }
+.modal-actions.professional-modal-actions {
+  justify-content: flex-end;
+  gap: 14px;
+}
 .modal-actions.wrap { flex-wrap: wrap; }
 .subtabs {
   display: inline-flex;
@@ -895,17 +974,22 @@ td small { display: block; color: var(--muted); margin-top: 4px; }
   .app-shell { grid-template-columns: 1fr; }
   .sidebar { position: static; height: auto; }
   .kpi-grid, .kpi-grid.four, .kpi-grid.five, .standards-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .system-info-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }
 
 @media (max-width: 680px) {
   .main { padding: 18px; }
   .page-header { display: grid; }
   .kpi-grid, .kpi-grid.four, .kpi-grid.five, .standards-grid, .form-grid, .detail-grid, .modal-docs-grid, .assigned-services-grid, .contract-form-grid, .create-user-form { grid-template-columns: 1fr; }
+  .system-info-grid { grid-template-columns: 1fr; }
   .assigned-service-card dl { grid-template-columns: 1fr; }
   .contract-modal-body { padding: 22px; }
   .contract-date-field { grid-column: auto; }
   .password-row { grid-template-columns: 1fr; }
   .create-user-actions { display: grid; }
+  .professional-modal-actions { display: grid; }
+  .professional-modal-actions .brand-action-btn,
+  .professional-modal-actions .close-detail-btn { width: 100%; min-width: 0; }
   .table-card { overflow-x: auto; }
   table { min-width: 760px; }
 }
