@@ -1,29 +1,35 @@
-import { Edit2, Plus, Trash2 } from "lucide-react";
+import { Edit2, Plus, Trash2, UserPlus } from "lucide-react";
 import { FormEvent, useEffect, useMemo, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import {
   actualizarRelacion,
+  asignarProfesionalServicio,
   crearRelacion,
   eliminarRelacion,
   listarServiciosIps,
   obtenerCumplimientoServicio,
   obtenerDetalleServicio,
+  obtenerTalentoHumanoServicio,
+  quitarProfesionalServicio,
 } from "../api";
 import type {
   CriterioCumplimiento,
   CumplimientoServicio,
   EstadoRelacion,
+  ProfesionalServicioPayload,
   RelacionPayload,
   ServicioDetalle,
   ServicioIps,
   ServicioRelacion,
+  TalentoHumanoServicio,
 } from "../types";
 import { Loading } from "../ui/Loading";
 
-type TabKey = "resumen" | "relaciones" | "estandares" | "cumplimiento" | "evidencias";
+type TabKey = "resumen" | "talento" | "relaciones" | "estandares" | "cumplimiento" | "evidencias";
 
 const tabs: Array<{ key: TabKey; label: string }> = [
   { key: "resumen", label: "Resumen" },
+  { key: "talento", label: "Talento humano" },
   { key: "relaciones", label: "Relaciones" },
   { key: "estandares", label: "Estandares" },
   { key: "cumplimiento", label: "Cumplimiento" },
@@ -62,6 +68,18 @@ const formInicial: RelacionPayload = {
   observaciones: "",
 };
 
+const talentoFormInicial: ProfesionalServicioPayload = {
+  profesional_id: 0,
+  es_servicio_base: false,
+  tipo_relacion: "componente_asistencial",
+  rol_en_servicio: "",
+  disponibilidad: "por agenda",
+  fecha_inicio: "",
+  fecha_fin: "",
+  estado: "activo",
+  observaciones: "",
+};
+
 function agruparPorEstandar(criterios: CriterioCumplimiento[]) {
   return criterios.reduce<Record<string, CriterioCumplimiento[]>>((acc, criterio) => {
     const key = criterio.estandar || "Sin estandar";
@@ -75,27 +93,33 @@ export function ServicioDetallePage() {
   const { codigo = "" } = useParams();
   const [detalle, setDetalle] = useState<ServicioDetalle | null>(null);
   const [cumplimiento, setCumplimiento] = useState<CumplimientoServicio | null>(null);
+  const [talento, setTalento] = useState<TalentoHumanoServicio | null>(null);
   const [servicios, setServicios] = useState<ServicioIps[]>([]);
   const [tabActiva, setTabActiva] = useState<TabKey>("resumen");
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [savingTalento, setSavingTalento] = useState(false);
   const [error, setError] = useState("");
   const [modalOpen, setModalOpen] = useState(false);
+  const [modalTalentoOpen, setModalTalentoOpen] = useState(false);
   const [editando, setEditando] = useState<ServicioRelacion | null>(null);
   const [form, setForm] = useState<RelacionPayload>(formInicial);
+  const [talentoForm, setTalentoForm] = useState<ProfesionalServicioPayload>(talentoFormInicial);
 
   async function cargar() {
     setLoading(true);
     setError("");
     try {
-      const [detalleData, serviciosData, cumplimientoData] = await Promise.all([
+      const [detalleData, serviciosData, cumplimientoData, talentoData] = await Promise.all([
         obtenerDetalleServicio(codigo),
         listarServiciosIps(),
         obtenerCumplimientoServicio(codigo),
+        obtenerTalentoHumanoServicio(codigo),
       ]);
       setDetalle(detalleData);
       setServicios(serviciosData.servicios || []);
       setCumplimiento(cumplimientoData);
+      setTalento(talentoData);
     } catch (err) {
       setError(err instanceof Error ? err.message : "No fue posible cargar el servicio");
     } finally {
@@ -119,6 +143,11 @@ export function ServicioDetallePage() {
     setEditando(null);
     setForm(formInicial);
     setModalOpen(true);
+  }
+
+  function abrirAsignarTalento() {
+    setTalentoForm(talentoFormInicial);
+    setModalTalentoOpen(true);
   }
 
   function abrirEditar(relacion: ServicioRelacion) {
@@ -163,6 +192,31 @@ export function ServicioDetallePage() {
     await cargar();
   }
 
+  async function guardarTalento(event: FormEvent) {
+    event.preventDefault();
+    if (!talentoForm.profesional_id) {
+      setError("Debes seleccionar un profesional");
+      return;
+    }
+    setSavingTalento(true);
+    setError("");
+    try {
+      await asignarProfesionalServicio(codigo, talentoForm);
+      setModalTalentoOpen(false);
+      await cargar();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "No fue posible asignar el profesional");
+    } finally {
+      setSavingTalento(false);
+    }
+  }
+
+  async function quitarTalento(id: number, nombre: string) {
+    if (!confirm(`Retirar a ${nombre} de este servicio?`)) return;
+    await quitarProfesionalServicio(id);
+    await cargar();
+  }
+
   if (loading) return <Loading text="Cargando detalle del servicio..." />;
   if (error && !detalle) return <div className="error-box">{error}</div>;
   if (!detalle) return <Loading text="Servicio no encontrado." />;
@@ -189,10 +243,17 @@ export function ServicioDetallePage() {
             {servicio.distintivo && <span className="tag">{servicio.distintivo}</span>}
           </div>
         </div>
-        <button className="primary-btn" type="button" onClick={abrirNuevo}>
-          <Plus size={18} />
-          Agregar relacion
-        </button>
+        {tabActiva === "talento" ? (
+          <button className="primary-btn" type="button" onClick={abrirAsignarTalento}>
+            <UserPlus size={18} />
+            Asignar profesional
+          </button>
+        ) : (
+          <button className="primary-btn" type="button" onClick={abrirNuevo}>
+            <Plus size={18} />
+            Agregar relacion
+          </button>
+        )}
       </header>
 
       {error && <div className="error-box">{error}</div>}
@@ -229,6 +290,61 @@ export function ServicioDetallePage() {
               <article className="kpi-card"><strong>{resumenCumplimiento.en_revision}</strong><span>En revision</span></article>
             </div>
           )}
+        </>
+      )}
+
+      {tabActiva === "talento" && (
+        <>
+          <div className="kpi-grid four">
+            <article className="kpi-card"><strong>{talento?.resumen.total || 0}</strong><span>Asignaciones</span></article>
+            <article className="kpi-card"><strong>{talento?.resumen.activos || 0}</strong><span>Activos</span></article>
+            <article className="kpi-card"><strong>{talento?.resumen.servicio_base || 0}</strong><span>Servicio base</span></article>
+            <article className="kpi-card"><strong>{talento?.resumen.participantes || 0}</strong><span>Participan aqui</span></article>
+          </div>
+
+          <section className="table-card">
+            <div className="section-heading">
+              <h2>Profesionales asignados</h2>
+              <p>Un profesional puede tener un servicio individual base y tambien participar en servicios mayores como 134, 129 o 130.</p>
+            </div>
+            <table>
+              <thead>
+                <tr>
+                  <th>Profesional</th>
+                  <th>Rol</th>
+                  <th>Relacion</th>
+                  <th>Disponibilidad</th>
+                  <th>Documentos</th>
+                  <th>Estado</th>
+                  <th>Acciones</th>
+                </tr>
+              </thead>
+              <tbody>
+                {(talento?.profesionales || []).map((profesional) => (
+                  <tr key={profesional.id}>
+                    <td>
+                      <strong>{profesional.nombre}</strong>
+                      <small>{profesional.cedula || "Sin cedula"} - {profesional.especialidad || "Sin especialidad"}</small>
+                    </td>
+                    <td>{profesional.rol_en_servicio || "Por definir"}</td>
+                    <td>{profesional.es_servicio_base ? "Servicio base" : profesional.tipo_relacion}</td>
+                    <td>{profesional.disponibilidad || "Por definir"}</td>
+                    <td>
+                      <strong>{profesional.documentos_aprobados || 0}/{profesional.total_documentos || 0}</strong>
+                      <small>{profesional.documentos_vencidos ? `${profesional.documentos_vencidos} vencidos` : "Sin vencidos"}</small>
+                    </td>
+                    <td><span className={`pill ${profesional.estado}`}>{profesional.estado}</span></td>
+                    <td className="actions">
+                      <button type="button" className="danger" onClick={() => quitarTalento(profesional.id, profesional.nombre)}>
+                        <Trash2 size={16} />
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+            {(talento?.profesionales.length || 0) === 0 && <Loading text="No hay profesionales asignados a este servicio." />}
+          </section>
         </>
       )}
 
@@ -464,6 +580,97 @@ export function ServicioDetallePage() {
             <div className="modal-actions">
               <button className="secondary-btn" type="button" onClick={() => setModalOpen(false)}>Cancelar</button>
               <button className="primary-btn" type="submit" disabled={saving}>{saving ? "Guardando..." : "Guardar"}</button>
+            </div>
+          </form>
+        </div>
+      )}
+
+      {modalTalentoOpen && (
+        <div className="modal-backdrop" onMouseDown={() => setModalTalentoOpen(false)}>
+          <form className="modal" onSubmit={guardarTalento} onMouseDown={(event) => event.stopPropagation()}>
+            <h2>Asignar profesional al servicio</h2>
+
+            <label>
+              Profesional
+              <select
+                value={talentoForm.profesional_id || ""}
+                onChange={(event) => setTalentoForm({ ...talentoForm, profesional_id: Number(event.target.value) })}
+              >
+                <option value="">Selecciona un profesional</option>
+                {(talento?.disponibles || []).map((profesional) => (
+                  <option key={profesional.id} value={profesional.id}>
+                    {profesional.nombre} - {profesional.especialidad || "Sin especialidad"}
+                  </option>
+                ))}
+              </select>
+            </label>
+
+            <div className="form-grid">
+              <label>
+                Tipo relacion
+                <select value={talentoForm.tipo_relacion} onChange={(event) => setTalentoForm({ ...talentoForm, tipo_relacion: event.target.value })}>
+                  <option value="componente_asistencial">componente_asistencial</option>
+                  <option value="servicio_individual">servicio_individual</option>
+                  <option value="interconsulta">interconsulta</option>
+                  <option value="apoyo_terapeutico">apoyo_terapeutico</option>
+                  <option value="disponibilidad">disponibilidad</option>
+                </select>
+              </label>
+              <label>
+                Rol en servicio
+                <input value={talentoForm.rol_en_servicio || ""} onChange={(event) => setTalentoForm({ ...talentoForm, rol_en_servicio: event.target.value })} />
+              </label>
+            </div>
+
+            <div className="form-grid">
+              <label>
+                Disponibilidad
+                <select value={talentoForm.disponibilidad || ""} onChange={(event) => setTalentoForm({ ...talentoForm, disponibilidad: event.target.value })}>
+                  <option value="por agenda">por agenda</option>
+                  <option value="permanente">permanente</option>
+                  <option value="disponible">disponible</option>
+                  <option value="por evento">por evento</option>
+                  <option value="domiciliario">domiciliario</option>
+                </select>
+              </label>
+              <label>
+                Estado
+                <select value={talentoForm.estado} onChange={(event) => setTalentoForm({ ...talentoForm, estado: event.target.value as "activo" | "inactivo" | "pendiente" })}>
+                  <option value="activo">activo</option>
+                  <option value="pendiente">pendiente</option>
+                  <option value="inactivo">inactivo</option>
+                </select>
+              </label>
+            </div>
+
+            <div className="form-grid">
+              <label>
+                Fecha inicio
+                <input type="date" value={talentoForm.fecha_inicio || ""} onChange={(event) => setTalentoForm({ ...talentoForm, fecha_inicio: event.target.value })} />
+              </label>
+              <label>
+                Fecha fin
+                <input type="date" value={talentoForm.fecha_fin || ""} onChange={(event) => setTalentoForm({ ...talentoForm, fecha_fin: event.target.value })} />
+              </label>
+            </div>
+
+            <label className="check-row">
+              <input
+                type="checkbox"
+                checked={talentoForm.es_servicio_base}
+                onChange={(event) => setTalentoForm({ ...talentoForm, es_servicio_base: event.target.checked })}
+              />
+              Marcar como servicio individual base del profesional
+            </label>
+
+            <label>
+              Observaciones
+              <textarea value={talentoForm.observaciones || ""} onChange={(event) => setTalentoForm({ ...talentoForm, observaciones: event.target.value })} rows={4} />
+            </label>
+
+            <div className="modal-actions">
+              <button className="secondary-btn" type="button" onClick={() => setModalTalentoOpen(false)}>Cancelar</button>
+              <button className="primary-btn" type="submit" disabled={savingTalento}>{savingTalento ? "Guardando..." : "Asignar"}</button>
             </div>
           </form>
         </div>

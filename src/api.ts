@@ -1,4 +1,11 @@
-import type { CumplimientoServicio, RelacionPayload, ServicioDetalle, ServicioIps } from "./types";
+import type {
+  CumplimientoServicio,
+  ProfesionalServicioPayload,
+  RelacionPayload,
+  ServicioDetalle,
+  ServicioIps,
+  TalentoHumanoServicio,
+} from "./types";
 
 const API_URL = import.meta.env.VITE_API_URL || "https://api-pruebas.viveips.com.co";
 const TOKEN_KEY = "viveips_token";
@@ -71,6 +78,10 @@ export async function obtenerCumplimientoServicio(codigo: string) {
   return apiCall<CumplimientoServicio>("GET", `/servicios-ips/${encodeURIComponent(codigo)}/cumplimiento`);
 }
 
+export async function obtenerTalentoHumanoServicio(codigo: string) {
+  return apiCall<TalentoHumanoServicio>("GET", `/servicios-ips/${encodeURIComponent(codigo)}/profesionales`);
+}
+
 export async function crearRelacion(codigo: string, payload: RelacionPayload) {
   return apiCall("POST", `/servicios-ips/${encodeURIComponent(codigo)}/relaciones`, payload);
 }
@@ -81,4 +92,12 @@ export async function actualizarRelacion(id: number, payload: RelacionPayload) {
 
 export async function eliminarRelacion(id: number) {
   return apiCall("DELETE", `/servicios-relaciones/${id}`);
+}
+
+export async function asignarProfesionalServicio(codigo: string, payload: ProfesionalServicioPayload) {
+  return apiCall("POST", `/servicios-ips/${encodeURIComponent(codigo)}/profesionales`, payload);
+}
+
+export async function quitarProfesionalServicio(id: number) {
+  return apiCall("DELETE", `/servicios-profesionales/${id}`);
 }

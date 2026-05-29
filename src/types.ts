@@ -121,3 +121,54 @@ export interface CumplimientoServicio {
     }>;
   };
 }
+
+export interface ProfesionalBasico {
+  id: number;
+  nombre: string;
+  cedula: string | null;
+  email: string | null;
+  telefono: string | null;
+  especialidad: string | null;
+  usuario_activo: number;
+}
+
+export interface ProfesionalServicio extends ProfesionalBasico {
+  profesional_id: number;
+  servicio_ips_id: number;
+  es_servicio_base: number;
+  tipo_relacion: string;
+  rol_en_servicio: string | null;
+  disponibilidad: string | null;
+  fecha_inicio: string | null;
+  fecha_fin: string | null;
+  estado: "activo" | "inactivo" | "pendiente" | string;
+  observaciones: string | null;
+  total_documentos: number;
+  documentos_aprobados: number;
+  documentos_vencidos: number;
+}
+
+export interface TalentoHumanoServicio {
+  success: boolean;
+  servicio: ServicioIps;
+  profesionales: ProfesionalServicio[];
+  disponibles: ProfesionalBasico[];
+  resumen: {
+    total: number;
+    activos: number;
+    servicio_base: number;
+    participantes: number;
+  };
+}
+
+export interface ProfesionalServicioPayload {
+  profesional_id: number;
+  es_servicio_base: boolean;
+  tipo_relacion: string;
+  rol_en_servicio?: string | null;
+  disponibilidad?: string | null;
+  fecha_inicio?: string | null;
+  fecha_fin?: string | null;
+  estado: "activo" | "inactivo" | "pendiente";
+  observaciones?: string | null;
+}
