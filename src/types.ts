@@ -221,6 +221,26 @@ export interface ProfesionalAdmin {
   formaciones?: FormacionAcademica[];
 }
 
+export interface ServicioProfesionalAsignado {
+  id: number;
+  profesional_id: number;
+  servicio_ips_id: number;
+  es_servicio_base: number;
+  tipo_relacion: string;
+  rol_en_servicio: string | null;
+  disponibilidad: string | null;
+  fecha_inicio: string | null;
+  fecha_fin: string | null;
+  estado: string;
+  observaciones: string | null;
+  distintivo: string | null;
+  tipo_servicio_ips: string | null;
+  estado_servicio_ips: string;
+  codigo: string;
+  nombre: string;
+  grupo: string;
+}
+
 export interface PermisosAcceso {
   success: boolean;
   rol: string;

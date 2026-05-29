@@ -5,6 +5,7 @@ import type {
   RelacionPayload,
   ServicioDetalle,
   ServicioIps,
+  ServicioProfesionalAsignado,
   TalentoHumanoServicio,
   UsuarioPermisos,
   UsuarioPermisosPayload,
@@ -176,6 +177,13 @@ export async function crearProfesional(payload: {
 
 export async function obtenerProfesional(id: number) {
   return apiCall<{ success: boolean; perfil: any; documentos: any[] }>("GET", `/profesionales/${id}`);
+}
+
+export async function obtenerServiciosProfesional(id: number) {
+  return apiCall<{ success: boolean; servicios: ServicioProfesionalAsignado[]; total: number }>(
+    "GET",
+    `/profesionales/${id}/servicios`,
+  );
 }
 
 export async function obtenerFormacionProfesional(id: number) {

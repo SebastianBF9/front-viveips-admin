@@ -467,6 +467,53 @@ td small { display: block; color: var(--muted); margin-top: 4px; }
   gap: 10px;
   padding: 14px;
 }
+.assigned-services-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+  padding: 14px;
+}
+.assigned-service-card {
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: #fff;
+  padding: 14px;
+  display: grid;
+  gap: 12px;
+}
+.assigned-service-card strong {
+  color: var(--navy);
+  display: block;
+}
+.assigned-service-card span {
+  color: var(--muted);
+  display: block;
+  font-size: 12px;
+  margin-top: 4px;
+}
+.assigned-service-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 7px;
+}
+.assigned-service-card dl {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+  margin: 0;
+}
+.assigned-service-card dt {
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+.assigned-service-card dd {
+  color: #334155;
+  font-size: 13px;
+  font-weight: 800;
+  margin: 3px 0 0;
+}
 .modal-doc-item {
   border: 1px solid var(--border);
   border-left-width: 4px;
@@ -738,7 +785,8 @@ td small { display: block; color: var(--muted); margin-top: 4px; }
 @media (max-width: 680px) {
   .main { padding: 18px; }
   .page-header { display: grid; }
-  .kpi-grid, .kpi-grid.four, .kpi-grid.five, .standards-grid, .form-grid, .detail-grid, .modal-docs-grid, .contract-form-grid, .create-user-form { grid-template-columns: 1fr; }
+  .kpi-grid, .kpi-grid.four, .kpi-grid.five, .standards-grid, .form-grid, .detail-grid, .modal-docs-grid, .assigned-services-grid, .contract-form-grid, .create-user-form { grid-template-columns: 1fr; }
+  .assigned-service-card dl { grid-template-columns: 1fr; }
   .contract-modal-body { padding: 22px; }
   .contract-date-field { grid-column: auto; }
   .password-row { grid-template-columns: 1fr; }

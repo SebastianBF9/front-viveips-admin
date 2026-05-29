@@ -9,8 +9,15 @@ import {
   obtenerMiAcceso,
   obtenerFormacionProfesional,
   obtenerProfesional,
+  obtenerServiciosProfesional,
 } from "../api";
-import type { DocumentoProfesional, FormacionAcademica, PermisosAcceso, ProfesionalAdmin } from "../types";
+import type {
+  DocumentoProfesional,
+  FormacionAcademica,
+  PermisosAcceso,
+  ProfesionalAdmin,
+  ServicioProfesionalAsignado,
+} from "../types";
 import { Loading } from "../ui/Loading";
 
 const cursosPorCargo: Record<string, string[]> = {
@@ -258,6 +265,8 @@ export function TalentoHumanoPage() {
   const [tab, setTab] = useState<"listado" | "crear">("listado");
   const [acceso, setAcceso] = useState<PermisosAcceso | null>(null);
   const [seleccionado, setSeleccionado] = useState<ProfesionalAdmin | null>(null);
+  const [serviciosSeleccionado, setServiciosSeleccionado] = useState<ServicioProfesionalAsignado[]>([]);
+  const [serviciosLoading, setServiciosLoading] = useState(false);
   const [contratoProfesional, setContratoProfesional] = useState<ProfesionalAdmin | null>(null);
   const [contratoEstado, setContratoEstado] = useState<ContratoEstado | null>(null);
   const [valorUrbano, setValorUrbano] = useState("");
@@ -371,6 +380,20 @@ export function TalentoHumanoPage() {
 
   function abrirCarnet(profesional: ProfesionalAdmin) {
     window.open(downloadUrl(`/carnet/generar/${profesional.id}`), "_blank", "noopener,noreferrer");
+  }
+
+  async function abrirDetalleProfesional(profesional: ProfesionalAdmin) {
+    setSeleccionado(profesional);
+    setServiciosSeleccionado([]);
+    setServiciosLoading(true);
+    try {
+      const data = await obtenerServiciosProfesional(profesional.id);
+      setServiciosSeleccionado(data.servicios || []);
+    } catch {
+      setServiciosSeleccionado([]);
+    } finally {
+      setServiciosLoading(false);
+    }
   }
 
   function actualizarNuevoUsuario(campo: keyof typeof nuevoUsuario, valor: string) {
@@ -561,7 +584,7 @@ export function TalentoHumanoPage() {
                   <td><span className={`pill ${profesional.activo ? "activo" : "inactivo"}`}>{profesional.activo ? "Activo" : "Inactivo"}</span></td>
                   <td>
                     <div className="table-actions">
-                      <button type="button" onClick={() => setSeleccionado(profesional)}><Eye size={15} /> Ver</button>
+                      <button type="button" onClick={() => abrirDetalleProfesional(profesional)}><Eye size={15} /> Ver</button>
                       <button type="button" onClick={() => descargarHojaVida(profesional)} disabled={accionLoading === `pdf-${profesional.id}`}>
                         <Download size={15} /> PDF
                       </button>
@@ -655,6 +678,52 @@ export function TalentoHumanoPage() {
               <article><span>Contrato</span><strong>{seleccionado.estado_contrato || "Sin contrato"}</strong></article>
               <article><span>Estado</span><strong>{seleccionado.activo ? "Activo" : "Inactivo"}</strong></article>
             </div>
+
+            <section className="table-card flat-card">
+              <div className="section-heading">
+                <h2>Servicios asignados</h2>
+                <p>Servicios habilitados donde participa este profesional.</p>
+              </div>
+
+              {serviciosLoading ? (
+                <div className="empty-state">Cargando servicios asignados...</div>
+              ) : serviciosSeleccionado.length ? (
+                <div className="assigned-services-grid">
+                  {serviciosSeleccionado.map((servicio) => (
+                    <article className="assigned-service-card" key={servicio.id}>
+                      <div>
+                        <strong>{servicio.codigo} - {servicio.nombre}</strong>
+                        <span>{servicio.grupo}</span>
+                      </div>
+                      <div className="assigned-service-tags">
+                        <span className={`pill ${servicio.es_servicio_base ? "activo" : "proximo"}`}>
+                          {servicio.es_servicio_base ? "Servicio base" : "Participante"}
+                        </span>
+                        <span className={`pill ${servicio.estado === "activo" ? "activo" : "pendiente"}`}>
+                          {servicio.estado || "pendiente"}
+                        </span>
+                      </div>
+                      <dl>
+                        <div>
+                          <dt>Rol</dt>
+                          <dd>{servicio.rol_en_servicio || servicio.tipo_relacion || "Sin rol definido"}</dd>
+                        </div>
+                        <div>
+                          <dt>Disponibilidad</dt>
+                          <dd>{servicio.disponibilidad || "Sin dato"}</dd>
+                        </div>
+                        <div>
+                          <dt>Distintivo</dt>
+                          <dd>{servicio.distintivo || "No aplica"}</dd>
+                        </div>
+                      </dl>
+                    </article>
+                  ))}
+                </div>
+              ) : (
+                <div className="empty-state">Este profesional no tiene servicios asignados.</div>
+              )}
+            </section>
 
             <section className="table-card flat-card">
               <div className="section-heading">
