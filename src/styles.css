@@ -22,21 +22,37 @@ button, input, select, textarea { font: inherit; }
 .app-shell { min-height: 100vh; display: grid; grid-template-columns: 260px minmax(0, 1fr); }
 
 .sidebar {
-  background: var(--navy);
+  background: #142c3a;
   color: #fff;
-  padding: 20px;
+  padding: 24px 20px;
   display: flex;
   flex-direction: column;
-  gap: 22px;
+  gap: 26px;
   position: sticky;
   top: 0;
   height: 100vh;
 }
 
-.brand { display: flex; gap: 12px; align-items: center; }
-.brand img { width: 42px; height: 42px; object-fit: contain; background: #fff; border-radius: 8px; padding: 4px; }
-.brand strong { display: block; font-size: 15px; }
-.brand span { color: rgba(255,255,255,.64); font-size: 12px; }
+.brand {
+  display: grid;
+  gap: 8px;
+  padding: 0 4px 22px;
+  border-bottom: 1px solid rgba(255, 255, 255, .07);
+}
+.brand img {
+  width: 178px;
+  max-width: 100%;
+  height: auto;
+  object-fit: contain;
+  display: block;
+}
+.brand span {
+  color: rgba(255,255,255,.48);
+  font-size: 13px;
+  font-weight: 900;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+}
 
 .nav { display: grid; gap: 8px; }
 .nav-link {
@@ -44,15 +60,21 @@ button, input, select, textarea { font: inherit; }
   align-items: center;
   gap: 10px;
   border: 0;
-  border-radius: 8px;
+  border-radius: 12px;
   background: transparent;
-  color: rgba(255,255,255,.72);
+  color: rgba(255,255,255,.68);
   cursor: pointer;
-  padding: 11px 12px;
+  padding: 12px 13px;
   text-decoration: none;
   text-align: left;
+  font-weight: 800;
 }
-.nav-link.active, .nav-link:hover { background: rgba(255,255,255,.12); color: #fff; }
+.nav-link svg { color: #25b8dc; }
+.nav-link.active, .nav-link:hover {
+  background: rgba(37, 184, 220, .14);
+  color: #fff;
+}
+.nav-link.active svg, .nav-link:hover svg { color: #35cfe0; }
 .nav-link.disabled { cursor: default; opacity: .55; }
 
 .logout {
