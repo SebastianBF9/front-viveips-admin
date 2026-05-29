@@ -139,6 +139,22 @@ export function ServicioDetallePage() {
     return agruparPorEstandar(cumplimiento?.criterios || []);
   }, [cumplimiento]);
 
+  const estandaresCumplimiento = useMemo(() => {
+    const calculados = cumplimiento?.resumen.estandares || [];
+    if (calculados.length > 0) return calculados;
+
+    return (detalle?.estandares || []).map((estandar) => ({
+      codigo: estandar.codigo,
+      nombre: estandar.nombre,
+      orden: estandar.orden,
+      total_criterios: 0,
+      porcentaje: 0,
+      estado: "pendiente" as const,
+      pendientes: 1,
+      hallazgos: ["Pendiente configurar criterios especificos para este servicio."],
+    }));
+  }, [cumplimiento, detalle]);
+
   function abrirNuevo() {
     setEditando(null);
     setForm(formInicial);
@@ -343,8 +359,15 @@ export function ServicioDetallePage() {
                     <td>{profesional.es_servicio_base ? "Servicio base" : profesional.tipo_relacion}</td>
                     <td>{profesional.disponibilidad || "Por definir"}</td>
                     <td>
-                      <strong>{profesional.documentos_aprobados || 0}/{profesional.total_documentos || 0}</strong>
-                      <small>{profesional.documentos_vencidos ? `${profesional.documentos_vencidos} vencidos` : "Sin vencidos"}</small>
+                      <strong>
+                        {profesional.documentos_cumplidos ?? profesional.documentos_aprobados ?? 0}/
+                        {profesional.documentos_requeridos ?? profesional.total_documentos ?? 0}
+                      </strong>
+                      <small>
+                        {profesional.documentos_vencidos
+                          ? `${profesional.documentos_vencidos} vencidos`
+                          : `${profesional.documentos_pendientes ?? 0} pendientes`}
+                      </small>
                     </td>
                     <td><span className={`pill ${profesional.estado}`}>{profesional.estado}</span></td>
                     <td className="actions">
@@ -442,9 +465,9 @@ export function ServicioDetallePage() {
 
       {tabActiva === "cumplimiento" && (
         <section className="criteria-stack">
-          {cumplimiento?.resumen.estandares && cumplimiento.resumen.estandares.length > 0 && (
+          {estandaresCumplimiento.length > 0 && (
             <section className="standards-grid">
-              {cumplimiento.resumen.estandares.map((estandar) => (
+              {estandaresCumplimiento.map((estandar) => (
                 <article className="standard-card" key={estandar.codigo}>
                   <div className="standard-card-head">
                     <strong>{estandar.nombre}</strong>
@@ -453,7 +476,11 @@ export function ServicioDetallePage() {
                   <div className="progress-bar" aria-label={`Cumplimiento ${estandar.porcentaje}%`}>
                     <span style={{ width: `${Math.min(100, Math.max(0, estandar.porcentaje))}%` }} />
                   </div>
-                  <small>{estandar.porcentaje}% calculado sobre {estandar.total_criterios} criterios</small>
+                  <small>
+                    {estandar.total_criterios > 0
+                      ? `${estandar.porcentaje}% calculado sobre ${estandar.total_criterios} criterios`
+                      : "Pendiente configurar criterios para este estandar"}
+                  </small>
                   {estandar.hallazgos.slice(0, 2).map((hallazgo) => (
                     <small key={hallazgo}>{hallazgo}</small>
                   ))}
