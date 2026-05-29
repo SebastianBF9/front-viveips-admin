@@ -351,6 +351,14 @@ function infoContrato(profesional: ProfesionalAdmin, contrato?: ContratoEstado |
   };
 }
 
+function serviciosResumen(servicios: ServicioProfesionalAsignado[] = []) {
+  const ordenados = [...servicios].sort((a, b) => Number(b.es_servicio_base) - Number(a.es_servicio_base));
+  return {
+    visibles: ordenados.slice(0, 3),
+    restantes: Math.max(ordenados.length - 3, 0),
+  };
+}
+
 function textoRegenerarContrato(contrato?: ContratoEstado | null) {
   const estado = normalizarEstadoContrato(contrato?.estado);
   if (!contrato) return "Generar nuevo contrato:";
@@ -409,18 +417,20 @@ export function TalentoHumanoPage() {
       const enriquecidos = await Promise.all(
         base.map(async (profesional) => {
           try {
-            const [detalle, formacion] = await Promise.all([
+            const [detalle, formacion, servicios] = await Promise.all([
               obtenerProfesional(profesional.id),
               obtenerFormacionProfesional(profesional.id),
+              obtenerServiciosProfesional(profesional.id),
             ]);
             return {
               ...profesional,
               ...detalle.perfil,
               documentos: (detalle.documentos || []) as DocumentoProfesional[],
               formaciones: (formacion.formaciones || []) as FormacionAcademica[],
+              servicios: (servicios.servicios || []) as ServicioProfesionalAsignado[],
             };
           } catch {
-            return { ...profesional, documentos: [], formaciones: [] };
+            return { ...profesional, documentos: [], formaciones: [], servicios: [] };
           }
         }),
       );
@@ -449,7 +459,10 @@ export function TalentoHumanoPage() {
         normalizar(profesional.nombre).includes(texto) ||
         normalizar(profesional.cedula).includes(texto) ||
         normalizar(profesional.email).includes(texto) ||
-        normalizar(profesional.especialidad).includes(texto);
+        normalizar(profesional.especialidad).includes(texto) ||
+        (profesional.servicios || []).some((servicio) =>
+          normalizar(`${servicio.codigo} ${servicio.nombre} ${servicio.rol_en_servicio || ""}`).includes(texto),
+        );
       const matchEstado =
         estado === "todos" ||
         (estado === "activos" && Boolean(profesional.activo)) ||
@@ -687,6 +700,7 @@ export function TalentoHumanoPage() {
             {filtrados.map((profesional) => {
               const resumen = resumenDocumental(profesional);
               const contratoInfo = infoContrato(profesional);
+              const servicios = serviciosResumen(profesional.servicios || []);
               return (
                 <tr key={profesional.id}>
                   <td>
@@ -698,7 +712,23 @@ export function TalentoHumanoPage() {
                       </div>
                     </div>
                   </td>
-                  <td>{profesional.especialidad || "Sin especialidad"}</td>
+                  <td>
+                    <div className="specialty-cell">
+                      <span>{profesional.especialidad || "Sin especialidad"}</span>
+                      {servicios.visibles.length > 0 ? (
+                        <div className="service-chip-list">
+                          {servicios.visibles.map((servicio) => (
+                            <span className={servicio.es_servicio_base ? "base" : ""} key={servicio.id}>
+                              {servicio.codigo} {servicio.nombre}
+                            </span>
+                          ))}
+                          {servicios.restantes > 0 && <span>+{servicios.restantes}</span>}
+                        </div>
+                      ) : (
+                        <small>Sin servicios asignados</small>
+                      )}
+                    </div>
+                  </td>
                   <td>
                     <div className="contact-cell">
                       <span>{profesional.email || "Sin correo"}</span>

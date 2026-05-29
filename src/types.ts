@@ -225,6 +225,7 @@ export interface ProfesionalAdmin {
   fecha_firma_contrato?: string | null;
   documentos?: DocumentoProfesional[];
   formaciones?: FormacionAcademica[];
+  servicios?: ServicioProfesionalAsignado[];
 }
 
 export interface ServicioProfesionalAsignado {
