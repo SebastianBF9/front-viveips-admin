@@ -343,7 +343,7 @@ export function ServicioDetallePage() {
                   <th>Rol</th>
                   <th>Relacion</th>
                   <th>Disponibilidad</th>
-                  <th>Documentos cargados</th>
+                  <th>Documentos cumplidos</th>
                   <th>Estado</th>
                   <th>Acciones</th>
                 </tr>
@@ -360,7 +360,7 @@ export function ServicioDetallePage() {
                     <td>{profesional.disponibilidad || "Por definir"}</td>
                     <td>
                       <strong>
-                        {profesional.documentos_cargados ?? profesional.documentos_aprobados ?? 0}/
+                        {profesional.documentos_cumplidos ?? profesional.documentos_aprobados ?? 0}/
                         {profesional.documentos_requeridos ?? profesional.total_documentos ?? 0}
                       </strong>
                       <small>
