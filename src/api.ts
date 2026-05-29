@@ -148,6 +148,17 @@ export async function listarProfesionales() {
   return apiCall<{ success: boolean; profesionales: any[] }>("GET", "/profesionales/");
 }
 
+export async function crearProfesional(payload: {
+  nombre: string;
+  cedula: string;
+  email: string;
+  telefono?: string;
+  especialidad: string;
+  password: string;
+}) {
+  return apiCall<{ success: boolean; mensaje: string }>("POST", "/profesionales/crear", payload);
+}
+
 export async function obtenerProfesional(id: number) {
   return apiCall<{ success: boolean; perfil: any; documentos: any[] }>("GET", `/profesionales/${id}`);
 }

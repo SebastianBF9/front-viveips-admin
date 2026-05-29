@@ -1,7 +1,8 @@
-import { BadgeCheck, CreditCard, Download, Eye, FileText, Search, UserRound, X } from "lucide-react";
+import { BadgeCheck, CreditCard, Download, Eye, FileText, Plus, Search, UserRound, X } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import {
   apiCall,
+  crearProfesional,
   downloadBlob,
   downloadUrl,
   listarProfesionales,
@@ -32,6 +33,25 @@ const documentosBase = [
   "ant_policia",
   "ant_correctivas",
   "vac_carnet",
+];
+
+const especialidades = [
+  "Medico General",
+  "Medico Especialista",
+  "Auxiliar de Enfermeria",
+  "Jefe de Enfermeria",
+  "Psicologo",
+  "Terapeuta Fisico",
+  "Terapeuta Ocupacional",
+  "Terapeuta de Lenguaje",
+  "Terapeuta Integral",
+  "Terapeuta Respiratorio",
+  "Nutricionista",
+  "Trabajo Social",
+  "Cuidador",
+  "Biomedico",
+  "Personal Administrativo",
+  "Otro",
 ];
 
 const nombresDocumentos: Record<string, string> = {
@@ -227,8 +247,14 @@ function formatearMoneda(valor: string) {
   return new Intl.NumberFormat("es-CO").format(Number(limpio));
 }
 
+function generarPasswordTemporal() {
+  const chars = "ABCDEFGHJKMNPQRSTUVWXYZabcdefghjkmnpqrstuvwxyz23456789@#$";
+  return Array.from({ length: 10 }, () => chars[Math.floor(Math.random() * chars.length)]).join("");
+}
+
 export function TalentoHumanoPage() {
   const [profesionales, setProfesionales] = useState<ProfesionalAdmin[]>([]);
+  const [tab, setTab] = useState<"listado" | "crear">("listado");
   const [seleccionado, setSeleccionado] = useState<ProfesionalAdmin | null>(null);
   const [contratoProfesional, setContratoProfesional] = useState<ProfesionalAdmin | null>(null);
   const [contratoEstado, setContratoEstado] = useState<ContratoEstado | null>(null);
@@ -240,6 +266,15 @@ export function TalentoHumanoPage() {
   const [loading, setLoading] = useState(true);
   const [accionLoading, setAccionLoading] = useState("");
   const [error, setError] = useState("");
+  const [success, setSuccess] = useState("");
+  const [nuevoUsuario, setNuevoUsuario] = useState({
+    nombre: "",
+    cedula: "",
+    email: "",
+    telefono: "",
+    especialidad: "",
+    password: "",
+  });
 
   async function cargar() {
     setLoading(true);
@@ -306,6 +341,7 @@ export function TalentoHumanoPage() {
   async function ejecutarAccion(clave: string, accion: () => Promise<void>) {
     setAccionLoading(clave);
     setError("");
+    setSuccess("");
     try {
       await accion();
     } catch (err) {
@@ -329,6 +365,39 @@ export function TalentoHumanoPage() {
 
   function abrirCarnet(profesional: ProfesionalAdmin) {
     window.open(downloadUrl(`/carnet/generar/${profesional.id}`), "_blank", "noopener,noreferrer");
+  }
+
+  function actualizarNuevoUsuario(campo: keyof typeof nuevoUsuario, valor: string) {
+    setNuevoUsuario((actual) => ({ ...actual, [campo]: valor }));
+  }
+
+  async function crearUsuario() {
+    const payload = {
+      ...nuevoUsuario,
+      nombre: nuevoUsuario.nombre.trim(),
+      cedula: nuevoUsuario.cedula.trim(),
+      email: nuevoUsuario.email.trim(),
+      telefono: nuevoUsuario.telefono.trim(),
+      especialidad: nuevoUsuario.especialidad.trim(),
+      password: nuevoUsuario.password.trim(),
+    };
+
+    if (!payload.nombre || !payload.cedula || !payload.email || !payload.especialidad || !payload.password) {
+      setError("Completa nombre, cedula, correo, especialidad y contrasena temporal.");
+      return;
+    }
+    if (payload.password.length < 8) {
+      setError("La contrasena temporal debe tener minimo 8 caracteres.");
+      return;
+    }
+
+    await ejecutarAccion("crear-usuario", async () => {
+      const data = await crearProfesional(payload);
+      setSuccess(data.mensaje || `Usuario ${payload.nombre} creado correctamente`);
+      setNuevoUsuario({ nombre: "", cedula: "", email: "", telefono: "", especialidad: "", password: "" });
+      await cargar();
+      setTab("listado");
+    });
   }
 
   async function abrirContrato(profesional: ProfesionalAdmin) {
@@ -392,9 +461,14 @@ export function TalentoHumanoPage() {
           <h1>Profesionales</h1>
           <p>Consulta profesionales, documentos, contratos, PDF completo y carnet desde el admin nuevo.</p>
         </div>
+        <button className="brand-action-btn" type="button" onClick={() => setTab("crear")}>
+          <Plus size={18} />
+          Nuevo profesional
+        </button>
       </header>
 
       {error && <div className="error-box">{error}</div>}
+      {success && <div className="success-box">{success}</div>}
 
       <div className="kpi-grid four">
         <article className="kpi-card"><strong>{kpis.total}</strong><span>Profesionales</span></article>
@@ -403,21 +477,28 @@ export function TalentoHumanoPage() {
         <article className="kpi-card"><strong>{kpis.vencidos}</strong><span>Con vencidos</span></article>
       </div>
 
-      <div className="toolbar">
-        <label className="search-field">
-          <Search size={18} />
-          <input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Buscar por nombre, cedula, correo o cargo" />
-        </label>
-        <select value={estado} onChange={(event) => setEstado(event.target.value)}>
-          <option value="todos">Todos</option>
-          <option value="activos">Activos</option>
-          <option value="inactivos">Inactivos</option>
-          <option value="pendientes">Con pendientes</option>
-          <option value="vencidos">Con vencidos</option>
-        </select>
+      <div className="subtabs">
+        <button className={tab === "listado" ? "active" : ""} type="button" onClick={() => setTab("listado")}>Listado</button>
+        <button className={tab === "crear" ? "active" : ""} type="button" onClick={() => setTab("crear")}>Crear usuario</button>
       </div>
 
-      <section className="table-card">
+      {tab === "listado" && (
+        <>
+          <div className="toolbar">
+            <label className="search-field">
+              <Search size={18} />
+              <input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Buscar por nombre, cedula, correo o cargo" />
+            </label>
+            <select value={estado} onChange={(event) => setEstado(event.target.value)}>
+              <option value="todos">Todos</option>
+              <option value="activos">Activos</option>
+              <option value="inactivos">Inactivos</option>
+              <option value="pendientes">Con pendientes</option>
+              <option value="vencidos">Con vencidos</option>
+            </select>
+          </div>
+
+          <section className="table-card">
         <div className="section-heading">
           <h2>Listado de profesionales</h2>
           <p>Replica el flujo actual: ver detalle, PDF, contrato y carnet.</p>
@@ -488,6 +569,60 @@ export function TalentoHumanoPage() {
         </table>
         {filtrados.length === 0 && <div className="empty-state">No hay profesionales para el filtro seleccionado.</div>}
       </section>
+        </>
+      )}
+
+      {tab === "crear" && (
+        <section className="table-card create-user-card">
+          <div className="section-heading">
+            <h2>Crear nuevo profesional</h2>
+            <p>Completa la informacion para crear el acceso al portal de profesionales.</p>
+          </div>
+
+          <div className="create-user-form">
+            <label>
+              Nombre completo <span>*</span>
+              <input value={nuevoUsuario.nombre} onChange={(event) => actualizarNuevoUsuario("nombre", event.target.value)} placeholder="Ej: Maria Lopez" />
+            </label>
+            <label>
+              Numero de cedula <span>*</span>
+              <input value={nuevoUsuario.cedula} onChange={(event) => actualizarNuevoUsuario("cedula", event.target.value)} placeholder="Ej: 1234567890" />
+            </label>
+            <label>
+              Correo electronico <span>*</span>
+              <input value={nuevoUsuario.email} onChange={(event) => actualizarNuevoUsuario("email", event.target.value)} type="email" placeholder="correo@ejemplo.com" />
+            </label>
+            <label>
+              Telefono / WhatsApp
+              <input value={nuevoUsuario.telefono} onChange={(event) => actualizarNuevoUsuario("telefono", event.target.value)} placeholder="300 000 0000" />
+            </label>
+            <label>
+              Especialidad / Cargo <span>*</span>
+              <select value={nuevoUsuario.especialidad} onChange={(event) => actualizarNuevoUsuario("especialidad", event.target.value)}>
+                <option value="">Seleccionar...</option>
+                {especialidades.map((especialidad) => (
+                  <option key={especialidad} value={especialidad}>{especialidad}</option>
+                ))}
+              </select>
+            </label>
+            <label>
+              Contrasena temporal <span>*</span>
+              <div className="password-row">
+                <input value={nuevoUsuario.password} onChange={(event) => actualizarNuevoUsuario("password", event.target.value)} placeholder="Minimo 8 caracteres" />
+                <button type="button" onClick={() => actualizarNuevoUsuario("password", generarPasswordTemporal())}>Generar</button>
+              </div>
+            </label>
+          </div>
+
+          <div className="create-user-actions">
+            <button className="secondary-btn pill-btn" type="button" onClick={() => setTab("listado")}>Cancelar</button>
+            <button className="brand-action-btn" type="button" onClick={crearUsuario} disabled={accionLoading === "crear-usuario"}>
+              <Plus size={18} />
+              Crear usuario
+            </button>
+          </div>
+        </section>
+      )}
 
       {seleccionado && (
         <div className="modal-backdrop" onMouseDown={() => setSeleccionado(null)}>
