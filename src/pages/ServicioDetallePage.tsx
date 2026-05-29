@@ -366,7 +366,7 @@ export function ServicioDetallePage() {
                       <small>
                         {profesional.documentos_vencidos
                           ? `${profesional.documentos_vencidos} vencidos`
-                          : `${profesional.documentos_pendientes ?? 0} requeridos generales pendientes`}
+                          : `${profesional.documentos_pendientes ?? 0} requeridos por cargo pendientes`}
                       </small>
                     </td>
                     <td><span className={`pill ${profesional.estado}`}>{profesional.estado}</span></td>
