@@ -220,3 +220,40 @@ export interface ProfesionalAdmin {
   documentos?: DocumentoProfesional[];
   formaciones?: FormacionAcademica[];
 }
+
+export interface PermisosAcceso {
+  success: boolean;
+  rol: string;
+  cedula: string;
+  permiso_ver_todo: boolean;
+  permiso_ver_profesionales: boolean;
+  permiso_crear_profesionales: boolean;
+  permiso_ver_capacitaciones: boolean;
+  permiso_tecnovigilancia: boolean;
+}
+
+export interface UsuarioPermisos {
+  usuario_id: number;
+  profesional_id: number | null;
+  nombre: string;
+  cedula: string;
+  email: string | null;
+  telefono: string | null;
+  especialidad: string | null;
+  rol: string;
+  activo: boolean;
+  permiso_ver_todo: boolean;
+  permiso_ver_profesionales: boolean;
+  permiso_crear_profesionales: boolean;
+  permiso_ver_capacitaciones: boolean;
+  permiso_tecnovigilancia: boolean;
+}
+
+export type UsuarioPermisosPayload = Pick<
+  UsuarioPermisos,
+  | "permiso_ver_todo"
+  | "permiso_ver_profesionales"
+  | "permiso_crear_profesionales"
+  | "permiso_ver_capacitaciones"
+  | "permiso_tecnovigilancia"
+>;

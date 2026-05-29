@@ -1,6 +1,6 @@
 import { FormEvent, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { login } from "../api";
+import { login, obtenerMiAcceso } from "../api";
 
 export function LoginPage() {
   const navigate = useNavigate();
@@ -15,7 +15,14 @@ export function LoginPage() {
     setLoading(true);
     try {
       await login(usuario, password);
-      navigate("/servicios", { replace: true });
+      const acceso = await obtenerMiAcceso();
+      if (acceso.permiso_ver_todo) {
+        navigate("/servicios", { replace: true });
+      } else if (acceso.permiso_ver_profesionales || acceso.permiso_crear_profesionales) {
+        navigate("/talento-humano", { replace: true });
+      } else {
+        navigate("/", { replace: true });
+      }
     } catch (err) {
       setError(err instanceof Error ? err.message : "No fue posible iniciar sesión");
     } finally {

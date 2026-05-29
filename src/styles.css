@@ -656,6 +656,56 @@ td small { display: block; color: var(--muted); margin-top: 4px; }
   gap: 10px;
   padding: 0 20px 20px;
 }
+.access-table th { white-space: nowrap; }
+.access-table td:not(:first-child) { vertical-align: middle; }
+.toggle-permission {
+  display: inline-flex;
+  align-items: center;
+  cursor: pointer;
+}
+.toggle-permission input {
+  position: absolute;
+  opacity: 0;
+  pointer-events: none;
+}
+.toggle-permission span {
+  width: 46px;
+  height: 26px;
+  border-radius: 999px;
+  background: #cbd5e1;
+  border: 1px solid #cbd5e1;
+  position: relative;
+  transition: .18s ease;
+}
+.toggle-permission span::after {
+  content: "";
+  position: absolute;
+  width: 20px;
+  height: 20px;
+  top: 2px;
+  left: 2px;
+  border-radius: 999px;
+  background: #fff;
+  box-shadow: 0 2px 5px rgba(15, 23, 42, .18);
+  transition: .18s ease;
+}
+.toggle-permission input:checked + span {
+  background: linear-gradient(135deg, var(--teal), var(--navy));
+  border-color: var(--teal);
+}
+.toggle-permission input:checked + span::after { transform: translateX(20px); }
+.toggle-permission input:disabled + span { opacity: .65; cursor: progress; }
+.access-note {
+  border: 1px solid #bfdbfe;
+  background: #eff6ff;
+  color: #1d4ed8;
+  border-radius: 8px;
+  padding: 14px 16px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.access-note p { color: #1d4ed8; }
 
 @media (max-width: 980px) {
   .app-shell { grid-template-columns: 1fr; }

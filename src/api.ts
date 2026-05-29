@@ -1,10 +1,13 @@
 import type {
   CumplimientoServicio,
   ProfesionalServicioPayload,
+  PermisosAcceso,
   RelacionPayload,
   ServicioDetalle,
   ServicioIps,
   TalentoHumanoServicio,
+  UsuarioPermisos,
+  UsuarioPermisosPayload,
 } from "./types";
 
 const API_URL = import.meta.env.VITE_API_URL || "https://api-pruebas.viveips.com.co";
@@ -106,6 +109,18 @@ export async function login(usuario: string, password: string) {
 
 export async function verificarSesion() {
   return apiCall<{ success: boolean; rol: string; cedula: string }>("GET", "/auth/verificar");
+}
+
+export async function obtenerMiAcceso() {
+  return apiCall<PermisosAcceso>("GET", "/permisos/mi-acceso");
+}
+
+export async function listarUsuariosPermisos() {
+  return apiCall<{ success: boolean; usuarios: UsuarioPermisos[] }>("GET", "/permisos/usuarios");
+}
+
+export async function actualizarPermisosUsuario(usuarioId: number, payload: UsuarioPermisosPayload) {
+  return apiCall<{ success: boolean; usuario: UsuarioPermisos }>("PATCH", `/permisos/usuarios/${usuarioId}`, payload);
 }
 
 export async function listarServiciosIps() {

@@ -2,6 +2,7 @@ import React from "react";
 import { createRoot } from "react-dom/client";
 import { Navigate, RouterProvider, createBrowserRouter } from "react-router-dom";
 import { AppLayout } from "./ui/AppLayout";
+import { AccesosPage } from "./pages/AccesosPage";
 import { LoginPage } from "./pages/LoginPage";
 import { ServicioDetallePage } from "./pages/ServicioDetallePage";
 import { ServiciosPage } from "./pages/ServiciosPage";
@@ -18,6 +19,7 @@ const router = createBrowserRouter([
       { path: "servicios", element: <ServiciosPage /> },
       { path: "servicios/:codigo", element: <ServicioDetallePage /> },
       { path: "talento-humano", element: <TalentoHumanoPage /> },
+      { path: "accesos", element: <AccesosPage /> },
     ],
   },
 ]);

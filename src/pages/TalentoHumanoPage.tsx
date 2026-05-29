@@ -6,10 +6,11 @@ import {
   downloadBlob,
   downloadUrl,
   listarProfesionales,
+  obtenerMiAcceso,
   obtenerFormacionProfesional,
   obtenerProfesional,
 } from "../api";
-import type { DocumentoProfesional, FormacionAcademica, ProfesionalAdmin } from "../types";
+import type { DocumentoProfesional, FormacionAcademica, PermisosAcceso, ProfesionalAdmin } from "../types";
 import { Loading } from "../ui/Loading";
 
 const cursosPorCargo: Record<string, string[]> = {
@@ -255,6 +256,7 @@ function generarPasswordTemporal() {
 export function TalentoHumanoPage() {
   const [profesionales, setProfesionales] = useState<ProfesionalAdmin[]>([]);
   const [tab, setTab] = useState<"listado" | "crear">("listado");
+  const [acceso, setAcceso] = useState<PermisosAcceso | null>(null);
   const [seleccionado, setSeleccionado] = useState<ProfesionalAdmin | null>(null);
   const [contratoProfesional, setContratoProfesional] = useState<ProfesionalAdmin | null>(null);
   const [contratoEstado, setContratoEstado] = useState<ContratoEstado | null>(null);
@@ -300,6 +302,8 @@ export function TalentoHumanoPage() {
         }),
       );
       setProfesionales(enriquecidos);
+      const permisos = await obtenerMiAcceso();
+      setAcceso(permisos);
     } catch (err) {
       setError(err instanceof Error ? err.message : "No fue posible cargar talento humano");
     } finally {
@@ -310,6 +314,8 @@ export function TalentoHumanoPage() {
   useEffect(() => {
     cargar();
   }, []);
+
+  const puedeCrearProfesionales = Boolean(acceso?.permiso_ver_todo || acceso?.permiso_crear_profesionales);
 
   const filtrados = useMemo(() => {
     const texto = normalizar(query);
@@ -372,6 +378,10 @@ export function TalentoHumanoPage() {
   }
 
   async function crearUsuario() {
+    if (!puedeCrearProfesionales) {
+      setError("No tienes permiso para crear profesionales.");
+      return;
+    }
     const payload = {
       ...nuevoUsuario,
       nombre: nuevoUsuario.nombre.trim(),
@@ -461,10 +471,12 @@ export function TalentoHumanoPage() {
           <h1>Profesionales</h1>
           <p>Consulta profesionales, documentos, contratos, PDF completo y carnet desde el admin nuevo.</p>
         </div>
-        <button className="brand-action-btn" type="button" onClick={() => setTab("crear")}>
-          <Plus size={18} />
-          Nuevo profesional
-        </button>
+        {puedeCrearProfesionales && (
+          <button className="brand-action-btn" type="button" onClick={() => setTab("crear")}>
+            <Plus size={18} />
+            Nuevo profesional
+          </button>
+        )}
       </header>
 
       {error && <div className="error-box">{error}</div>}
@@ -479,7 +491,9 @@ export function TalentoHumanoPage() {
 
       <div className="subtabs">
         <button className={tab === "listado" ? "active" : ""} type="button" onClick={() => setTab("listado")}>Listado</button>
-        <button className={tab === "crear" ? "active" : ""} type="button" onClick={() => setTab("crear")}>Crear usuario</button>
+        {puedeCrearProfesionales && (
+          <button className={tab === "crear" ? "active" : ""} type="button" onClick={() => setTab("crear")}>Crear usuario</button>
+        )}
       </div>
 
       {tab === "listado" && (
@@ -572,7 +586,7 @@ export function TalentoHumanoPage() {
         </>
       )}
 
-      {tab === "crear" && (
+      {tab === "crear" && puedeCrearProfesionales && (
         <section className="table-card create-user-card">
           <div className="section-heading">
             <h2>Crear nuevo profesional</h2>
