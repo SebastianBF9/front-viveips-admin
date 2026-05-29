@@ -22,6 +22,42 @@ export function downloadUrl(endpoint: string) {
   return `${API_URL}${endpoint}${token ? `${glue}token=${encodeURIComponent(token)}` : ""}`;
 }
 
+export async function downloadBlob(endpoint: string, filename: string, openInNewTab = false) {
+  const token = getToken();
+  const headers: Record<string, string> = {};
+  if (token) headers.Authorization = `Bearer ${token}`;
+
+  const response = await fetch(`${API_URL}${endpoint}`, { headers });
+  if (!response.ok) {
+    let message = "No fue posible descargar el archivo";
+    try {
+      const data = await response.json();
+      message = typeof data?.detail === "string" ? data.detail : message;
+    } catch {
+      // El backend puede responder HTML/texto para descargas fallidas.
+    }
+    if (response.status === 401) clearSession();
+    throw new Error(message);
+  }
+
+  const blob = await response.blob();
+  const url = URL.createObjectURL(blob);
+
+  if (openInNewTab) {
+    window.open(url, "_blank", "noopener,noreferrer");
+    setTimeout(() => URL.revokeObjectURL(url), 60_000);
+    return;
+  }
+
+  const anchor = document.createElement("a");
+  anchor.href = url;
+  anchor.download = filename;
+  document.body.appendChild(anchor);
+  anchor.click();
+  anchor.remove();
+  URL.revokeObjectURL(url);
+}
+
 export function clearSession() {
   sessionStorage.removeItem(TOKEN_KEY);
   sessionStorage.removeItem(ROL_KEY);

@@ -230,6 +230,72 @@ td small { display: block; color: var(--muted); margin-top: 4px; }
   margin-right: 6px;
   vertical-align: middle;
 }
+.professionals-table th:nth-child(1) { min-width: 260px; }
+.professionals-table th:nth-child(6) { min-width: 310px; }
+.prof-info {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.prof-avatar {
+  width: 38px;
+  height: 38px;
+  border-radius: 999px;
+  display: grid;
+  place-items: center;
+  background: #e0f7fa;
+  color: var(--navy);
+  font-weight: 900;
+  letter-spacing: 0;
+}
+.prof-nombre { color: var(--text); font-weight: 900; }
+.prof-cedula { color: var(--muted); font-size: 12px; margin-top: 2px; }
+.contact-cell span { display: block; max-width: 220px; overflow-wrap: anywhere; }
+.docs-mini {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 4px;
+  max-width: 190px;
+}
+.doc-mini-badge {
+  width: 10px;
+  height: 10px;
+  border-radius: 999px;
+  border: 1px solid rgba(15, 23, 42, .12);
+  background: #cbd5e1;
+}
+.doc-mini-badge.vigente { background: #22c55e; }
+.doc-mini-badge.sin-cargar { background: #cbd5e1; }
+.doc-mini-badge.por-vencer { background: #f59e0b; }
+.doc-mini-badge.vencido { background: #ef4444; }
+.pill.vigente { background: #d1fae5; color: #065f46; }
+.pill.sin-cargar { background: #eef2f7; color: #475569; }
+.pill.por-vencer { background: #fef3c7; color: #92400e; }
+.pill.vencido { background: #fee2e2; color: #991b1b; }
+.table-actions {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  flex-wrap: wrap;
+}
+.table-actions button,
+.doc-actions button {
+  border: 1px solid var(--border);
+  background: #fff;
+  color: var(--navy);
+  border-radius: 8px;
+  padding: 7px 9px;
+  font-weight: 900;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+}
+.table-actions button:hover,
+.doc-actions button:hover { border-color: var(--teal); color: var(--teal); }
+.table-actions button:disabled,
+.doc-actions button:disabled { opacity: .6; cursor: progress; }
 
 .standards-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px; }
 .standard-card { padding: 16px; }
@@ -341,10 +407,51 @@ td small { display: block; color: var(--muted); margin-top: 4px; }
   margin-bottom: 4px;
 }
 .flat-card { box-shadow: none; }
+.modal-docs-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+  padding: 14px;
+}
+.modal-doc-item {
+  border: 1px solid var(--border);
+  border-left-width: 4px;
+  border-radius: 8px;
+  padding: 12px;
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  background: #fff;
+}
+.modal-doc-item.vigente { border-left-color: #22c55e; }
+.modal-doc-item.sin-cargar { border-left-color: #cbd5e1; }
+.modal-doc-item.por-vencer { border-left-color: #f59e0b; }
+.modal-doc-item.vencido { border-left-color: #ef4444; }
+.modal-doc-item strong { display: block; color: var(--navy); font-size: 13px; }
+.modal-doc-item span { display: block; color: var(--muted); font-size: 12px; margin-top: 4px; }
+.doc-actions {
+  display: grid;
+  justify-items: end;
+  gap: 7px;
+  min-width: 116px;
+}
+.contract-state {
+  border: 1px solid var(--border);
+  background: #f8fafc;
+  border-radius: 8px;
+  padding: 12px;
+  display: flex;
+  gap: 10px;
+  align-items: center;
+}
+.contract-state svg { color: var(--teal); }
+.contract-state strong { display: block; color: var(--navy); }
+.contract-state span { display: block; color: var(--muted); font-size: 12px; margin-top: 2px; }
 .form-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
 .check-row { align-content: center; grid-template-columns: auto 1fr; display: grid !important; }
 .check-row input { min-height: 0; }
 .modal-actions { display: flex; justify-content: flex-end; gap: 10px; }
+.modal-actions.wrap { flex-wrap: wrap; }
 
 @media (max-width: 980px) {
   .app-shell { grid-template-columns: 1fr; }
@@ -355,7 +462,7 @@ td small { display: block; color: var(--muted); margin-top: 4px; }
 @media (max-width: 680px) {
   .main { padding: 18px; }
   .page-header { display: grid; }
-  .kpi-grid, .kpi-grid.four, .kpi-grid.five, .standards-grid, .form-grid, .detail-grid { grid-template-columns: 1fr; }
+  .kpi-grid, .kpi-grid.four, .kpi-grid.five, .standards-grid, .form-grid, .detail-grid, .modal-docs-grid { grid-template-columns: 1fr; }
   .table-card { overflow-x: auto; }
   table { min-width: 760px; }
 }
