@@ -303,10 +303,12 @@ td small { display: block; color: var(--muted); margin-top: 4px; }
 .doc-mini-badge.vigente { background: #22c55e; }
 .doc-mini-badge.sin-cargar { background: #cbd5e1; }
 .doc-mini-badge.por-vencer { background: #f59e0b; }
+.doc-mini-badge.incompleto { background: #f59e0b; }
 .doc-mini-badge.vencido { background: #ef4444; }
 .pill.vigente { background: #d1fae5; color: #065f46; }
 .pill.sin-cargar { background: #eef2f7; color: #475569; }
 .pill.por-vencer { background: #fef3c7; color: #92400e; }
+.pill.incompleto { background: #fef3c7; color: #92400e; }
 .pill.vencido { background: #fee2e2; color: #991b1b; }
 .table-actions {
   display: flex;
@@ -329,6 +331,11 @@ td small { display: block; color: var(--muted); margin-top: 4px; }
 }
 .table-actions button:hover,
 .doc-actions button:hover { border-color: var(--teal); color: var(--teal); }
+.doc-actions .consult-btn {
+  background: #eff6ff;
+  border-color: #bfdbfe;
+  color: #1d4ed8;
+}
 .table-actions button:disabled,
 .doc-actions button:disabled { opacity: .6; cursor: progress; }
 .table-actions .contract-action.no-generado {
@@ -625,6 +632,10 @@ td small { display: block; color: var(--muted); margin-top: 4px; }
   border-color: #dbe6f0;
 }
 .modal-doc-item.por-vencer {
+  background: #fffbeb;
+  border-color: #fcd34d;
+}
+.modal-doc-item.incompleto {
   background: #fffbeb;
   border-color: #fcd34d;
 }

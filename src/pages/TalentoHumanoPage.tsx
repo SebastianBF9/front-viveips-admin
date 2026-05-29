@@ -87,7 +87,13 @@ const nombresDocumentos: Record<string, string> = {
   toma_muestras: "Toma de Muestras",
 };
 
-type EstadoDoc = "vigente" | "sin-cargar" | "vencido" | "por-vencer";
+type EstadoDoc = "vigente" | "sin-cargar" | "vencido" | "por-vencer" | "incompleto";
+
+interface AccionDocumento {
+  label: string;
+  endpoint: string;
+  filename: string;
+}
 
 interface ChecklistItem {
   codigo: string;
@@ -95,6 +101,8 @@ interface ChecklistItem {
   estado: EstadoDoc;
   detalle: string;
   documento?: DocumentoProfesional;
+  documentos?: DocumentoProfesional[];
+  acciones?: AccionDocumento[];
 }
 
 interface ContratoEstado {
@@ -143,24 +151,104 @@ function codigosEsperados(especialidad?: string | null) {
   return [...documentosBase.slice(0, 4), "formacion_academica", ...documentosBase.slice(4), ...(cursosPorCargo[grupo] || [])];
 }
 
+function tieneArchivoFormacion(item?: FormacionAcademica | null) {
+  return Boolean(item && (item.ruta_archivo || item.nombre_archivo));
+}
+
+function tieneDiploma(item?: FormacionAcademica | null) {
+  return Boolean(item && (item.diploma_ruta_archivo || item.diploma_nombre_archivo));
+}
+
+function tieneActa(item?: FormacionAcademica | null) {
+  return Boolean(item && (item.acta_ruta_archivo || item.acta_nombre_archivo));
+}
+
 function estadoFormacion(formaciones: FormacionAcademica[] = []): EstadoDoc {
-  const bachillerato = formaciones.some((item) => item.tipo === "bachillerato");
+  const bachillerato = formaciones.find((item) => item.tipo === "bachillerato");
   const profesional = formaciones.find((item) => item.tipo === "profesional");
-  const soporteProfesional = Boolean(
-    profesional &&
-      (profesional.diploma_ruta_archivo ||
-        profesional.diploma_nombre_archivo ||
-        profesional.ruta_archivo ||
-        profesional.nombre_archivo),
-  );
-  const actaProfesional = Boolean(profesional && (profesional.acta_ruta_archivo || profesional.acta_nombre_archivo));
-  if (bachillerato && profesional && soporteProfesional && actaProfesional) return "vigente";
-  if (formaciones.length > 0) return "por-vencer";
+  if (bachillerato && profesional && tieneDiploma(profesional) && tieneActa(profesional)) return "vigente";
+  if (formaciones.length > 0) return "incompleto";
   return "sin-cargar";
 }
 
+function accionesFormacion(formaciones: FormacionAcademica[] = []): AccionDocumento[] {
+  const bachillerato = formaciones.find((item) => item.tipo === "bachillerato");
+  const profesional = formaciones.find((item) => item.tipo === "profesional");
+  const especializaciones = formaciones.filter((item) => item.tipo === "especializacion");
+  const acciones: AccionDocumento[] = [];
+
+  if (tieneArchivoFormacion(bachillerato)) {
+    acciones.push({
+      label: "Bach.",
+      endpoint: `/formacion/archivo/${bachillerato!.id}`,
+      filename: `bachillerato_${bachillerato!.id}`,
+    });
+  }
+  if (tieneDiploma(profesional)) {
+    acciones.push({
+      label: "Diploma",
+      endpoint: `/formacion/archivo/${profesional!.id}/diploma`,
+      filename: `diploma_${profesional!.id}`,
+    });
+  }
+  if (tieneActa(profesional)) {
+    acciones.push({
+      label: "Acta",
+      endpoint: `/formacion/archivo/${profesional!.id}/acta`,
+      filename: `acta_${profesional!.id}`,
+    });
+  }
+  especializaciones
+    .filter((item) => tieneArchivoFormacion(item))
+    .forEach((item, index) => {
+      acciones.push({
+        label: `Espec. ${index + 1}`,
+        endpoint: `/formacion/archivo/${item.id}`,
+        filename: `especializacion_${item.id}`,
+      });
+    });
+
+  return acciones;
+}
+
+function detalleFormacion(formaciones: FormacionAcademica[] = []) {
+  const bachillerato = formaciones.find((item) => item.tipo === "bachillerato");
+  const profesional = formaciones.find((item) => item.tipo === "profesional");
+  const especializaciones = formaciones.filter((item) => item.tipo === "especializacion");
+  const partes: string[] = [];
+
+  if (bachillerato) {
+    partes.push(`${bachillerato.institucion || "Bachillerato"}${bachillerato.anio_grado ? ` - ${bachillerato.anio_grado}` : ""}`);
+  }
+  if (profesional) {
+    partes.push(`${tieneDiploma(profesional) ? "Diploma cargado" : "Diploma faltante"} - ${tieneActa(profesional) ? "Acta cargada" : "Acta faltante"}`);
+  }
+  especializaciones.forEach((item) => {
+    partes.push(`${item.titulo || item.institucion || "Especializacion"}${item.nivel ? ` - ${item.nivel}` : ""}`);
+  });
+
+  return partes.length ? partes.join(" | ") : "Sin informacion registrada";
+}
+
+function etiquetaEstadoDoc(estado: EstadoDoc) {
+  const labels: Record<EstadoDoc, string> = {
+    vigente: "Vigente",
+    "sin-cargar": "Sin cargar",
+    vencido: "Vencido",
+    "por-vencer": "Por vencer",
+    incompleto: "Incompleto",
+  };
+  return labels[estado];
+}
+
 function checklistProfesional(profesional: ProfesionalAdmin): ChecklistItem[] {
-  const docs = new Map((profesional.documentos || []).map((doc) => [doc.tipo_codigo, doc]));
+  const docs = new Map<string, DocumentoProfesional[]>();
+  (profesional.documentos || []).forEach((doc) => {
+    const actuales = docs.get(doc.tipo_codigo) || [];
+    actuales.push(doc);
+    docs.set(doc.tipo_codigo, actuales);
+  });
+
   return codigosEsperados(profesional.especialidad).map((codigo) => {
     if (codigo === "formacion_academica") {
       const estado = estadoFormacion(profesional.formaciones || []);
@@ -168,11 +256,23 @@ function checklistProfesional(profesional: ProfesionalAdmin): ChecklistItem[] {
         codigo,
         nombre: nombresDocumentos[codigo],
         estado,
-        detalle: estado === "vigente" ? "Completa" : estado === "por-vencer" ? "Incompleta" : "No cargada",
+        detalle: estado === "vigente" ? detalleFormacion(profesional.formaciones || []) : estado === "incompleto" ? detalleFormacion(profesional.formaciones || []) : "No cargada",
+        acciones: accionesFormacion(profesional.formaciones || []),
       };
     }
 
-    const doc = docs.get(codigo);
+    const documentos = docs.get(codigo) || [];
+    if (codigo === "cert_experiencia") {
+      return {
+        codigo,
+        nombre: nombresDocumentos[codigo],
+        estado: documentos.length ? "vigente" : "sin-cargar",
+        detalle: `${documentos.length} archivo(s)`,
+        documentos,
+      };
+    }
+
+    const doc = documentos[0];
     if (!doc) {
       return { codigo, nombre: nombresDocumentos[codigo] || codigo, estado: "sin-cargar", detalle: "No cargado" };
     }
@@ -192,7 +292,7 @@ function resumenDocumental(profesional: ProfesionalAdmin) {
   const items = checklistProfesional(profesional);
   const cumplidos = items.filter((item) => item.estado === "vigente").length;
   const vencidos = items.filter((item) => item.estado === "vencido").length;
-  const pendientes = items.filter((item) => item.estado === "sin-cargar").length;
+  const pendientes = items.filter((item) => item.estado === "sin-cargar" || item.estado === "incompleto").length;
   return { total: items.length, cumplidos, vencidos, pendientes, items };
 }
 
@@ -370,6 +470,24 @@ export function TalentoHumanoPage() {
     await ejecutarAccion(`doc-${documento.id}`, async () => {
       await downloadBlob(`/documentos/descargar/${documento.id}`, documento.nombre_archivo || `documento_${documento.id}`, true);
     });
+  }
+
+  async function descargarAccionDocumento(accion: AccionDocumento) {
+    await ejecutarAccion(`accion-doc-${accion.endpoint}`, async () => {
+      await downloadBlob(accion.endpoint, accion.filename, true);
+    });
+  }
+
+  function consultarRethus(cedula?: string | null) {
+    if (cedula) {
+      navigator.clipboard?.writeText(cedula).catch(() => {});
+      setSuccess(`Cedula ${cedula} copiada. Pegala en Numero de Identificacion en ReTHUS.`);
+    }
+    window.open(
+      "https://web.sispro.gov.co/THS/Cliente/ConsultasPublicas/ConsultaPublicaDeTHxIdentificacion.aspx",
+      "_blank",
+      "noopener,noreferrer",
+    );
   }
 
   async function descargarHojaVida(profesional: ProfesionalAdmin) {
@@ -737,12 +855,38 @@ export function TalentoHumanoPage() {
                       <span>{item.detalle}</span>
                     </div>
                     <div className="doc-actions">
-                      <span className={`pill ${item.estado}`}>{item.estado}</span>
-                      {item.documento ? (
+                      <span className={`pill ${item.estado}`}>{etiquetaEstadoDoc(item.estado)}</span>
+                      {item.acciones?.map((accion) => (
+                        <button
+                          type="button"
+                          key={`${item.codigo}-${accion.endpoint}`}
+                          onClick={() => descargarAccionDocumento(accion)}
+                          disabled={accionLoading === `accion-doc-${accion.endpoint}`}
+                        >
+                          <Download size={14} /> {accion.label}
+                        </button>
+                      ))}
+                      {item.documentos?.map((documento, index) => (
+                        <button
+                          type="button"
+                          key={documento.id}
+                          onClick={() => descargarDocumento(documento)}
+                          disabled={accionLoading === `doc-${documento.id}`}
+                        >
+                          <Download size={14} /> Exp. {index + 1}
+                        </button>
+                      ))}
+                      {item.documento && (
                         <button type="button" onClick={() => descargarDocumento(item.documento!)} disabled={accionLoading === `doc-${item.documento.id}`}>
                           <Download size={14} /> Descargar
                         </button>
-                      ) : (
+                      )}
+                      {item.codigo === "rethus" && (
+                        <button className="consult-btn" type="button" onClick={() => consultarRethus(seleccionado.cedula)}>
+                          Consultar
+                        </button>
+                      )}
+                      {!item.documento && !item.documentos?.length && !item.acciones?.length && item.codigo !== "rethus" && (
                         <small>No disponible</small>
                       )}
                     </div>
