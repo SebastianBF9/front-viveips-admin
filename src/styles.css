@@ -1,3 +1,5 @@
+@import url('https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&family=Outfit:wght@300;400;500;600;700&display=swap');
+
 :root {
   --navy: #1B3A6B;
   --teal: #1BAAB5;
@@ -12,7 +14,7 @@
 
 body {
   margin: 0;
-  font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  font-family: "Outfit", ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
   background: var(--bg);
   color: var(--text);
 }
@@ -100,8 +102,8 @@ button, input, select, textarea { font: inherit; }
   align-items: flex-start;
 }
 .eyebrow { color: var(--teal); font-weight: 900; font-size: 12px; text-transform: uppercase; }
-h1 { color: var(--navy); font-size: 31px; line-height: 1.15; margin: 6px 0; }
-h2 { color: var(--navy); margin: 0; font-size: 18px; }
+h1 { color: var(--navy); font-family: "Nunito", sans-serif; font-size: 31px; line-height: 1.15; margin: 6px 0; }
+h2 { color: var(--navy); font-family: "Nunito", sans-serif; margin: 0; font-size: 18px; }
 p { color: var(--muted); margin: 0; }
 
 .kpi-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px; }
@@ -415,6 +417,8 @@ td small { display: block; color: var(--muted); margin-top: 4px; }
   place-items: center;
   padding: 18px;
   z-index: 20;
+  overflow-y: auto;
+  overscroll-behavior: contain;
 }
 .modal {
   width: min(760px, 100%);
@@ -431,7 +435,8 @@ td small { display: block; color: var(--muted); margin-top: 4px; }
   padding: 0;
   gap: 0;
   border-radius: 20px;
-  overflow: hidden;
+  overflow-y: auto;
+  overscroll-behavior: contain;
 }
 .professional-detail-title {
   display: flex;
@@ -443,10 +448,12 @@ td small { display: block; color: var(--muted); margin-top: 4px; }
 }
 .professional-detail-title h2 {
   color: #08243a;
+  font-family: "Nunito", sans-serif;
   display: flex;
   align-items: center;
   gap: 10px;
   font-size: 24px;
+  font-weight: 900;
 }
 .professional-detail-title h2 svg { color: #e7d9f2; }
 .professional-detail-title button {
@@ -477,7 +484,9 @@ td small { display: block; color: var(--muted); margin-top: 4px; }
 }
 .legacy-profile-header h2 {
   color: #08243a;
+  font-family: "Nunito", sans-serif;
   font-size: 25px;
+  font-weight: 900;
   margin-bottom: 4px;
 }
 .legacy-profile-header p {
@@ -531,7 +540,9 @@ td small { display: block; color: var(--muted); margin-top: 4px; }
 }
 .legacy-section-heading h2 {
   color: #334155;
+  font-family: "Nunito", sans-serif;
   font-size: 17px;
+  font-weight: 900;
   text-transform: uppercase;
   letter-spacing: .04em;
 }
@@ -605,7 +616,23 @@ td small { display: block; color: var(--muted); margin-top: 4px; }
   background: #f8fbfe;
   align-items: center;
 }
-.modal-doc-item strong { display: block; color: #08243a; font-size: 16px; }
+.modal-doc-item.vigente {
+  background: #ecfdf5;
+  border-color: #86efac;
+}
+.modal-doc-item.sin-cargar {
+  background: #f8fbfe;
+  border-color: #dbe6f0;
+}
+.modal-doc-item.por-vencer {
+  background: #fffbeb;
+  border-color: #fcd34d;
+}
+.modal-doc-item.vencido {
+  background: #fef2f2;
+  border-color: #fecaca;
+}
+.modal-doc-item strong { display: block; color: #08243a; font-family: "Nunito", sans-serif; font-size: 16px; font-weight: 900; }
 .modal-doc-item span { display: block; color: #1f3b53; font-size: 13px; margin-top: 4px; }
 .doc-actions {
   display: grid;
