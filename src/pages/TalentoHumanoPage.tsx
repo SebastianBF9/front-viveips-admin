@@ -1,4 +1,4 @@
-import { BadgeCheck, CreditCard, Download, Eye, FileText, Search, UserRound } from "lucide-react";
+import { BadgeCheck, CreditCard, Download, Eye, FileText, Search, UserRound, X } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import {
   apiCall,
@@ -172,6 +172,61 @@ function nombreArchivoSeguro(valor: string) {
   return normalizar(valor).replace(/[^a-z0-9]+/g, "_").replace(/^_+|_+$/g, "") || "profesional";
 }
 
+function normalizarEstadoContrato(valor?: string | null) {
+  return normalizar(valor).replace(/[\s-]+/g, "_");
+}
+
+function infoContrato(profesional: ProfesionalAdmin, contrato?: ContratoEstado | null) {
+  const estado = normalizarEstadoContrato(contrato?.estado || profesional.estado_contrato);
+  if (!estado) {
+    return {
+      clave: "no-generado",
+      texto: "Contrato",
+      titulo: "Contrato no generado",
+      detalle: "Sin contrato generado",
+    };
+  }
+  if (estado.includes("firmado_completo") || estado.includes("completo") || estado.includes("finalizado")) {
+    return {
+      clave: "completo",
+      texto: "Contrato",
+      titulo: "Contrato completo",
+      detalle: "Contrato firmado por ambas partes",
+    };
+  }
+  if (estado.includes("firmado")) {
+    return {
+      clave: "firmado-profesional",
+      texto: "Contrato",
+      titulo: "Firmado por el profesional",
+      detalle: "Pendiente por firma del gerente",
+    };
+  }
+  return {
+    clave: "pendiente-firma",
+    texto: "Contrato",
+    titulo: "Pendiente por firma del trabajador",
+    detalle: "Contrato generado, pendiente por firma del profesional",
+  };
+}
+
+function textoRegenerarContrato(contrato?: ContratoEstado | null) {
+  const estado = normalizarEstadoContrato(contrato?.estado);
+  if (!contrato) return "Generar nuevo contrato:";
+  if (estado.includes("firmado_completo") || estado.includes("completo")) return "Regenerar contrato si necesitas reemplazar el actual:";
+  return "Generar nuevo contrato si necesitas reemplazar el actual:";
+}
+
+function normalizarValorMoneda(valor: string) {
+  return String(valor || "").replace(/[^0-9]/g, "");
+}
+
+function formatearMoneda(valor: string) {
+  const limpio = normalizarValorMoneda(valor);
+  if (!limpio) return "";
+  return new Intl.NumberFormat("es-CO").format(Number(limpio));
+}
+
 export function TalentoHumanoPage() {
   const [profesionales, setProfesionales] = useState<ProfesionalAdmin[]>([]);
   const [seleccionado, setSeleccionado] = useState<ProfesionalAdmin | null>(null);
@@ -296,8 +351,8 @@ export function TalentoHumanoPage() {
 
   async function generarContrato() {
     if (!contratoProfesional) return;
-    const urbano = Number(valorUrbano);
-    const rural = Number(valorRural);
+    const urbano = Number(normalizarValorMoneda(valorUrbano));
+    const rural = Number(normalizarValorMoneda(valorRural));
     if (!urbano || urbano <= 0 || !rural || rural <= 0 || !fechaInicio) {
       setError("Ingresa valor urbano, valor rural y fecha de inicio para generar el contrato.");
       return;
@@ -381,6 +436,7 @@ export function TalentoHumanoPage() {
           <tbody>
             {filtrados.map((profesional) => {
               const resumen = resumenDocumental(profesional);
+              const contratoInfo = infoContrato(profesional);
               return (
                 <tr key={profesional.id}>
                   <td>
@@ -414,7 +470,14 @@ export function TalentoHumanoPage() {
                       <button type="button" onClick={() => descargarHojaVida(profesional)} disabled={accionLoading === `pdf-${profesional.id}`}>
                         <Download size={15} /> PDF
                       </button>
-                      <button type="button" onClick={() => abrirContrato(profesional)}><FileText size={15} /> Contrato</button>
+                      <button
+                        className={`contract-action ${contratoInfo.clave}`}
+                        type="button"
+                        onClick={() => abrirContrato(profesional)}
+                        title={contratoInfo.titulo}
+                      >
+                        <FileText size={15} /> {contratoInfo.texto}
+                      </button>
                       <button type="button" onClick={() => abrirCarnet(profesional)}><CreditCard size={15} /> Carnet</button>
                     </div>
                   </td>
@@ -484,49 +547,78 @@ export function TalentoHumanoPage() {
 
       {contratoProfesional && (
         <div className="modal-backdrop" onMouseDown={() => setContratoProfesional(null)}>
-          <div className="modal" onMouseDown={(event) => event.stopPropagation()}>
-            <div className="modal-profile-header">
-              <div className="avatar-circle"><FileText size={24} /></div>
+          <div className="modal contract-modal" onMouseDown={(event) => event.stopPropagation()}>
+            <div className="contract-modal-header">
               <div>
-                <h2>Contrato</h2>
+                <h2><FileText size={22} /> Generar contrato</h2>
                 <p>{contratoProfesional.nombre} - {contratoProfesional.especialidad || "Sin cargo"}</p>
               </div>
+              <button className="modal-close-btn" type="button" onClick={() => setContratoProfesional(null)} aria-label="Cerrar modal">
+                <X size={20} />
+              </button>
             </div>
 
-            <div className="contract-state">
-              <BadgeCheck size={18} />
-              <div>
-                <strong>{contratoEstado?.estado || contratoProfesional.estado_contrato || "Sin contrato generado"}</strong>
-                <span>{contratoEstado?.fecha_generacion || contratoProfesional.fecha_contrato || "Sin fecha registrada"}</span>
+            <div className="contract-modal-body">
+              <div className={`contract-state-box ${infoContrato(contratoProfesional, contratoEstado).clave}`}>
+                <BadgeCheck size={18} />
+                <div>
+                  <strong>{infoContrato(contratoProfesional, contratoEstado).detalle}</strong>
+                  <span>
+                    {contratoEstado?.nombre_archivo
+                      ? `Archivo: ${contratoEstado.nombre_archivo}`
+                      : contratoEstado?.fecha_generacion || contratoProfesional.fecha_contrato || "Sin archivo generado"}
+                  </span>
+                  {(contratoEstado || contratoProfesional.estado_contrato) && (
+                    <button className="contract-download-btn" type="button" onClick={() => descargarContrato(contratoProfesional)}>
+                      <Download size={15} /> Descargar contrato
+                    </button>
+                  )}
+                </div>
               </div>
-            </div>
 
-            <div className="form-grid">
-              <label>
-                Valor urbano
-                <input value={valorUrbano} onChange={(event) => setValorUrbano(event.target.value)} inputMode="numeric" placeholder="Ej: 45000" />
-              </label>
-              <label>
-                Valor rural
-                <input value={valorRural} onChange={(event) => setValorRural(event.target.value)} inputMode="numeric" placeholder="Ej: 55000" />
-              </label>
-              <label>
-                Fecha inicio
-                <input value={fechaInicio} onChange={(event) => setFechaInicio(event.target.value)} type="date" />
-              </label>
-            </div>
+              <p className="contract-regenerate-text">{textoRegenerarContrato(contratoEstado)}</p>
 
-            <div className="modal-actions wrap">
-              <button className="secondary-btn" type="button" onClick={() => descargarContrato(contratoProfesional)}>
-                <Download size={16} /> Descargar contrato
-              </button>
-              <button className="secondary-btn" type="button" onClick={firmarContratoGerente} disabled={accionLoading.includes("contrato-firma")}>
-                Firmar gerente
-              </button>
-              <button className="primary-btn" type="button" onClick={generarContrato} disabled={accionLoading.includes("contrato-generar")}>
-                Generar contrato
-              </button>
-              <button className="secondary-btn" type="button" onClick={() => setContratoProfesional(null)}>Cerrar</button>
+              <div className="contract-form-grid">
+                <label>
+                  Valor urbano <span>*</span>
+                  <input
+                    value={valorUrbano}
+                    onChange={(event) => setValorUrbano(formatearMoneda(event.target.value))}
+                    inputMode="numeric"
+                    placeholder="Ej: 50.000"
+                  />
+                </label>
+                <label>
+                  Valor rural <span>*</span>
+                  <input
+                    value={valorRural}
+                    onChange={(event) => setValorRural(formatearMoneda(event.target.value))}
+                    inputMode="numeric"
+                    placeholder="Ej: 65.000"
+                  />
+                </label>
+                <label className="contract-date-field">
+                  Fecha de inicio del contrato <span>*</span>
+                  <input value={fechaInicio} onChange={(event) => setFechaInicio(event.target.value)} type="date" />
+                </label>
+              </div>
+
+              <div className="contract-note">
+                La fecha indicada sera la fecha de inicio visible dentro del contrato. El backend calculara la fecha final segun la duracion configurada.
+              </div>
+
+              <div className="modal-actions contract-actions">
+                <button className="secondary-btn pill-btn" type="button" onClick={() => setContratoProfesional(null)}>Cancelar</button>
+                {normalizarEstadoContrato(contratoEstado?.estado || contratoProfesional.estado_contrato).includes("firmado") &&
+                  !normalizarEstadoContrato(contratoEstado?.estado || contratoProfesional.estado_contrato).includes("completo") && (
+                    <button className="secondary-btn pill-btn" type="button" onClick={firmarContratoGerente} disabled={accionLoading.includes("contrato-firma")}>
+                      Firmar gerente
+                    </button>
+                  )}
+                <button className="primary-btn gradient-btn" type="button" onClick={generarContrato} disabled={accionLoading.includes("contrato-generar")}>
+                  Generar contrato
+                </button>
+              </div>
             </div>
           </div>
         </div>
