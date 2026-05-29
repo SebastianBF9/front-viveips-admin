@@ -89,6 +89,10 @@ export interface CriterioCumplimiento {
   evidencia_nombre: string | null;
   evidencia_archivo: string | null;
   evidencia_estado: string | null;
+  porcentaje_calculado: number;
+  estado_calculado: EstadoCumplimiento;
+  fuente_calculo: "automatico" | string;
+  hallazgos: string[];
 }
 
 export interface CumplimientoServicio {
@@ -102,11 +106,18 @@ export interface CumplimientoServicio {
     pendiente: number;
     en_revision: number;
     no_aplica: number;
+    porcentaje_global: number;
+    estado_global: EstadoCumplimiento;
+    fuente: "calculado" | string;
+    estandares: Array<{
+      codigo: string;
+      nombre: string;
+      orden: number;
+      total_criterios: number;
+      porcentaje: number;
+      estado: EstadoCumplimiento;
+      pendientes: number;
+      hallazgos: string[];
+    }>;
   };
-}
-
-export interface CumplimientoPayload {
-  estado_cumplimiento: EstadoCumplimiento;
-  respuesta?: string | null;
-  observacion?: string | null;
 }

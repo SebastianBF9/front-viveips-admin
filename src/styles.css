@@ -189,6 +189,15 @@ td small { display: block; color: var(--muted); margin-top: 4px; }
 .secondary-btn { background: #eef2f7; color: #334155; }
 .primary-btn:disabled { opacity: .6; cursor: progress; }
 .back-link { color: var(--teal); font-size: 13px; font-weight: 900; text-decoration: none; }
+.breadcrumb {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--muted);
+  font-size: 13px;
+  font-weight: 800;
+  margin-bottom: 4px;
+}
 
 .actions { white-space: nowrap; }
 .actions button {
@@ -205,6 +214,21 @@ td small { display: block; color: var(--muted); margin-top: 4px; }
 .standard-card { padding: 16px; }
 .standard-card strong { display: block; color: var(--navy); margin-bottom: 6px; }
 .standard-card span { color: var(--muted); font-size: 13px; }
+.standard-card small { display: block; color: var(--muted); font-size: 12px; margin-top: 6px; }
+.standard-card-head { display: flex; justify-content: space-between; gap: 10px; align-items: flex-start; }
+.standard-card-head strong { margin-bottom: 0; }
+.progress-bar {
+  height: 9px;
+  background: #e5e7eb;
+  border-radius: 999px;
+  overflow: hidden;
+  margin: 12px 0 8px;
+}
+.progress-bar span {
+  display: block;
+  height: 100%;
+  background: var(--teal);
+}
 .criteria-stack { display: grid; gap: 16px; }
 .criteria-stack textarea { width: 100%; min-width: 220px; }
 .criteria-stack select { min-width: 150px; }

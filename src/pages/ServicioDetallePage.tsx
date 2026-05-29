@@ -1,8 +1,7 @@
-import { Edit2, Plus, Save, Trash2 } from "lucide-react";
+import { Edit2, Plus, Trash2 } from "lucide-react";
 import { FormEvent, useEffect, useMemo, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import {
-  actualizarCumplimiento,
   actualizarRelacion,
   crearRelacion,
   eliminarRelacion,
@@ -12,9 +11,7 @@ import {
 } from "../api";
 import type {
   CriterioCumplimiento,
-  CumplimientoPayload,
   CumplimientoServicio,
-  EstadoCumplimiento,
   EstadoRelacion,
   RelacionPayload,
   ServicioDetalle,
@@ -82,7 +79,6 @@ export function ServicioDetallePage() {
   const [tabActiva, setTabActiva] = useState<TabKey>("resumen");
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-  const [savingCumplimiento, setSavingCumplimiento] = useState<number | null>(null);
   const [error, setError] = useState("");
   const [modalOpen, setModalOpen] = useState(false);
   const [editando, setEditando] = useState<ServicioRelacion | null>(null);
@@ -167,25 +163,6 @@ export function ServicioDetallePage() {
     await cargar();
   }
 
-  async function guardarCumplimiento(criterio: CriterioCumplimiento, payload: CumplimientoPayload) {
-    if (!criterio.cumplimiento_id) {
-      setError("Este criterio aun no tiene registro de cumplimiento creado en base de datos.");
-      return;
-    }
-
-    setSavingCumplimiento(criterio.cumplimiento_id);
-    setError("");
-    try {
-      await actualizarCumplimiento(criterio.cumplimiento_id, payload);
-      const cumplimientoData = await obtenerCumplimientoServicio(codigo);
-      setCumplimiento(cumplimientoData);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "No fue posible actualizar el cumplimiento");
-    } finally {
-      setSavingCumplimiento(null);
-    }
-  }
-
   if (loading) return <Loading text="Cargando detalle del servicio..." />;
   if (error && !detalle) return <div className="error-box">{error}</div>;
   if (!detalle) return <Loading text="Servicio no encontrado." />;
@@ -197,8 +174,12 @@ export function ServicioDetallePage() {
     <section className="page">
       <header className="page-header">
         <div>
-          <Link className="back-link" to="/servicios">Servicios</Link>
-          <span className="eyebrow">Servicio {servicio.codigo}</span>
+          <div className="breadcrumb">
+            <Link className="back-link" to="/servicios">Servicios</Link>
+            <span>/</span>
+            <span>Servicio {servicio.codigo}</span>
+          </div>
+          <span className="eyebrow">Detalle del servicio</span>
           <h1>{servicio.nombre}</h1>
           <p>{servicio.observaciones || "Dashboard independiente de habilitacion."}</p>
           <div className="meta-row">
@@ -241,9 +222,9 @@ export function ServicioDetallePage() {
 
           {resumenCumplimiento && (
             <div className="kpi-grid five">
-              <article className="kpi-card"><strong>{resumenCumplimiento.total}</strong><span>Criterios</span></article>
+              <article className="kpi-card"><strong>{resumenCumplimiento.porcentaje_global}%</strong><span>Cumplimiento global</span></article>
+              <article className="kpi-card"><strong>{resumenCumplimiento.total}</strong><span>Criterios evaluados</span></article>
               <article className="kpi-card"><strong>{resumenCumplimiento.cumple}</strong><span>Cumple</span></article>
-              <article className="kpi-card"><strong>{resumenCumplimiento.no_cumple}</strong><span>No cumple</span></article>
               <article className="kpi-card"><strong>{resumenCumplimiento.pendiente}</strong><span>Pendiente</span></article>
               <article className="kpi-card"><strong>{resumenCumplimiento.en_revision}</strong><span>En revision</span></article>
             </div>
@@ -304,30 +285,60 @@ export function ServicioDetallePage() {
 
       {tabActiva === "cumplimiento" && (
         <section className="criteria-stack">
+          {cumplimiento?.resumen.estandares && cumplimiento.resumen.estandares.length > 0 && (
+            <section className="standards-grid">
+              {cumplimiento.resumen.estandares.map((estandar) => (
+                <article className="standard-card" key={estandar.codigo}>
+                  <div className="standard-card-head">
+                    <strong>{estandar.nombre}</strong>
+                    <span className={`pill ${estandar.estado}`}>{estadoLabel[estandar.estado] || estandar.estado}</span>
+                  </div>
+                  <div className="progress-bar" aria-label={`Cumplimiento ${estandar.porcentaje}%`}>
+                    <span style={{ width: `${Math.min(100, Math.max(0, estandar.porcentaje))}%` }} />
+                  </div>
+                  <small>{estandar.porcentaje}% calculado sobre {estandar.total_criterios} criterios</small>
+                  {estandar.hallazgos.slice(0, 2).map((hallazgo) => (
+                    <small key={hallazgo}>{hallazgo}</small>
+                  ))}
+                </article>
+              ))}
+            </section>
+          )}
+
           {Object.entries(criteriosPorEstandar).map(([estandar, criterios]) => (
             <article className="table-card" key={estandar}>
               <div className="section-heading">
                 <h2>{estandar}</h2>
-                <p>{criterios.length} criterios normativos asociados a este estandar.</p>
+                <p>{criterios.length} criterios calculados automaticamente desde soportes, relaciones y datos operativos.</p>
               </div>
               <table>
                 <thead>
                   <tr>
                     <th>Criterio</th>
-                    <th>Estado</th>
-                    <th>Respuesta</th>
-                    <th>Observacion</th>
-                    <th>Guardar</th>
+                    <th>Resultado</th>
+                    <th>Fuente</th>
+                    <th>Hallazgos</th>
                   </tr>
                 </thead>
                 <tbody>
                   {criterios.map((criterio) => (
-                    <CumplimientoRow
-                      criterio={criterio}
-                      key={criterio.criterio_id}
-                      onSave={guardarCumplimiento}
-                      saving={savingCumplimiento === criterio.cumplimiento_id}
-                    />
+                    <tr key={criterio.criterio_id}>
+                      <td>
+                        <strong>{criterio.criterio_codigo}</strong>
+                        <small>{criterio.descripcion}</small>
+                        {criterio.norma_referencia && <small>{criterio.norma_referencia}</small>}
+                      </td>
+                      <td>
+                        <span className={`pill ${criterio.estado_calculado}`}>{estadoLabel[criterio.estado_calculado] || criterio.estado_calculado}</span>
+                        <small>{criterio.porcentaje_calculado}%</small>
+                      </td>
+                      <td>{criterio.fuente_calculo}</td>
+                      <td>
+                        {(criterio.hallazgos || []).length
+                          ? criterio.hallazgos.map((hallazgo) => <small key={hallazgo}>{hallazgo}</small>)
+                          : <small>Sin pendientes detectados.</small>}
+                      </td>
+                    </tr>
                   ))}
                 </tbody>
               </table>
@@ -458,55 +469,5 @@ export function ServicioDetallePage() {
         </div>
       )}
     </section>
-  );
-}
-
-function CumplimientoRow({
-  criterio,
-  onSave,
-  saving,
-}: {
-  criterio: CriterioCumplimiento;
-  onSave: (criterio: CriterioCumplimiento, payload: CumplimientoPayload) => Promise<void>;
-  saving: boolean;
-}) {
-  const [estado, setEstado] = useState<EstadoCumplimiento>(criterio.estado_cumplimiento || "pendiente");
-  const [respuesta, setRespuesta] = useState(criterio.respuesta || "");
-  const [observacion, setObservacion] = useState(criterio.observacion || "");
-
-  useEffect(() => {
-    setEstado(criterio.estado_cumplimiento || "pendiente");
-    setRespuesta(criterio.respuesta || "");
-    setObservacion(criterio.observacion || "");
-  }, [criterio]);
-
-  return (
-    <tr>
-      <td>
-        <strong>{criterio.criterio_codigo}</strong>
-        <small>{criterio.descripcion}</small>
-        {criterio.norma_referencia && <small>{criterio.norma_referencia}</small>}
-      </td>
-      <td>
-        <select value={estado} onChange={(event) => setEstado(event.target.value as EstadoCumplimiento)}>
-          {estados.map((item) => <option key={item} value={item}>{estadoLabel[item]}</option>)}
-        </select>
-      </td>
-      <td>
-        <textarea value={respuesta} onChange={(event) => setRespuesta(event.target.value)} rows={3} />
-      </td>
-      <td>
-        <textarea value={observacion} onChange={(event) => setObservacion(event.target.value)} rows={3} />
-      </td>
-      <td className="actions">
-        <button
-          type="button"
-          disabled={saving || !criterio.cumplimiento_id}
-          onClick={() => onSave(criterio, { estado_cumplimiento: estado, respuesta, observacion })}
-        >
-          <Save size={16} />
-        </button>
-      </td>
-    </tr>
   );
 }
