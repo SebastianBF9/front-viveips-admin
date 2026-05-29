@@ -41,7 +41,7 @@ export function AppLayout() {
     <div className="app-shell">
       <aside className="sidebar">
         <div className="brand">
-          <img src="/logo.jpg" alt="Vive IPS" />
+          <img src="/logo_carnet.png" alt="Vive IPS" />
           <div>
             <span>Panel Administrativo</span>
           </div>
