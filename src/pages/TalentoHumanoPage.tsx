@@ -1,4 +1,4 @@
-import { BadgeCheck, CreditCard, Download, Eye, FileText, Plus, Search, UserRound, X } from "lucide-react";
+import { AlertTriangle, BadgeCheck, CheckCircle2, Clock3, CreditCard, Download, Eye, FileText, Plus, Search, UserCheck, UserRound, X } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import {
   apiCall,
@@ -291,9 +291,11 @@ function checklistProfesional(profesional: ProfesionalAdmin): ChecklistItem[] {
 function resumenDocumental(profesional: ProfesionalAdmin) {
   const items = checklistProfesional(profesional);
   const cumplidos = items.filter((item) => item.estado === "vigente").length;
+  const porVencer = items.filter((item) => item.estado === "por-vencer" || item.estado === "incompleto").length;
   const vencidos = items.filter((item) => item.estado === "vencido").length;
   const pendientes = items.filter((item) => item.estado === "sin-cargar" || item.estado === "incompleto").length;
-  return { total: items.length, cumplidos, vencidos, pendientes, items };
+  const faltantes = items.filter((item) => item.estado === "sin-cargar").length;
+  return { total: items.length, cumplidos, porVencer, vencidos, pendientes, faltantes, items };
 }
 
 function nombreArchivoSeguro(valor: string) {
@@ -475,9 +477,18 @@ export function TalentoHumanoPage() {
 
   const kpis = useMemo(() => {
     const activos = profesionales.filter((profesional) => Boolean(profesional.activo)).length;
-    const pendientes = profesionales.filter((profesional) => resumenDocumental(profesional).pendientes > 0).length;
-    const vencidos = profesionales.filter((profesional) => resumenDocumental(profesional).vencidos > 0).length;
-    return { total: profesionales.length, activos, pendientes, vencidos };
+    const documentos = profesionales.reduce(
+      (acumulado, profesional) => {
+        const resumen = resumenDocumental(profesional);
+        acumulado.vigentes += resumen.cumplidos;
+        acumulado.porVencerIncompletos += resumen.porVencer;
+        acumulado.vencidos += resumen.vencidos;
+        acumulado.faltantes += resumen.faltantes;
+        return acumulado;
+      },
+      { vigentes: 0, porVencerIncompletos: 0, vencidos: 0, faltantes: 0 },
+    );
+    return { activos, ...documentos };
   }, [profesionales]);
 
   async function ejecutarAccion(clave: string, accion: () => Promise<void>) {
@@ -650,11 +661,32 @@ export function TalentoHumanoPage() {
       {error && <div className="error-box">{error}</div>}
       {success && <div className="success-box">{success}</div>}
 
-      <div className="kpi-grid four">
-        <article className="kpi-card"><strong>{kpis.total}</strong><span>Profesionales</span></article>
-        <article className="kpi-card"><strong>{kpis.activos}</strong><span>Activos</span></article>
-        <article className="kpi-card"><strong>{kpis.pendientes}</strong><span>Con pendientes</span></article>
-        <article className="kpi-card"><strong>{kpis.vencidos}</strong><span>Con vencidos</span></article>
+      <div className="kpi-grid five talent-kpis">
+        <article className="kpi-card compact success">
+          <div className="kpi-icon"><UserCheck size={18} /></div>
+          <strong>{kpis.activos}</strong>
+          <span>Profesionales activos</span>
+        </article>
+        <article className="kpi-card compact success">
+          <div className="kpi-icon"><CheckCircle2 size={18} /></div>
+          <strong>{kpis.vigentes}</strong>
+          <span>Documentos vigentes</span>
+        </article>
+        <article className="kpi-card compact warning">
+          <div className="kpi-icon"><Clock3 size={18} /></div>
+          <strong>{kpis.porVencerIncompletos}</strong>
+          <span>Por vencer / Incompletos</span>
+        </article>
+        <article className="kpi-card compact danger">
+          <div className="kpi-icon"><AlertTriangle size={18} /></div>
+          <strong>{kpis.vencidos}</strong>
+          <span>Documentos vencidos</span>
+        </article>
+        <article className="kpi-card compact muted">
+          <div className="kpi-icon"><FileText size={18} /></div>
+          <strong>{kpis.faltantes}</strong>
+          <span>Documentos faltantes</span>
+        </article>
       </div>
 
       <div className="subtabs">

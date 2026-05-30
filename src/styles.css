@@ -118,6 +118,47 @@ p { color: var(--muted); margin: 0; }
 .kpi-card { padding: 18px; }
 .kpi-card strong { display: block; color: var(--navy); font-size: 30px; line-height: 1; margin-bottom: 8px; }
 .kpi-card span { color: var(--muted); font-size: 13px; }
+.talent-kpis { gap: 12px; }
+.kpi-card.compact {
+  min-height: 100px;
+  padding: 14px 15px;
+  position: relative;
+  overflow: hidden;
+}
+.kpi-card.compact::after {
+  content: "";
+  position: absolute;
+  inset: auto -22px -34px auto;
+  width: 92px;
+  height: 92px;
+  border-radius: 999px;
+  background: currentColor;
+  opacity: .08;
+}
+.kpi-card.compact .kpi-icon {
+  width: 34px;
+  height: 34px;
+  border-radius: 999px;
+  display: grid;
+  place-items: center;
+  margin-bottom: 8px;
+  background: color-mix(in srgb, currentColor 12%, #fff);
+}
+.kpi-card.compact strong {
+  font-size: 27px;
+  margin-bottom: 4px;
+  color: currentColor;
+}
+.kpi-card.compact span {
+  color: #405973;
+  font-size: 12px;
+  font-weight: 800;
+  line-height: 1.2;
+}
+.kpi-card.success { color: #087f8c; border-color: #b7ebef; background: linear-gradient(180deg, #ffffff, #f0fdff); }
+.kpi-card.warning { color: #d97706; border-color: #fde68a; background: linear-gradient(180deg, #ffffff, #fffbeb); }
+.kpi-card.danger { color: #dc2626; border-color: #fecaca; background: linear-gradient(180deg, #ffffff, #fff1f2); }
+.kpi-card.muted { color: #64748b; border-color: #dbe6f0; background: linear-gradient(180deg, #ffffff, #f8fbfe); }
 
 .toolbar { display: flex; gap: 12px; flex-wrap: wrap; }
 .search-field {
