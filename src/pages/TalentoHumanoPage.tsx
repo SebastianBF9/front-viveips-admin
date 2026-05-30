@@ -19,6 +19,7 @@ import type {
   ServicioProfesionalAsignado,
 } from "../types";
 import { Loading } from "../ui/Loading";
+import { CapacitacionesTalentoSection } from "./CapacitacionesTalentoSection";
 
 const cursosPorCargo: Record<string, string[]> = {
   medico: ["seg_paciente", "atencion_violencia", "bls", "acls", "humanizacion"],
@@ -385,7 +386,7 @@ function generarPasswordTemporal() {
 
 export function TalentoHumanoPage() {
   const [profesionales, setProfesionales] = useState<ProfesionalAdmin[]>([]);
-  const [tab, setTab] = useState<"listado" | "crear">("listado");
+  const [tab, setTab] = useState<"listado" | "crear" | "capacitaciones">("listado");
   const [acceso, setAcceso] = useState<PermisosAcceso | null>(null);
   const [seleccionado, setSeleccionado] = useState<ProfesionalAdmin | null>(null);
   const [serviciosSeleccionado, setServiciosSeleccionado] = useState<ServicioProfesionalAsignado[]>([]);
@@ -451,6 +452,7 @@ export function TalentoHumanoPage() {
   }, []);
 
   const puedeCrearProfesionales = Boolean(acceso?.permiso_ver_todo || acceso?.permiso_crear_profesionales);
+  const puedeVerCapacitaciones = Boolean(acceso?.permiso_ver_todo || acceso?.permiso_ver_capacitaciones);
 
   const filtrados = useMemo(() => {
     const texto = normalizar(query);
@@ -694,6 +696,9 @@ export function TalentoHumanoPage() {
         {puedeCrearProfesionales && (
           <button className={tab === "crear" ? "active" : ""} type="button" onClick={() => setTab("crear")}>Crear usuario</button>
         )}
+        {puedeVerCapacitaciones && (
+          <button className={tab === "capacitaciones" ? "active" : ""} type="button" onClick={() => setTab("capacitaciones")}>Capacitaciones</button>
+        )}
       </div>
 
       {tab === "listado" && (
@@ -854,6 +859,8 @@ export function TalentoHumanoPage() {
           </div>
         </section>
       )}
+
+      {tab === "capacitaciones" && puedeVerCapacitaciones && <CapacitacionesTalentoSection />}
 
       {seleccionado && (
         <div className="modal-backdrop" onMouseDown={() => setSeleccionado(null)}>

@@ -1,5 +1,7 @@
 import type {
+  AdherenciaCapacitacionesResponse,
   CumplimientoServicio,
+  CapacitacionAdmin,
   ProfesionalServicioPayload,
   PermisosAcceso,
   RelacionPayload,
@@ -188,4 +190,24 @@ export async function obtenerServiciosProfesional(id: number) {
 
 export async function obtenerFormacionProfesional(id: number) {
   return apiCall<{ success: boolean; formaciones: any[] }>("GET", `/formacion/${id}`);
+}
+
+export async function listarCapacitacionesAdmin() {
+  return apiCall<{ success: boolean; capacitaciones: CapacitacionAdmin[] }>("GET", "/capacitaciones/admin/lista");
+}
+
+export async function obtenerAdherenciaCapacitaciones(params: {
+  estado?: string;
+  capacitacion_id?: number | string;
+  cargo?: string;
+  q?: string;
+} = {}) {
+  const query = new URLSearchParams();
+  Object.entries(params).forEach(([key, value]) => {
+    if (value !== undefined && value !== null && String(value).trim()) {
+      query.set(key, String(value));
+    }
+  });
+  const suffix = query.toString() ? `?${query.toString()}` : "";
+  return apiCall<AdherenciaCapacitacionesResponse>("GET", `/capacitaciones/admin/adherencia${suffix}`);
 }

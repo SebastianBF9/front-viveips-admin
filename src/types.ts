@@ -284,3 +284,47 @@ export type UsuarioPermisosPayload = Pick<
   | "permiso_ver_capacitaciones"
   | "permiso_tecnovigilancia"
 >;
+
+export interface CapacitacionAdmin {
+  id: number;
+  rama: string;
+  nombre: string;
+  descripcion: string | null;
+  vigencia_meses: number;
+  fecha_habilitacion: string | null;
+  fecha_vencimiento: string | null;
+  activo: number;
+  num_archivos: number;
+  num_preguntas: number;
+}
+
+export interface AdherenciaCapacitacion {
+  profesional_id: number;
+  profesional: string;
+  cedula: string | null;
+  cargo: string | null;
+  capacitacion_id: number;
+  capacitacion: string;
+  rama: string;
+  fecha_habilitacion: string | null;
+  fecha_vencimiento: string | null;
+  intento_id: number | null;
+  nota: number | null;
+  aprobado: number | null;
+  fecha_presentacion: string | null;
+  estado: "aprobado" | "no_aprobado" | "pendiente";
+  estado_label: string;
+}
+
+export interface AdherenciaCapacitacionesResponse {
+  success: boolean;
+  resumen: {
+    total: number;
+    aprobados: number;
+    no_aprobados: number;
+    pendientes: number;
+  };
+  adherencia: AdherenciaCapacitacion[];
+  capacitaciones: Array<{ id: number; nombre: string; rama: string }>;
+  cargos: string[];
+}
