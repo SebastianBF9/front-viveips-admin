@@ -21,7 +21,7 @@ export function LoginPage() {
       } else if (acceso.permiso_ver_profesionales || acceso.permiso_crear_profesionales) {
         navigate("/talento-humano", { replace: true });
       } else {
-        navigate("/", { replace: true });
+        navigate("/portal-profesional", { replace: true });
       }
     } catch (err) {
       setError(err instanceof Error ? err.message : "No fue posible iniciar sesión");

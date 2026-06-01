@@ -10,6 +10,9 @@ import type {
   ArchivoCapacitacionProfesional,
   ProfesionalServicioPayload,
   PermisosAcceso,
+  DocumentoPortalProfesional,
+  ProfesionalPerfil,
+  ProfesionalPerfilPayload,
   RelacionPayload,
   ServicioDetalle,
   ServicioIps,
@@ -198,6 +201,65 @@ export async function obtenerServiciosProfesional(id: number) {
 
 export async function obtenerFormacionProfesional(id: number) {
   return apiCall<{ success: boolean; formaciones: any[] }>("GET", `/formacion/${id}`);
+}
+
+export async function obtenerMiPerfilProfesional() {
+  return apiCall<{ success: boolean; perfil: ProfesionalPerfil }>("GET", "/profesionales/mi-perfil");
+}
+
+export async function actualizarMiPerfilProfesional(payload: ProfesionalPerfilPayload) {
+  return apiCall<{ success: boolean; mensaje: string }>("PUT", "/profesionales/mi-perfil", payload);
+}
+
+export async function listarMisDocumentosProfesional() {
+  return apiCall<{ success: boolean; documentos: DocumentoPortalProfesional[] }>("GET", "/documentos/mis-documentos");
+}
+
+export async function subirDocumentoProfesional(tipoDocumentoCodigo: string, archivo: File, fechaVencimiento?: string | null) {
+  const token = getToken();
+  const form = new FormData();
+  form.set("tipo_documento_codigo", tipoDocumentoCodigo);
+  if (fechaVencimiento) form.set("fecha_vencimiento", fechaVencimiento);
+  form.set("archivo", archivo);
+
+  const headers: Record<string, string> = {};
+  if (token) headers.Authorization = `Bearer ${token}`;
+
+  const response = await fetch(`${API_URL}/documentos/subir`, { method: "POST", headers, body: form });
+  let data: any = null;
+  try {
+    data = await response.json();
+  } catch {
+    data = null;
+  }
+  if (!response.ok) {
+    if (response.status === 401) clearSession();
+    const detail = data?.detail;
+    throw new Error(typeof detail === "string" ? detail : JSON.stringify(detail || data || "No fue posible subir el documento"));
+  }
+  return data as { success: boolean; mensaje: string; estado: string; nombre: string; ia_no_disponible?: boolean };
+}
+
+export async function actualizarFechaDocumento(documentoId: number, fechaVencimiento: string | null) {
+  return apiCall<{ success: boolean }>("PATCH", `/documentos/${documentoId}/fecha-vencimiento`, {
+    fecha_vencimiento: fechaVencimiento,
+  });
+}
+
+export async function subirFotoProfesional(archivo: File) {
+  const token = getToken();
+  const form = new FormData();
+  form.set("foto", archivo);
+  const headers: Record<string, string> = {};
+  if (token) headers.Authorization = `Bearer ${token}`;
+
+  const response = await fetch(`${API_URL}/profesionales/subir-foto`, { method: "POST", headers, body: form });
+  const data = await response.json().catch(() => null);
+  if (!response.ok) {
+    if (response.status === 401) clearSession();
+    throw new Error(data?.detail || data?.message || "No fue posible subir la foto");
+  }
+  return data as { success: boolean; mensaje?: string };
 }
 
 export async function listarCapacitacionesAdmin() {

@@ -228,6 +228,59 @@ export interface ProfesionalAdmin {
   servicios?: ServicioProfesionalAsignado[];
 }
 
+export interface ProfesionalPerfil {
+  id: number;
+  usuario_id: number;
+  nombre: string;
+  cedula: string | null;
+  email: string | null;
+  telefono: string | null;
+  especialidad: string | null;
+  ciudad: string | null;
+  direccion: string | null;
+  banco: string | null;
+  num_cuenta: string | null;
+  num_cuenta_mascara?: string | null;
+  titular_cuenta: string | null;
+  rh: string | null;
+  fecha_nacimiento: string | null;
+  expedicion_cedula: string | null;
+  departamento: string | null;
+  foto?: string | null;
+}
+
+export interface ProfesionalPerfilPayload {
+  nombre: string;
+  email: string;
+  telefono?: string | null;
+  especialidad?: string | null;
+  ciudad?: string | null;
+  direccion?: string | null;
+  banco?: string | null;
+  num_cuenta?: string | null;
+  titular_cuenta?: string | null;
+  rh?: string | null;
+  fecha_nacimiento?: string | null;
+  expedicion_cedula?: string | null;
+  departamento?: string | null;
+}
+
+export interface DocumentoPortalProfesional {
+  id: number | null;
+  profesional_id?: number | null;
+  tipo_documento_id: number;
+  tipo_codigo: string;
+  tipo_nombre: string;
+  nombre_archivo: string | null;
+  ruta_archivo?: string | null;
+  mime_type?: string | null;
+  fecha_vencimiento: string | null;
+  estado: "vigente" | "vencer" | "vencido" | "sin_cargar" | "sin_vencimiento" | string;
+  aprobado?: number | null;
+  tiene_vencimiento: number;
+  es_curso: number;
+}
+
 export interface ServicioProfesionalAsignado {
   id: number;
   profesional_id: number;
