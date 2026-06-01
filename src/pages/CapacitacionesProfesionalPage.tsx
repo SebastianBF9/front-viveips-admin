@@ -1,12 +1,15 @@
 import {
   Award,
   BookOpen,
+  CalendarCheck2,
+  CalendarClock,
   CheckCircle2,
   Download,
   FileText,
   GraduationCap,
   LogOut,
   RotateCcw,
+  Trophy,
   XCircle,
 } from "lucide-react";
 import { ChangeEvent, useEffect, useMemo, useState } from "react";
@@ -283,16 +286,14 @@ export function CapacitacionesProfesionalPage() {
                   <span className={`professional-training-badge ${estadoCurso(curso)}`}>{estadoLabel(curso)}</span>
                 </div>
                 <h2>{curso.nombre}</h2>
-                <p>{curso.descripcion || "Material de capacitacion disponible para consulta."}</p>
-                <dl>
-                  <div><dt>Nota</dt><dd>{curso.mi_nota !== null && curso.mi_nota !== undefined ? `${curso.mi_nota}` : "-"}</dd></div>
-                  <div><dt>Presentacion</dt><dd>{fechaCorta(curso.fecha_presentacion)}</dd></div>
-                  <div><dt>Habilitacion</dt><dd>{fechaCorta(curso.fecha_habilitacion)}</dd></div>
-                  <div><dt>Vencimiento</dt><dd>{fechaCorta(curso.fecha_vencimiento)}</dd></div>
-                </dl>
+                <div className="professional-training-meta">
+                  <span><CalendarClock size={15} /> Plazo: {fechaCorta(curso.fecha_vencimiento || curso.fecha_habilitacion)}</span>
+                  {curso.fecha_presentacion && <span><CalendarCheck2 size={15} /> Presentado: {fechaCorta(curso.fecha_presentacion)}</span>}
+                  {curso.mi_nota !== null && curso.mi_nota !== undefined && <span><Trophy size={15} /> Nota: {curso.mi_nota}%</span>}
+                </div>
                 <div className="professional-training-actions">
                   <button className="btn-cap btn-material" type="button" disabled={!curso.num_archivos} onClick={() => abrirMateriales(curso)}>
-                    <BookOpen size={16} /> Material
+                    <BookOpen size={16} /> Material ({curso.num_archivos || 0})
                   </button>
                   <button className="btn-cap btn-examen" type="button" disabled={!puedePresentar(curso)} onClick={() => abrirExamen(curso)}>
                     {curso.mi_nota !== null && curso.mi_nota !== undefined ? <RotateCcw size={16} /> : <FileText size={16} />}
