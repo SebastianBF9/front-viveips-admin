@@ -253,6 +253,31 @@ export async function subirDocumentoProfesional(tipoDocumentoCodigo: string, arc
   return data as { success: boolean; mensaje: string; estado: string; nombre: string; documento_id?: number; ia_no_disponible?: boolean };
 }
 
+export async function obtenerEstadoContratoProfesional() {
+  return apiCall<{
+    success: boolean;
+    contrato: { estado: string; nombre_archivo?: string | null; fecha_generacion?: string | null } | null;
+  }>("GET", "/contratos/estado-profesional");
+}
+
+export async function subirFirmaContratoProfesional(profesionalId: number, archivo: File, textoAceptacion: string) {
+  const token = getToken();
+  const form = new FormData();
+  form.set("archivo", archivo);
+  form.set("firma_aceptacion_texto", textoAceptacion);
+
+  const headers: Record<string, string> = {};
+  if (token) headers.Authorization = `Bearer ${token}`;
+
+  const response = await fetch(`${API_URL}/contratos/subir-firma/${profesionalId}`, { method: "POST", headers, body: form });
+  const data = await response.json().catch(() => null);
+  if (!response.ok || !data?.success) {
+    if (response.status === 401) clearSession();
+    throw new Error(typeof data?.detail === "string" ? data.detail : "No fue posible firmar el contrato");
+  }
+  return data as { success: boolean; hash_documento?: string | null; email_enviado?: boolean; email_error?: string | null };
+}
+
 export async function actualizarFechaDocumento(documentoId: number, fechaVencimiento: string | null) {
   return apiCall<{ success: boolean }>("PATCH", `/documentos/${documentoId}/fecha-vencimiento`, {
     fecha_vencimiento: fechaVencimiento,

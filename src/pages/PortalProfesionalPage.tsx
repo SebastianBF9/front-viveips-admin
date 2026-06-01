@@ -4,11 +4,14 @@ import {
   BriefcaseBusiness,
   Camera,
   Download,
+  Eraser,
   ExternalLink,
   FileCheck2,
+  FileText,
   GraduationCap,
   IdCard,
   LogOut,
+  PenLine,
   Plus,
   Save,
   Syringe,
@@ -18,7 +21,7 @@ import {
   UsersRound,
   XCircle,
 } from "lucide-react";
-import { ChangeEvent, ReactNode, useEffect, useMemo, useState } from "react";
+import { ChangeEvent, PointerEvent, ReactNode, useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   actualizarFechaDocumento,
@@ -38,7 +41,9 @@ import {
   listarMisVacunas,
   listarMisDocumentosProfesional,
   listarMunicipios,
+  obtenerEstadoContratoProfesional,
   obtenerMiPerfilProfesional,
+  subirFirmaContratoProfesional,
   subirDocumentoProfesional,
   subirFotoProfesional,
 } from "../api";
@@ -79,6 +84,14 @@ type UploadFeedback = {
 type IaRejectionModal = {
   message: string;
 };
+
+type ContratoProfesional = {
+  estado: string;
+  nombre_archivo?: string | null;
+  fecha_generacion?: string | null;
+} | null;
+
+const ACEPTACION_CONTRATO = "Declaro que he leido el contrato, entiendo su contenido y acepto firmarlo electronicamente. Reconozco que esta firma electronica corresponde a mi voluntad de aceptacion del documento.";
 
 const TODOS_LOS_CURSOS = [
   { id: "seg_paciente", nombre: "Seguridad del Paciente", vigencia: 12 },
@@ -178,6 +191,86 @@ function limpiarMensajeIa(message: string) {
   return message.replace(/^validaci\S*\s+ia:\s*/i, "").trim() || "El documento no corresponde al soporte solicitado.";
 }
 
+function dataUrlABytes(dataUrl: string) {
+  const base64 = dataUrl.split(",")[1] || "";
+  const binary = atob(base64);
+  const bytes = new Uint8Array(binary.length);
+  for (let i = 0; i < binary.length; i += 1) bytes[i] = binary.charCodeAt(i);
+  return bytes;
+}
+
+function imagenDimensiones(dataUrl: string) {
+  return new Promise<{ width: number; height: number }>((resolve, reject) => {
+    const img = new Image();
+    img.onload = () => resolve({ width: img.naturalWidth || 1280, height: img.naturalHeight || 720 });
+    img.onerror = () => reject(new Error("No fue posible preparar la foto de la cedula"));
+    img.src = dataUrl;
+  });
+}
+
+async function fotosCedulaAPdf(fotos: string[]) {
+  const pageW = 595;
+  const pageH = 842;
+  const margin = 36;
+  const gap = 24;
+  const areaH = fotos.length > 1 ? (pageH - margin * 2 - gap) / 2 : pageH - margin * 2;
+  const images = await Promise.all(fotos.map(async (dataUrl, index) => {
+    const bytes = dataUrlABytes(dataUrl);
+    const dims = await imagenDimensiones(dataUrl);
+    const maxW = pageW - margin * 2;
+    const scale = Math.min(maxW / dims.width, areaH / dims.height);
+    const w = dims.width * scale;
+    const h = dims.height * scale;
+    const x = (pageW - w) / 2;
+    const yTop = margin + index * (areaH + gap) + (areaH - h) / 2;
+    return { bytes, dims, x, y: pageH - yTop - h, w, h };
+  }));
+
+  const chunks: Array<string | Uint8Array> = ["%PDF-1.4\n"];
+  const offsets: number[] = [];
+  let length = chunks[0].length;
+  const push = (chunk: string | Uint8Array) => {
+    chunks.push(chunk);
+    length += typeof chunk === "string" ? chunk.length : chunk.length;
+  };
+  const obj = (id: number, body: Array<string | Uint8Array>) => {
+    offsets[id] = length;
+    push(`${id} 0 obj\n`);
+    body.forEach(push);
+    push("\nendobj\n");
+  };
+
+  const imageObjectIds = images.map((_, index) => 4 + index);
+  const contentId = 4 + images.length;
+  obj(1, ["<< /Type /Catalog /Pages 2 0 R >>"]);
+  obj(2, ["<< /Type /Pages /Kids [3 0 R] /Count 1 >>"]);
+  obj(3, [`<< /Type /Page /Parent 2 0 R /MediaBox [0 0 ${pageW} ${pageH}] /Resources << /XObject << ${imageObjectIds.map((id, index) => `/Im${index + 1} ${id} 0 R`).join(" ")} >> >> /Contents ${contentId} 0 R >>`]);
+
+  images.forEach((image, index) => {
+    obj(imageObjectIds[index], [
+      `<< /Type /XObject /Subtype /Image /Width ${image.dims.width} /Height ${image.dims.height} /ColorSpace /DeviceRGB /BitsPerComponent 8 /Filter /DCTDecode /Length ${image.bytes.length} >>\nstream\n`,
+      image.bytes,
+      "\nendstream",
+    ]);
+  });
+
+  const content = images.map((image, index) => `q\n${image.w.toFixed(2)} 0 0 ${image.h.toFixed(2)} ${image.x.toFixed(2)} ${image.y.toFixed(2)} cm\n/Im${index + 1} Do\nQ`).join("\n");
+  obj(contentId, [`<< /Length ${content.length} >>\nstream\n${content}\nendstream`]);
+
+  const xref = length;
+  push(`xref\n0 ${contentId + 1}\n0000000000 65535 f \n`);
+  for (let i = 1; i <= contentId; i += 1) {
+    push(`${String(offsets[i]).padStart(10, "0")} 00000 n \n`);
+  }
+  push(`trailer\n<< /Root 1 0 R /Size ${contentId + 1} >>\nstartxref\n${xref}\n%%EOF`);
+
+  return new File(chunks, "cedula_camara.pdf", { type: "application/pdf" });
+}
+
+function dataUrlAArchivo(dataUrl: string, nombre: string) {
+  return new File([dataUrlABytes(dataUrl)], nombre, { type: "image/png" });
+}
+
 export function PortalProfesionalPage() {
   const navigate = useNavigate();
   const [perfil, setPerfil] = useState<ProfesionalPerfil | null>(null);
@@ -199,6 +292,19 @@ export function PortalProfesionalPage() {
   const [aceptandoTratamiento, setAceptandoTratamiento] = useState(false);
   const [uploadFeedback, setUploadFeedback] = useState<Record<string, UploadFeedback>>({});
   const [iaRejectionModal, setIaRejectionModal] = useState<IaRejectionModal | null>(null);
+  const [contrato, setContrato] = useState<ContratoProfesional>(null);
+  const [signatureOpen, setSignatureOpen] = useState(false);
+  const [signatureAccepted, setSignatureAccepted] = useState(false);
+  const [signatureHasStroke, setSignatureHasStroke] = useState(false);
+  const [cameraOpen, setCameraOpen] = useState(false);
+  const [cameraStep, setCameraStep] = useState<"front" | "back" | "confirm">("front");
+  const [cameraFront, setCameraFront] = useState("");
+  const [cameraBack, setCameraBack] = useState("");
+  const [cameraError, setCameraError] = useState("");
+  const videoRef = useRef<HTMLVideoElement | null>(null);
+  const cameraStreamRef = useRef<MediaStream | null>(null);
+  const signatureCanvasRef = useRef<HTMLCanvasElement | null>(null);
+  const signatureDrawingRef = useRef(false);
 
   const docsPorCodigo = useMemo(() => {
     return new Map(documentos.map((doc) => [doc.tipo_codigo, doc]));
@@ -231,6 +337,9 @@ export function PortalProfesionalPage() {
         listarMisVacunas(),
         listarMisFormaciones(),
       ]);
+      obtenerEstadoContratoProfesional()
+        .then((data) => setContrato(data.contrato))
+        .catch(() => setContrato(null));
       const p = perfilData.perfil;
       const departamentoActual = p.departamento || "";
       const tratamientoAceptado = Boolean(p.acepta_tratamiento_datos);
@@ -280,8 +389,215 @@ export function PortalProfesionalPage() {
     cargar();
   }, []);
 
+  useEffect(() => {
+    if (!cameraOpen) return;
+    let cancelled = false;
+    async function start() {
+      setCameraError("");
+      try {
+        const stream = await navigator.mediaDevices.getUserMedia({
+          video: { facingMode: "environment", width: { ideal: 1280 }, height: { ideal: 720 } },
+        });
+        if (cancelled) {
+          stream.getTracks().forEach((track) => track.stop());
+          return;
+        }
+        cameraStreamRef.current = stream;
+        if (videoRef.current) {
+          videoRef.current.srcObject = stream;
+          await videoRef.current.play().catch(() => undefined);
+        }
+      } catch {
+        setCameraError("No se pudo acceder a la camara. Verifica los permisos del navegador.");
+      }
+    }
+    start();
+    return () => {
+      cancelled = true;
+      cameraStreamRef.current?.getTracks().forEach((track) => track.stop());
+      cameraStreamRef.current = null;
+    };
+  }, [cameraOpen, cameraStep]);
+
+  useEffect(() => {
+    if (!signatureOpen) return;
+    const canvas = signatureCanvasRef.current;
+    if (!canvas) return;
+    const rect = canvas.getBoundingClientRect();
+    const ratio = window.devicePixelRatio || 1;
+    canvas.width = Math.max(1, Math.floor(rect.width * ratio));
+    canvas.height = Math.max(1, Math.floor(rect.height * ratio));
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return;
+    ctx.setTransform(ratio, 0, 0, ratio, 0, 0);
+    ctx.lineCap = "round";
+    ctx.lineJoin = "round";
+    ctx.lineWidth = 2.6;
+    ctx.strokeStyle = "#111827";
+    ctx.fillStyle = "#ffffff";
+    ctx.fillRect(0, 0, rect.width, rect.height);
+    setSignatureHasStroke(false);
+  }, [signatureOpen]);
+
   function actualizar(campo: keyof ProfesionalPerfilPayload, valor: string) {
     setForm((actual) => ({ ...actual, [campo]: valor }));
+  }
+
+  function abrirCamaraCedula() {
+    setCameraFront("");
+    setCameraBack("");
+    setCameraStep("front");
+    setCameraError("");
+    setCameraOpen(true);
+  }
+
+  function capturarFotoCedula() {
+    const video = videoRef.current;
+    if (!video) return;
+    const width = video.videoWidth || video.clientWidth || 1280;
+    const height = video.videoHeight || video.clientHeight || 720;
+    const canvas = document.createElement("canvas");
+    canvas.width = width;
+    canvas.height = height;
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return;
+    ctx.drawImage(video, 0, 0, width, height);
+    const dataUrl = canvas.toDataURL("image/jpeg", 0.92);
+    if (dataUrl.length < 5000) {
+      setCameraError("No se pudo capturar la imagen. Asegurate de que la camara este activa e intenta de nuevo.");
+      return;
+    }
+    if (cameraStep === "front") {
+      setCameraFront(dataUrl);
+      setCameraStep("back");
+    } else {
+      setCameraBack(dataUrl);
+      setCameraStep("confirm");
+    }
+  }
+
+  async function subirCedulaCamara() {
+    if (!cameraFront) {
+      setCameraError("Debes capturar al menos la cara frontal.");
+      return;
+    }
+    setUploading("cedula-camera");
+    setCameraError("");
+    setUploadFeedback((actual) => ({
+      ...actual,
+      cedula: { status: "validating", message: "Validando con IA..." },
+    }));
+    try {
+      const archivo = await fotosCedulaAPdf([cameraFront, cameraBack].filter(Boolean));
+      const data = await subirDocumentoProfesional("cedula", archivo, null);
+      setUploadFeedback((actual) => ({
+        ...actual,
+        cedula: {
+          status: "success",
+          message: data.ia_no_disponible ? "IA no disponible; queda pendiente de revision." : "Cedula validada con IA correctamente.",
+        },
+      }));
+      setSuccess(data.ia_no_disponible ? "Cedula cargada; validacion IA no disponible." : "Cedula cargada y validada con IA correctamente.");
+      setCameraOpen(false);
+      await cargar();
+    } catch (err) {
+      const message = err instanceof Error ? err.message : "No fue posible subir la cedula capturada";
+      setCameraError(message);
+      setUploadFeedback((actual) => ({
+        ...actual,
+        cedula: { status: "error", message },
+      }));
+      if (mensajeIa(message)) {
+        setIaRejectionModal({ message: limpiarMensajeIa(message) });
+      }
+      manejarErrorDocumento(err, "No fue posible subir la cedula capturada");
+    } finally {
+      setUploading("");
+    }
+  }
+
+  async function descargarContratoProfesional() {
+    try {
+      await downloadBlob("/contratos/descargar-profesional", contrato?.nombre_archivo || "mi_contrato.docx");
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "No fue posible descargar el contrato");
+    }
+  }
+
+  function puntoFirma(event: PointerEvent<HTMLCanvasElement>) {
+    const canvas = signatureCanvasRef.current;
+    if (!canvas) return { x: 0, y: 0 };
+    const rect = canvas.getBoundingClientRect();
+    return { x: event.clientX - rect.left, y: event.clientY - rect.top };
+  }
+
+  function iniciarFirma(event: PointerEvent<HTMLCanvasElement>) {
+    const ctx = signatureCanvasRef.current?.getContext("2d");
+    if (!ctx) return;
+    event.currentTarget.setPointerCapture(event.pointerId);
+    signatureDrawingRef.current = true;
+    setSignatureHasStroke(true);
+    const punto = puntoFirma(event);
+    ctx.beginPath();
+    ctx.moveTo(punto.x, punto.y);
+  }
+
+  function dibujarFirma(event: PointerEvent<HTMLCanvasElement>) {
+    if (!signatureDrawingRef.current) return;
+    const ctx = signatureCanvasRef.current?.getContext("2d");
+    if (!ctx) return;
+    const punto = puntoFirma(event);
+    ctx.lineTo(punto.x, punto.y);
+    ctx.stroke();
+  }
+
+  function terminarFirma(event: PointerEvent<HTMLCanvasElement>) {
+    signatureDrawingRef.current = false;
+    if (event.currentTarget.hasPointerCapture(event.pointerId)) {
+      event.currentTarget.releasePointerCapture(event.pointerId);
+    }
+  }
+
+  function limpiarFirma() {
+    const canvas = signatureCanvasRef.current;
+    const ctx = canvas?.getContext("2d");
+    if (!canvas || !ctx) return;
+    const rect = canvas.getBoundingClientRect();
+    ctx.clearRect(0, 0, rect.width, rect.height);
+    ctx.fillStyle = "#ffffff";
+    ctx.fillRect(0, 0, rect.width, rect.height);
+    setSignatureHasStroke(false);
+  }
+
+  async function guardarFirmaContrato() {
+    if (!perfil?.id) {
+      setError("No se encontro el perfil profesional para firmar el contrato.");
+      return;
+    }
+    if (!signatureAccepted) {
+      setError("Debes aceptar la firma electronica del contrato.");
+      return;
+    }
+    if (!signatureHasStroke || !signatureCanvasRef.current) {
+      setError("Dibuja tu firma antes de guardar.");
+      return;
+    }
+    setUploading("firma-contrato");
+    setError("");
+    setSuccess("");
+    try {
+      const archivo = dataUrlAArchivo(signatureCanvasRef.current.toDataURL("image/png"), "firma_contrato.png");
+      await subirFirmaContratoProfesional(perfil.id, archivo, ACEPTACION_CONTRATO);
+      setSuccess("Contrato firmado correctamente.");
+      setSignatureOpen(false);
+      setSignatureAccepted(false);
+      const estado = await obtenerEstadoContratoProfesional();
+      setContrato(estado.contrato);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "No fue posible firmar el contrato");
+    } finally {
+      setUploading("");
+    }
   }
 
   async function cambiarDepartamento(codigo: string) {
@@ -579,6 +895,20 @@ export function PortalProfesionalPage() {
             <button type="button" onClick={() => setShowTratamientoModal(true)}>Aceptar ahora</button>
           </div>
         )}
+        {contrato?.estado === "pendiente_firma" && (
+          <div className="portal-contract-warning">
+            <div>
+              <strong>Tienes un contrato pendiente de firma</strong>
+              <span>Descarga el contrato, leelo y luego firma electronicamente para completar el proceso.</span>
+            </div>
+            <button className="secondary-btn" type="button" onClick={descargarContratoProfesional}>
+              <Download size={16} /> Descargar contrato
+            </button>
+            <button className="primary-btn" type="button" onClick={() => setSignatureOpen(true)}>
+              <PenLine size={16} /> Firmar contrato
+            </button>
+          </div>
+        )}
 
         <section className="professional-welcome">
           <div>
@@ -669,7 +999,7 @@ export function PortalProfesionalPage() {
           <button className="brand-action-btn small-brand-btn" type="button" onClick={() => setReferencias((actual) => [...actual, { ...REFERENCIA_VACIA }])}><Plus size={17} /> Agregar referencia</button>
         </section>
 
-        <DocumentSection title="Documentos Personales" icon={<IdCard size={22} />} codes={DOCUMENTOS_PERSONALES} docs={docsPorCodigo} uploading={uploading} feedback={uploadFeedback} onUpload={subirDocumento} onDownload={descargarDocumento} />
+        <DocumentSection title="Documentos Personales" icon={<IdCard size={22} />} codes={DOCUMENTOS_PERSONALES} docs={docsPorCodigo} uploading={uploading} feedback={uploadFeedback} onUpload={subirDocumento} onDownload={descargarDocumento} onOpenCamera={abrirCamaraCedula} />
         <DocumentSection title="Documentos Académicos" icon={<GraduationCap size={22} />} codes={DOCUMENTOS_ACADEMICOS} docs={docsPorCodigo} uploading={uploading} feedback={uploadFeedback} onUpload={subirDocumento} onDownload={descargarDocumento} onOpenRethus={abrirRethus} />
 
         <FormacionSection formaciones={formaciones} uploading={uploading} onSave={guardarFormacion} onDelete={eliminarFormacion} />
@@ -779,6 +1109,36 @@ export function PortalProfesionalPage() {
           onClose={() => setIaRejectionModal(null)}
         />
       )}
+      {cameraOpen && (
+        <CedulaCameraModal
+          step={cameraStep}
+          front={cameraFront}
+          back={cameraBack}
+          error={cameraError}
+          uploading={uploading === "cedula-camera"}
+          videoRef={videoRef}
+          onClose={() => setCameraOpen(false)}
+          onCapture={capturarFotoCedula}
+          onSkipBack={() => setCameraStep("confirm")}
+          onRetakeFront={() => { setCameraFront(""); setCameraBack(""); setCameraStep("front"); }}
+          onRetakeBack={() => { setCameraBack(""); setCameraStep("back"); }}
+          onUpload={subirCedulaCamara}
+        />
+      )}
+      {signatureOpen && (
+        <ContractSignatureModal
+          accepted={signatureAccepted}
+          saving={uploading === "firma-contrato"}
+          canvasRef={signatureCanvasRef}
+          onAcceptedChange={setSignatureAccepted}
+          onClose={() => setSignatureOpen(false)}
+          onSave={guardarFirmaContrato}
+          onClear={limpiarFirma}
+          onPointerDown={iniciarFirma}
+          onPointerMove={dibujarFirma}
+          onPointerUp={terminarFirma}
+        />
+      )}
     </main>
   );
 }
@@ -800,6 +1160,129 @@ function IaRejectionDialog({ message, onClose }: {
         <button className="portal-ia-action" type="button" onClick={onClose}>
           Entendido, volver a intentar
         </button>
+      </div>
+    </div>
+  );
+}
+
+function CedulaCameraModal({ step, front, back, error, uploading, videoRef, onClose, onCapture, onSkipBack, onRetakeFront, onRetakeBack, onUpload }: {
+  step: "front" | "back" | "confirm";
+  front: string;
+  back: string;
+  error: string;
+  uploading: boolean;
+  videoRef: { current: HTMLVideoElement | null };
+  onClose: () => void;
+  onCapture: () => void;
+  onSkipBack: () => void;
+  onRetakeFront: () => void;
+  onRetakeBack: () => void;
+  onUpload: () => void;
+}) {
+  return (
+    <div className="portal-camera-modal" role="dialog" aria-modal="true" aria-labelledby="cedula-camera-title">
+      <div className="portal-camera-card">
+        <div className="portal-camera-header">
+          <div>
+            <h2 id="cedula-camera-title"><Camera size={22} /> Capturar Cedula</h2>
+            <p>{step === "front" ? "Coloca la parte frontal de tu cedula frente a la camara." : step === "back" ? "Captura la cara trasera si aplica, o continua solo con la frontal." : "Verifica las fotos y sube la cedula para validacion IA."}</p>
+          </div>
+          <button type="button" onClick={onClose}>x</button>
+        </div>
+        <div className="portal-camera-steps">
+          <span className={step === "front" ? "active" : front ? "done" : ""}>1 Frontal</span>
+          <span className={step === "back" ? "active" : back ? "done" : ""}>2 Trasera</span>
+          <span className={step === "confirm" ? "active" : ""}>3 Confirmar</span>
+        </div>
+        {step !== "confirm" ? (
+          <div className="portal-camera-view">
+            <video ref={videoRef} autoPlay playsInline muted />
+            <div className="portal-camera-guide" />
+          </div>
+        ) : (
+          <div className="portal-camera-preview">
+            <div>
+              <span>Cara frontal</span>
+              {front && <img src={front} alt="Cedula frontal" />}
+            </div>
+            {back && (
+              <div>
+                <span>Cara trasera</span>
+                <img src={back} alt="Cedula trasera" />
+              </div>
+            )}
+          </div>
+        )}
+        {error && <div className="portal-camera-error">{error}</div>}
+        <div className="portal-camera-actions">
+          {step === "front" && <button className="primary-btn" type="button" onClick={onCapture}><Camera size={16} /> Capturar cara frontal</button>}
+          {step === "back" && (
+            <>
+              <button className="primary-btn" type="button" onClick={onCapture}><Camera size={16} /> Capturar cara trasera</button>
+              <button className="secondary-btn" type="button" onClick={onSkipBack}>Solo tiene cara frontal</button>
+              <button className="secondary-btn" type="button" onClick={onRetakeFront}>Repetir frontal</button>
+            </>
+          )}
+          {step === "confirm" && (
+            <>
+              <button className="secondary-btn" type="button" onClick={onRetakeFront}>Repetir frontal</button>
+              {back && <button className="secondary-btn" type="button" onClick={onRetakeBack}>Repetir trasera</button>}
+              <button className="primary-btn" type="button" disabled={uploading} onClick={onUpload}>
+                {uploading ? "Subiendo..." : "Subir cedula"}
+              </button>
+            </>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function ContractSignatureModal({ accepted, saving, canvasRef, onAcceptedChange, onClose, onSave, onClear, onPointerDown, onPointerMove, onPointerUp }: {
+  accepted: boolean;
+  saving: boolean;
+  canvasRef: { current: HTMLCanvasElement | null };
+  onAcceptedChange: (accepted: boolean) => void;
+  onClose: () => void;
+  onSave: () => void;
+  onClear: () => void;
+  onPointerDown: (event: PointerEvent<HTMLCanvasElement>) => void;
+  onPointerMove: (event: PointerEvent<HTMLCanvasElement>) => void;
+  onPointerUp: (event: PointerEvent<HTMLCanvasElement>) => void;
+}) {
+  return (
+    <div className="portal-signature-modal" role="dialog" aria-modal="true" aria-labelledby="contract-signature-title">
+      <div className="portal-signature-card">
+        <div className="portal-signature-header">
+          <div>
+            <h2 id="contract-signature-title"><PenLine size={22} /> Firma electronica del contrato</h2>
+            <p>Lee el contrato, acepta y firma dentro del recuadro.</p>
+          </div>
+          <button type="button" onClick={onClose}>x</button>
+        </div>
+        <label className="portal-signature-acceptance">
+          <input type="checkbox" checked={accepted} onChange={(event) => onAcceptedChange(event.target.checked)} />
+          <span>{ACEPTACION_CONTRATO}</span>
+        </label>
+        <div className="portal-signature-pad">
+          <strong>Dibuja tu firma en el recuadro</strong>
+          <span>Puedes firmar con el dedo en celular o con el mouse en computador.</span>
+          <canvas
+            ref={canvasRef}
+            onPointerDown={onPointerDown}
+            onPointerMove={onPointerMove}
+            onPointerUp={onPointerUp}
+            onPointerCancel={onPointerUp}
+            onPointerLeave={onPointerUp}
+          />
+        </div>
+        <div className="portal-signature-actions">
+          <button className="secondary-btn" type="button" onClick={onClear}><Eraser size={16} /> Limpiar</button>
+          <div>
+            <button className="secondary-btn" type="button" onClick={onClose}>Cancelar</button>
+            <button className="primary-btn" type="button" disabled={saving} onClick={onSave}>{saving ? "Guardando..." : "Firmar contrato"}</button>
+          </div>
+        </div>
       </div>
     </div>
   );
@@ -1024,7 +1507,7 @@ function FormacionSection({ formaciones, uploading, onSave, onDelete }: {
   );
 }
 
-function DocumentSection({ title, icon, codes, docs, uploading, feedback, onUpload, onDownload, onOpenRethus }: {
+function DocumentSection({ title, icon, codes, docs, uploading, feedback, onUpload, onDownload, onOpenRethus, onOpenCamera }: {
   title: string;
   icon: ReactNode;
   codes: string[];
@@ -1034,20 +1517,21 @@ function DocumentSection({ title, icon, codes, docs, uploading, feedback, onUplo
   onUpload: (codigo: string, event: ChangeEvent<HTMLInputElement>) => void;
   onDownload: (doc: DocumentoPortalProfesional) => void;
   onOpenRethus?: () => void;
+  onOpenCamera?: () => void;
 }) {
   return (
     <section className="portal-section-card">
       <SectionTitle icon={icon} title={title} subtitle="Carga, reemplaza o consulta tus soportes actuales." />
       <div className="portal-doc-grid">
         {codes.map((codigo) => (
-          <DocumentCard key={codigo} codigo={codigo} doc={docs.get(codigo)} uploading={uploading} feedback={feedback[codigo]} onUpload={onUpload} onDownload={onDownload} onOpenRethus={onOpenRethus} />
+          <DocumentCard key={codigo} codigo={codigo} doc={docs.get(codigo)} uploading={uploading} feedback={feedback[codigo]} onUpload={onUpload} onDownload={onDownload} onOpenRethus={onOpenRethus} onOpenCamera={onOpenCamera} />
         ))}
       </div>
     </section>
   );
 }
 
-function DocumentCard({ codigo, doc, uploading, feedback, onUpload, onDownload, onOpenRethus }: {
+function DocumentCard({ codigo, doc, uploading, feedback, onUpload, onDownload, onOpenRethus, onOpenCamera }: {
   codigo: string;
   doc?: DocumentoPortalProfesional;
   uploading: string;
@@ -1055,11 +1539,13 @@ function DocumentCard({ codigo, doc, uploading, feedback, onUpload, onDownload, 
   onUpload: (codigo: string, event: ChangeEvent<HTMLInputElement>) => void;
   onDownload: (doc: DocumentoPortalProfesional) => void;
   onOpenRethus?: () => void;
+  onOpenCamera?: () => void;
 }) {
   const inputId = `doc-${codigo}`;
   const cargado = Boolean(doc?.id);
   const isValidating = uploading === codigo || feedback?.status === "validating";
   const esRethus = codigo === "rethus";
+  const esCedula = codigo === "cedula";
   return (
     <article className={`portal-doc-card state-${doc?.estado || "sin_cargar"} ${feedback ? `upload-${feedback.status}` : ""}`}>
       <div className="portal-doc-head">
@@ -1074,6 +1560,11 @@ function DocumentCard({ codigo, doc, uploading, feedback, onUpload, onDownload, 
       <input id={inputId} type="file" accept=".pdf,.jpg,.jpeg,.png" hidden onChange={(event) => onUpload(codigo, event)} />
       {feedback && feedback.status !== "validating" && (
         <div className={`portal-upload-feedback ${feedback.status}`}>{feedback.message}</div>
+      )}
+      {esCedula && onOpenCamera && (
+        <button className="portal-camera-btn" type="button" onClick={onOpenCamera}>
+          <Camera size={15} /> Capturar con camara
+        </button>
       )}
       {esRethus && onOpenRethus && (
         <button className="portal-rethus-btn" type="button" onClick={onOpenRethus}>
