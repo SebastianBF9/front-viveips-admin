@@ -7,9 +7,13 @@ import {
   GraduationCap,
   IdCard,
   LogOut,
+  Plus,
   Save,
+  Syringe,
+  Trash2,
   Upload,
   UserRound,
+  UsersRound,
 } from "lucide-react";
 import { ChangeEvent, ReactNode, useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
@@ -18,12 +22,33 @@ import {
   actualizarMiPerfilProfesional,
   clearSession,
   downloadBlob,
+  eliminarFormacionPortal,
+  guardarFormacionPortal,
+  guardarMisExperiencias,
+  guardarMisReferencias,
+  guardarMisVacunas,
+  listarDepartamentos,
+  listarMisExperiencias,
+  listarMisFormaciones,
+  listarMisReferencias,
+  listarMisVacunas,
   listarMisDocumentosProfesional,
+  listarMunicipios,
   obtenerMiPerfilProfesional,
   subirDocumentoProfesional,
   subirFotoProfesional,
 } from "../api";
-import type { DocumentoPortalProfesional, ProfesionalPerfil, ProfesionalPerfilPayload } from "../types";
+import type {
+  DocumentoPortalProfesional,
+  ExperienciaLaboral,
+  FormacionPortal,
+  ProfesionalPerfil,
+  ProfesionalPerfilPayload,
+  ReferenciaPersonal,
+  UbicacionDepartamento,
+  UbicacionMunicipio,
+  VacunaProfesional,
+} from "../types";
 import { Loading } from "../ui/Loading";
 
 const API_URL = import.meta.env.VITE_API_URL || "https://api-pruebas.viveips.com.co";
@@ -31,6 +56,16 @@ const API_URL = import.meta.env.VITE_API_URL || "https://api-pruebas.viveips.com
 const DOCUMENTOS_PERSONALES = ["cedula", "hoja_vida", "rut", "cert_bancaria"];
 const DOCUMENTOS_ACADEMICOS = ["tarjeta_prof", "rethus"];
 const ANTECEDENTES = ["ant_procuraduria", "ant_contraloria", "ant_policia", "ant_correctivas"];
+const REFERENCIA_VACIA: ReferenciaPersonal = { nombre: "", relacion: "", telefono: "", email: "", ocupacion: "" };
+const EXPERIENCIA_VACIA: ExperienciaLaboral = { empresa: "", cargo: "", fecha_inicio: "", fecha_fin: "", actualmente: false, documento_id: null, nombre_archivo: null };
+const LISTA_VACUNAS = [
+  { id: "vac_hepatitis", nombre: "Hepatitis B (esquema completo)" },
+  { id: "vac_tetano", nombre: "Tetanos / Td o Tdap" },
+  { id: "vac_influenza", nombre: "Influenza (anual)" },
+  { id: "vac_triple_viral", nombre: "Triple viral - SRP" },
+  { id: "vac_varicela", nombre: "Varicela" },
+  { id: "vac_covid", nombre: "COVID-19" },
+];
 
 const TODOS_LOS_CURSOS = [
   { id: "seg_paciente", nombre: "Seguridad del Paciente", vigencia: 12 },
@@ -132,6 +167,12 @@ export function PortalProfesionalPage() {
   const [uploading, setUploading] = useState("");
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
+  const [departamentos, setDepartamentos] = useState<UbicacionDepartamento[]>([]);
+  const [municipios, setMunicipios] = useState<UbicacionMunicipio[]>([]);
+  const [referencias, setReferencias] = useState<ReferenciaPersonal[]>([]);
+  const [experiencias, setExperiencias] = useState<ExperienciaLaboral[]>([]);
+  const [vacunas, setVacunas] = useState<Record<string, string>>({});
+  const [formaciones, setFormaciones] = useState<FormacionPortal[]>([]);
 
   const docsPorCodigo = useMemo(() => {
     return new Map(documentos.map((doc) => [doc.tipo_codigo, doc]));
@@ -155,9 +196,19 @@ export function PortalProfesionalPage() {
     setLoading(true);
     setError("");
     try {
-      const [perfilData, docsData] = await Promise.all([obtenerMiPerfilProfesional(), listarMisDocumentosProfesional()]);
+      const [perfilData, docsData, deptData, refsData, expData, vacData, formData] = await Promise.all([
+        obtenerMiPerfilProfesional(),
+        listarMisDocumentosProfesional(),
+        listarDepartamentos(),
+        listarMisReferencias(),
+        listarMisExperiencias(),
+        listarMisVacunas(),
+        listarMisFormaciones(),
+      ]);
       const p = perfilData.perfil;
+      const departamentoActual = p.departamento || "";
       setPerfil(p);
+      setDepartamentos(deptData.departamentos || []);
       setForm({
         nombre: p.nombre || "",
         email: p.email || "",
@@ -171,9 +222,24 @@ export function PortalProfesionalPage() {
         rh: p.rh || "",
         fecha_nacimiento: fechaCorta(p.fecha_nacimiento),
         expedicion_cedula: p.expedicion_cedula || "",
-        departamento: p.departamento || "",
+        departamento: departamentoActual,
       });
       setDocumentos(docsData.documentos || []);
+      setReferencias(refsData.referencias?.length ? refsData.referencias : []);
+      setExperiencias(expData.experiencias?.length ? expData.experiencias.map((exp) => ({
+        ...exp,
+        fecha_inicio: fechaCorta(exp.fecha_inicio),
+        fecha_fin: fechaCorta(exp.fecha_fin),
+        actualmente: Boolean(exp.actualmente),
+      })) : []);
+      setVacunas(Object.fromEntries((vacData.vacunas || []).map((vac) => [vac.vacuna_codigo, fechaCorta(vac.fecha_aplicacion)])));
+      setFormaciones(formData.formaciones || []);
+      if (departamentoActual) {
+        const munData = await listarMunicipios(departamentoActual);
+        setMunicipios(munData.municipios || []);
+      } else {
+        setMunicipios([]);
+      }
     } catch (err) {
       setError(err instanceof Error ? err.message : "No fue posible cargar tu portal");
     } finally {
@@ -189,6 +255,91 @@ export function PortalProfesionalPage() {
     setForm((actual) => ({ ...actual, [campo]: valor }));
   }
 
+  async function cambiarDepartamento(codigo: string) {
+    setForm((actual) => ({ ...actual, departamento: codigo, ciudad: "" }));
+    if (!codigo) {
+      setMunicipios([]);
+      return;
+    }
+    try {
+      const data = await listarMunicipios(codigo);
+      setMunicipios(data.municipios || []);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "No fue posible cargar municipios");
+    }
+  }
+
+  function actualizarReferencia(index: number, campo: keyof ReferenciaPersonal, valor: string) {
+    setReferencias((actual) => actual.map((ref, i) => (i === index ? { ...ref, [campo]: valor } : ref)));
+  }
+
+  function actualizarExperiencia(index: number, campo: keyof ExperienciaLaboral, valor: string | boolean) {
+    setExperiencias((actual) => actual.map((exp, i) => (i === index ? { ...exp, [campo]: valor } : exp)));
+  }
+
+  async function subirCertificadoExperiencia(index: number, event: ChangeEvent<HTMLInputElement>) {
+    const archivo = event.target.files?.[0];
+    event.target.value = "";
+    if (!archivo) return;
+    setUploading(`exp-${index}`);
+    setError("");
+    try {
+      const data = await subirDocumentoProfesional("cert_experiencia", archivo, null);
+      setExperiencias((actual) => actual.map((exp, i) => (i === index ? {
+        ...exp,
+        documento_id: data.documento_id || exp.documento_id || null,
+        nombre_archivo: data.nombre || archivo.name,
+      } : exp)));
+      setSuccess("Certificado laboral cargado.");
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "No fue posible subir el certificado laboral");
+    } finally {
+      setUploading("");
+    }
+  }
+
+  async function guardarFormacion(tipo: "bachillerato" | "profesional" | "especializacion", formacion: FormacionPortal, archivos: Record<string, File | null>) {
+    setUploading(`formacion-${tipo}`);
+    setError("");
+    setSuccess("");
+    try {
+      const payload = new FormData();
+      payload.set("tipo", tipo);
+      if (formacion.id) payload.set("formacion_id", String(formacion.id));
+      payload.set("institucion", formacion.institucion || "");
+      if (formacion.titulo) payload.set("titulo", formacion.titulo);
+      if (formacion.nivel) payload.set("nivel", formacion.nivel);
+      if (formacion.anio_grado) payload.set("anio_grado", String(formacion.anio_grado));
+      if (formacion.ciudad) payload.set("ciudad", formacion.ciudad);
+      if (archivos.archivo) payload.set("archivo", archivos.archivo);
+      if (archivos.archivo_diploma) payload.set("archivo_diploma", archivos.archivo_diploma);
+      if (archivos.archivo_acta) payload.set("archivo_acta", archivos.archivo_acta);
+      await guardarFormacionPortal(payload);
+      setSuccess("Formacion guardada correctamente.");
+      const data = await listarMisFormaciones();
+      setFormaciones(data.formaciones || []);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "No fue posible guardar la formacion");
+    } finally {
+      setUploading("");
+    }
+  }
+
+  async function eliminarFormacion(id?: number | null) {
+    if (!id) return;
+    setUploading(`formacion-delete-${id}`);
+    setError("");
+    try {
+      await eliminarFormacionPortal(id);
+      const data = await listarMisFormaciones();
+      setFormaciones(data.formaciones || []);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "No fue posible eliminar la formacion");
+    } finally {
+      setUploading("");
+    }
+  }
+
   async function guardarPerfil() {
     if (!form.nombre.trim() || !form.email.trim()) {
       setError("Nombre y correo son obligatorios.");
@@ -198,7 +349,23 @@ export function PortalProfesionalPage() {
     setError("");
     setSuccess("");
     try {
+      const referenciasValidas = referencias
+        .map((ref) => ({ ...ref, nombre: ref.nombre.trim(), relacion: ref.relacion.trim(), telefono: ref.telefono.trim() }))
+        .filter((ref) => ref.nombre || ref.relacion || ref.telefono || ref.email || ref.ocupacion);
+      const referenciasIncompletas = referenciasValidas.some((ref) => !ref.nombre || !ref.relacion || !ref.telefono);
+      if (referenciasIncompletas) {
+        throw new Error("Cada referencia personal debe tener nombre, relacion y telefono.");
+      }
+      const experienciasValidas = experiencias
+        .map((exp) => ({ ...exp, empresa: exp.empresa.trim(), cargo: exp.cargo?.trim() || "", fecha_inicio: fechaCorta(exp.fecha_inicio), fecha_fin: exp.actualmente ? null : fechaCorta(exp.fecha_fin) }))
+        .filter((exp) => exp.empresa && exp.fecha_inicio);
+      const vacunasValidas: VacunaProfesional[] = Object.entries(vacunas)
+        .filter(([, fecha]) => Boolean(fecha))
+        .map(([vacuna_codigo, fecha_aplicacion]) => ({ vacuna_codigo, fecha_aplicacion }));
       await actualizarMiPerfilProfesional(form);
+      await guardarMisReferencias(referenciasValidas);
+      await guardarMisExperiencias(experienciasValidas);
+      await guardarMisVacunas(vacunasValidas);
       setSuccess("Datos guardados correctamente.");
       await cargar();
     } catch (err) {
@@ -333,8 +500,21 @@ export function PortalProfesionalPage() {
             <Field label="Correo electrónico" required type="email" value={form.email} onChange={(value) => actualizar("email", value)} />
             <Field label="Teléfono / WhatsApp" required value={form.telefono || ""} onChange={(value) => actualizar("telefono", value)} />
             <SelectField label="Especialidad / Cargo" required value={form.especialidad || ""} onChange={(value) => actualizar("especialidad", value)} options={CARGOS} />
-            <Field label="Departamento" value={form.departamento || ""} onChange={(value) => actualizar("departamento", value)} />
-            <Field label="Ciudad / Municipio" value={form.ciudad || ""} onChange={(value) => actualizar("ciudad", value)} />
+            <ObjectSelectField
+              label="Departamento"
+              value={form.departamento || ""}
+              onChange={cambiarDepartamento}
+              placeholder="Selecciona departamento"
+              options={departamentos.map((dept) => ({ value: dept.codigo_departamento, label: dept.nombre_departamento }))}
+            />
+            <ObjectSelectField
+              label="Ciudad / Municipio"
+              value={form.ciudad || ""}
+              onChange={(value) => actualizar("ciudad", value)}
+              placeholder={form.departamento ? "Selecciona ciudad" : "Selecciona primero departamento"}
+              disabled={!form.departamento}
+              options={municipios.map((mun) => ({ value: mun.nombre_municipio, label: mun.nombre_municipio }))}
+            />
             <Field className="wide-field" label="Dirección de residencia" value={form.direccion || ""} onChange={(value) => actualizar("direccion", value)} />
           </div>
         </section>
@@ -347,6 +527,77 @@ export function PortalProfesionalPage() {
             <Field label="Tipo de cuenta" value="Cuenta de Ahorros" disabled />
             <Field label="Número de cuenta" required value={form.num_cuenta || ""} onChange={(value) => actualizar("num_cuenta", value)} />
             <Field label="Titular de la cuenta" value={form.titular_cuenta || ""} onChange={(value) => actualizar("titular_cuenta", value)} />
+          </div>
+        </section>
+
+        <section className="portal-section-card">
+          <SectionTitle icon={<UsersRound size={22} />} title="Referencias Personales" subtitle="Agrega contactos de referencia para validación administrativa." />
+          <div className="dynamic-section-list">
+            {referencias.length ? referencias.map((ref, index) => (
+              <article className="dynamic-item-card" key={`ref-${index}`}>
+                <div className="dynamic-item-header">
+                  <strong>Referencia {index + 1}</strong>
+                  <button className="icon-danger-btn" type="button" onClick={() => setReferencias((actual) => actual.filter((_, i) => i !== index))} title="Eliminar referencia"><Trash2 size={16} /></button>
+                </div>
+                <div className="portal-form-grid compact-grid">
+                  <Field label="Nombre" required value={ref.nombre || ""} onChange={(value) => actualizarReferencia(index, "nombre", value)} />
+                  <Field label="Relación" required value={ref.relacion || ""} onChange={(value) => actualizarReferencia(index, "relacion", value)} />
+                  <Field label="Teléfono" required value={ref.telefono || ""} onChange={(value) => actualizarReferencia(index, "telefono", value)} />
+                  <Field label="Correo" type="email" value={ref.email || ""} onChange={(value) => actualizarReferencia(index, "email", value)} />
+                  <Field className="wide-field" label="Ocupación" value={ref.ocupacion || ""} onChange={(value) => actualizarReferencia(index, "ocupacion", value)} />
+                </div>
+              </article>
+            )) : <div className="empty-state compact-empty">Aún no tienes referencias registradas.</div>}
+          </div>
+          <button className="brand-action-btn small-brand-btn" type="button" onClick={() => setReferencias((actual) => [...actual, { ...REFERENCIA_VACIA }])}><Plus size={17} /> Agregar referencia</button>
+        </section>
+
+        <FormacionSection formaciones={formaciones} uploading={uploading} onSave={guardarFormacion} onDelete={eliminarFormacion} />
+
+        <section className="portal-section-card">
+          <SectionTitle icon={<BriefcaseBusiness size={22} />} title="Experiencia Laboral" subtitle="Registra tu experiencia y adjunta soportes cuando aplique." />
+          <div className="dynamic-section-list">
+            {experiencias.length ? experiencias.map((exp, index) => (
+              <article className="dynamic-item-card" key={`exp-${index}`}>
+                <div className="dynamic-item-header">
+                  <strong>Experiencia {index + 1}</strong>
+                  <button className="icon-danger-btn" type="button" onClick={() => setExperiencias((actual) => actual.filter((_, i) => i !== index))} title="Eliminar experiencia"><Trash2 size={16} /></button>
+                </div>
+                <div className="portal-form-grid compact-grid">
+                  <Field label="Empresa / Institución" required value={exp.empresa || ""} onChange={(value) => actualizarExperiencia(index, "empresa", value)} />
+                  <Field label="Cargo desempeñado" value={exp.cargo || ""} onChange={(value) => actualizarExperiencia(index, "cargo", value)} />
+                  <Field label="Fecha inicio" required type="date" value={fechaCorta(exp.fecha_inicio)} onChange={(value) => actualizarExperiencia(index, "fecha_inicio", value)} />
+                  <Field label="Fecha fin" type="date" value={fechaCorta(exp.fecha_fin)} disabled={Boolean(exp.actualmente)} onChange={(value) => actualizarExperiencia(index, "fecha_fin", value)} />
+                </div>
+                <label className="portal-check-row">
+                  <input type="checkbox" checked={Boolean(exp.actualmente)} onChange={(event) => actualizarExperiencia(index, "actualmente", event.target.checked)} />
+                  Actualmente trabajo aquí
+                </label>
+                <div className="file-inline-row">
+                  <span>{exp.nombre_archivo || "Sin certificado laboral"}</span>
+                  <input id={`exp-file-${index}`} type="file" accept=".pdf,.jpg,.jpeg,.png" hidden onChange={(event) => subirCertificadoExperiencia(index, event)} />
+                  <button className="secondary-btn" type="button" onClick={() => document.getElementById(`exp-file-${index}`)?.click()}>
+                    <Upload size={15} /> {uploading === `exp-${index}` ? "Subiendo..." : "Subir certificado"}
+                  </button>
+                </div>
+              </article>
+            )) : <div className="empty-state compact-empty">Aún no has agregado experiencia laboral.</div>}
+          </div>
+          <button className="brand-action-btn small-brand-btn" type="button" onClick={() => setExperiencias((actual) => [...actual, { ...EXPERIENCIA_VACIA }])}><Plus size={17} /> Agregar experiencia</button>
+        </section>
+
+        <section className="portal-section-card">
+          <SectionTitle icon={<Syringe size={22} />} title="Vacunas" subtitle="Registra la fecha de aplicación de tus vacunas ocupacionales." />
+          <div className="portal-list-grid">
+            {LISTA_VACUNAS.map((vacuna) => (
+              <article className={`portal-list-row vaccine-row ${vacunas[vacuna.id] ? "state-vigente" : "state-sin_cargar"}`} key={vacuna.id}>
+                <div>
+                  <strong>{vacuna.nombre}</strong>
+                  <span>{vacunas[vacuna.id] ? `Fecha: ${vacunas[vacuna.id]}` : "Sin fecha registrada"}</span>
+                </div>
+                <input className="portal-date-input" type="date" value={vacunas[vacuna.id] || ""} onChange={(event) => setVacunas((actual) => ({ ...actual, [vacuna.id]: event.target.value }))} />
+              </article>
+            ))}
           </div>
         </section>
 
@@ -437,6 +688,131 @@ function SelectField({ label, value, onChange, options, required }: {
         {options.map((option) => <option key={option} value={option}>{option}</option>)}
       </select>
     </label>
+  );
+}
+
+function ObjectSelectField({ label, value, onChange, options, required, placeholder = "Selecciona", disabled }: {
+  label: string;
+  value: string;
+  onChange: (value: string) => void;
+  options: Array<{ value: string; label: string }>;
+  required?: boolean;
+  placeholder?: string;
+  disabled?: boolean;
+}) {
+  return (
+    <label className="portal-field">
+      {label} {required && <span>*</span>}
+      <select value={value} disabled={disabled} onChange={(event) => onChange(event.target.value)}>
+        <option value="">{placeholder}</option>
+        {options.map((option) => <option key={`${option.value}-${option.label}`} value={option.value}>{option.label}</option>)}
+      </select>
+    </label>
+  );
+}
+
+function FormacionSection({ formaciones, uploading, onSave, onDelete }: {
+  formaciones: FormacionPortal[];
+  uploading: string;
+  onSave: (tipo: "bachillerato" | "profesional" | "especializacion", formacion: FormacionPortal, archivos: Record<string, File | null>) => void;
+  onDelete: (id?: number | null) => void;
+}) {
+  const bachillerato = formaciones.find((item) => item.tipo === "bachillerato") || { tipo: "bachillerato", institucion: "", anio_grado: "", ciudad: "" };
+  const profesional = formaciones.find((item) => item.tipo === "profesional") || { tipo: "profesional", institucion: "", titulo: "", nivel: "", anio_grado: "", ciudad: "" };
+  const posgradosIniciales = formaciones.filter((item) => item.tipo !== "bachillerato" && item.tipo !== "profesional");
+  const [bach, setBach] = useState<FormacionPortal>(bachillerato);
+  const [prof, setProf] = useState<FormacionPortal>(profesional);
+  const [posgrados, setPosgrados] = useState<FormacionPortal[]>(posgradosIniciales);
+  const [bachArchivo, setBachArchivo] = useState<File | null>(null);
+  const [diploma, setDiploma] = useState<File | null>(null);
+  const [acta, setActa] = useState<File | null>(null);
+  const [posgradoArchivos, setPosgradoArchivos] = useState<Record<number, File | null>>({});
+
+  useEffect(() => {
+    setBach(bachillerato);
+    setProf(profesional);
+    setPosgrados(posgradosIniciales);
+  }, [formaciones]);
+
+  return (
+    <section className="portal-section-card">
+      <SectionTitle icon={<GraduationCap size={22} />} title="Formación Académica" subtitle="Registra bachillerato, título profesional y soportes académicos." />
+      <div className="dynamic-section-list">
+        <article className="dynamic-item-card">
+          <div className="dynamic-item-header">
+            <strong>Bachillerato</strong>
+            {bach.id && <button className="icon-danger-btn" type="button" onClick={() => onDelete(bach.id)}><Trash2 size={16} /></button>}
+          </div>
+          <div className="portal-form-grid compact-grid">
+            <Field label="Institución" required value={bach.institucion || ""} onChange={(value) => setBach((actual) => ({ ...actual, institucion: value }))} />
+            <Field label="Año grado" value={String(bach.anio_grado || "")} onChange={(value) => setBach((actual) => ({ ...actual, anio_grado: value }))} />
+            <Field className="wide-field" label="Ciudad" value={bach.ciudad || ""} onChange={(value) => setBach((actual) => ({ ...actual, ciudad: value }))} />
+          </div>
+          <div className="file-inline-row">
+            <span>{bachArchivo?.name || bach.nombre_archivo || "Sin soporte cargado"}</span>
+            <input id="bach-file" type="file" accept=".pdf,.jpg,.jpeg,.png" hidden onChange={(event) => setBachArchivo(event.target.files?.[0] || null)} />
+            <button className="secondary-btn" type="button" onClick={() => document.getElementById("bach-file")?.click()}><Upload size={15} /> Elegir archivo</button>
+            <button className="primary-btn" type="button" disabled={uploading === "formacion-bachillerato" || !bach.institucion} onClick={() => onSave("bachillerato", bach, { archivo: bachArchivo })}>Guardar</button>
+          </div>
+        </article>
+
+        <article className="dynamic-item-card">
+          <div className="dynamic-item-header">
+            <strong>Profesional</strong>
+            {prof.id && <button className="icon-danger-btn" type="button" onClick={() => onDelete(prof.id)}><Trash2 size={16} /></button>}
+          </div>
+          <div className="portal-form-grid compact-grid">
+            <SelectField label="Nivel" value={prof.nivel || ""} onChange={(value) => setProf((actual) => ({ ...actual, nivel: value }))} options={["Técnico", "Tecnólogo", "Profesional", "Especialización", "Maestría", "Doctorado"]} />
+            <Field label="Título obtenido" required value={prof.titulo || ""} onChange={(value) => setProf((actual) => ({ ...actual, titulo: value }))} />
+            <Field label="Institución" required value={prof.institucion || ""} onChange={(value) => setProf((actual) => ({ ...actual, institucion: value }))} />
+            <Field label="Año grado" value={String(prof.anio_grado || "")} onChange={(value) => setProf((actual) => ({ ...actual, anio_grado: value }))} />
+            <Field className="wide-field" label="Ciudad" value={prof.ciudad || ""} onChange={(value) => setProf((actual) => ({ ...actual, ciudad: value }))} />
+          </div>
+          <div className="file-inline-row two-files-row">
+            <span>Diploma: {diploma?.name || prof.diploma_nombre_archivo || "sin cargar"}</span>
+            <input id="prof-diploma-file" type="file" accept=".pdf,.jpg,.jpeg,.png" hidden onChange={(event) => setDiploma(event.target.files?.[0] || null)} />
+            <button className="secondary-btn" type="button" onClick={() => document.getElementById("prof-diploma-file")?.click()}><Upload size={15} /> Diploma</button>
+            <span>Acta: {acta?.name || prof.acta_nombre_archivo || "sin cargar"}</span>
+            <input id="prof-acta-file" type="file" accept=".pdf,.jpg,.jpeg,.png" hidden onChange={(event) => setActa(event.target.files?.[0] || null)} />
+            <button className="secondary-btn" type="button" onClick={() => document.getElementById("prof-acta-file")?.click()}><Upload size={15} /> Acta</button>
+            <button className="primary-btn" type="button" disabled={uploading === "formacion-profesional" || !prof.institucion || !prof.titulo} onClick={() => onSave("profesional", prof, { archivo_diploma: diploma, archivo_acta: acta })}>Guardar</button>
+          </div>
+        </article>
+
+        <article className="dynamic-item-card">
+          <div className="dynamic-item-header">
+            <strong>Especializaciones y otros estudios</strong>
+            <button className="brand-action-btn small-brand-btn inline-add-btn" type="button" onClick={() => setPosgrados((actual) => [...actual, { tipo: "especializacion", institucion: "", titulo: "", nivel: "especializacion", anio_grado: "", ciudad: "" }])}>
+              <Plus size={16} /> Agregar
+            </button>
+          </div>
+          {posgrados.length ? posgrados.map((item, index) => (
+            <div className="nested-dynamic-card" key={`posgrado-${item.id || index}`}>
+              <div className="dynamic-item-header">
+                <strong>Estudio {index + 1}</strong>
+                <button className="icon-danger-btn" type="button" onClick={() => {
+                  if (item.id) onDelete(item.id);
+                  setPosgrados((actual) => actual.filter((_, i) => i !== index));
+                }}><Trash2 size={16} /></button>
+              </div>
+              <div className="portal-form-grid compact-grid">
+                <SelectField label="Nivel" value={item.nivel || ""} onChange={(value) => setPosgrados((actual) => actual.map((pos, i) => i === index ? { ...pos, nivel: value } : pos))} options={["Especialización", "Maestría", "Doctorado", "Diplomado", "Curso"]} />
+                <Field label="Título" required value={item.titulo || ""} onChange={(value) => setPosgrados((actual) => actual.map((pos, i) => i === index ? { ...pos, titulo: value } : pos))} />
+                <Field label="Institución" required value={item.institucion || ""} onChange={(value) => setPosgrados((actual) => actual.map((pos, i) => i === index ? { ...pos, institucion: value } : pos))} />
+                <Field label="Año" value={String(item.anio_grado || "")} onChange={(value) => setPosgrados((actual) => actual.map((pos, i) => i === index ? { ...pos, anio_grado: value } : pos))} />
+                <Field className="wide-field" label="Ciudad" value={item.ciudad || ""} onChange={(value) => setPosgrados((actual) => actual.map((pos, i) => i === index ? { ...pos, ciudad: value } : pos))} />
+              </div>
+              <div className="file-inline-row">
+                <span>{posgradoArchivos[index]?.name || item.nombre_archivo || "Sin soporte cargado"}</span>
+                <input id={`posgrado-file-${index}`} type="file" accept=".pdf,.jpg,.jpeg,.png" hidden onChange={(event) => setPosgradoArchivos((actual) => ({ ...actual, [index]: event.target.files?.[0] || null }))} />
+                <button className="secondary-btn" type="button" onClick={() => document.getElementById(`posgrado-file-${index}`)?.click()}><Upload size={15} /> Archivo</button>
+                <button className="primary-btn" type="button" disabled={uploading === "formacion-especializacion" || !item.institucion || !item.titulo} onClick={() => onSave("especializacion", item, { archivo: posgradoArchivos[index] || null })}>Guardar</button>
+              </div>
+            </div>
+          )) : <div className="empty-state compact-empty">Aún no has agregado especializaciones u otros estudios.</div>}
+        </article>
+      </div>
+    </section>
   );
 }
 

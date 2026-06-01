@@ -11,15 +11,21 @@ import type {
   ProfesionalServicioPayload,
   PermisosAcceso,
   DocumentoPortalProfesional,
+  ExperienciaLaboral,
+  FormacionPortal,
   ProfesionalPerfil,
   ProfesionalPerfilPayload,
+  ReferenciaPersonal,
   RelacionPayload,
   ServicioDetalle,
   ServicioIps,
   ServicioProfesionalAsignado,
   TalentoHumanoServicio,
+  UbicacionDepartamento,
+  UbicacionMunicipio,
   UsuarioPermisos,
   UsuarioPermisosPayload,
+  VacunaProfesional,
   EnviarExamenPayload,
   ResultadoExamenCapacitacion,
 } from "./types";
@@ -237,7 +243,7 @@ export async function subirDocumentoProfesional(tipoDocumentoCodigo: string, arc
     const detail = data?.detail;
     throw new Error(typeof detail === "string" ? detail : JSON.stringify(detail || data || "No fue posible subir el documento"));
   }
-  return data as { success: boolean; mensaje: string; estado: string; nombre: string; ia_no_disponible?: boolean };
+  return data as { success: boolean; mensaje: string; estado: string; nombre: string; documento_id?: number; ia_no_disponible?: boolean };
 }
 
 export async function actualizarFechaDocumento(documentoId: number, fechaVencimiento: string | null) {
@@ -260,6 +266,63 @@ export async function subirFotoProfesional(archivo: File) {
     throw new Error(data?.detail || data?.message || "No fue posible subir la foto");
   }
   return data as { success: boolean; mensaje?: string };
+}
+
+export async function listarDepartamentos() {
+  return apiCall<{ success: boolean; departamentos: UbicacionDepartamento[] }>("GET", "/ubicaciones/departamentos");
+}
+
+export async function listarMunicipios(codigoDepartamento: string) {
+  return apiCall<{ success: boolean; municipios: UbicacionMunicipio[] }>(
+    "GET",
+    `/ubicaciones/municipios/${encodeURIComponent(codigoDepartamento)}`,
+  );
+}
+
+export async function listarMisReferencias() {
+  return apiCall<{ success: boolean; referencias: ReferenciaPersonal[] }>("GET", "/referencias/mis-referencias");
+}
+
+export async function guardarMisReferencias(referencias: ReferenciaPersonal[]) {
+  return apiCall<{ success: boolean; mensaje?: string }>("POST", "/referencias/guardar", { referencias });
+}
+
+export async function listarMisExperiencias() {
+  return apiCall<{ success: boolean; experiencias: ExperienciaLaboral[] }>("GET", "/experiencia/mis-experiencias");
+}
+
+export async function guardarMisExperiencias(experiencias: ExperienciaLaboral[]) {
+  return apiCall<{ success: boolean; mensaje?: string }>("POST", "/experiencia/guardar", { experiencias });
+}
+
+export async function listarMisVacunas() {
+  return apiCall<{ success: boolean; vacunas: VacunaProfesional[] }>("GET", "/vacunas/mis-vacunas");
+}
+
+export async function guardarMisVacunas(vacunas: VacunaProfesional[]) {
+  return apiCall<{ success: boolean; mensaje?: string }>("POST", "/vacunas/guardar", { vacunas });
+}
+
+export async function listarMisFormaciones() {
+  return apiCall<{ success: boolean; formaciones: FormacionPortal[] }>("GET", "/formacion/mis-formaciones");
+}
+
+export async function guardarFormacionPortal(formData: FormData) {
+  const token = getToken();
+  const headers: Record<string, string> = {};
+  if (token) headers.Authorization = `Bearer ${token}`;
+
+  const response = await fetch(`${API_URL}/formacion/guardar`, { method: "POST", headers, body: formData });
+  const data = await response.json().catch(() => null);
+  if (!response.ok) {
+    if (response.status === 401) clearSession();
+    throw new Error(data?.detail || data?.message || "No fue posible guardar la formacion");
+  }
+  return data as { success: boolean; mensaje?: string };
+}
+
+export async function eliminarFormacionPortal(id: number) {
+  return apiCall<{ success: boolean }>("DELETE", `/formacion/eliminar/${id}`);
 }
 
 export async function listarCapacitacionesAdmin() {

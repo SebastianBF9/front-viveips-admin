@@ -281,6 +281,54 @@ export interface DocumentoPortalProfesional {
   es_curso: number;
 }
 
+export interface UbicacionDepartamento {
+  codigo_departamento: string;
+  nombre_departamento: string;
+}
+
+export interface UbicacionMunicipio {
+  codigo_municipio?: string | null;
+  nombre_municipio: string;
+  codigo_departamento?: string | null;
+}
+
+export interface ReferenciaPersonal {
+  id?: number | null;
+  nombre: string;
+  relacion: string;
+  telefono: string;
+  email?: string | null;
+  ocupacion?: string | null;
+}
+
+export interface ExperienciaLaboral {
+  empresa: string;
+  cargo?: string | null;
+  fecha_inicio: string;
+  fecha_fin?: string | null;
+  actualmente?: boolean;
+  documento_id?: number | null;
+  nombre_archivo?: string | null;
+}
+
+export interface VacunaProfesional {
+  vacuna_codigo: string;
+  fecha_aplicacion: string | null;
+}
+
+export interface FormacionPortal {
+  id?: number | null;
+  tipo: "bachillerato" | "profesional" | "especializacion" | string;
+  institucion: string;
+  titulo?: string | null;
+  nivel?: string | null;
+  anio_grado?: number | string | null;
+  ciudad?: string | null;
+  nombre_archivo?: string | null;
+  diploma_nombre_archivo?: string | null;
+  acta_nombre_archivo?: string | null;
+}
+
 export interface ServicioProfesionalAsignado {
   id: number;
   profesional_id: number;
