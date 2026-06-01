@@ -143,6 +143,10 @@ export async function actualizarPermisosUsuario(usuarioId: number, payload: Usua
   return apiCall<{ success: boolean; usuario: UsuarioPermisos }>("PATCH", `/permisos/usuarios/${usuarioId}`, payload);
 }
 
+export async function alternarEstadoProfesional(profesionalId: number) {
+  return apiCall<{ success: boolean; activo: boolean | number }>("POST", `/profesionales/toggle-activo/${profesionalId}`);
+}
+
 export async function listarServiciosIps() {
   return apiCall<{ success: boolean; servicios: ServicioIps[]; total: number }>("GET", "/servicios-ips");
 }

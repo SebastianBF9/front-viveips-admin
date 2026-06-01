@@ -1098,6 +1098,39 @@ td small { display: block; color: var(--muted); margin-top: 4px; }
 }
 .access-table th { white-space: nowrap; }
 .access-table td:not(:first-child) { vertical-align: middle; }
+.access-status-cell {
+  display: grid;
+  gap: 7px;
+  align-items: start;
+}
+.status-toggle-btn {
+  width: max-content;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  padding: 6px 10px;
+  background: #fff;
+  color: var(--navy);
+  font-size: 12px;
+  font-weight: 900;
+  cursor: pointer;
+}
+.status-toggle-btn.success {
+  background: #ecfdf5;
+  border-color: #86efac;
+  color: #047857;
+}
+.status-toggle-btn.danger {
+  background: #fef2f2;
+  border-color: #fecaca;
+  color: #b91c1c;
+}
+.status-toggle-btn:disabled {
+  opacity: .6;
+  cursor: progress;
+}
 .toggle-permission {
   display: inline-flex;
   align-items: center;

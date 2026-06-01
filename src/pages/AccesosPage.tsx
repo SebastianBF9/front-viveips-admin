@@ -1,6 +1,6 @@
-import { Search, ShieldCheck } from "lucide-react";
+import { Power, Search, ShieldCheck } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
-import { actualizarPermisosUsuario, listarUsuariosPermisos } from "../api";
+import { actualizarPermisosUsuario, alternarEstadoProfesional, listarUsuariosPermisos } from "../api";
 import type { UsuarioPermisos, UsuarioPermisosPayload } from "../types";
 import { Loading } from "../ui/Loading";
 
@@ -84,6 +84,27 @@ export function AccesosPage() {
     }
   }
 
+  async function cambiarEstadoProfesional(usuario: UsuarioPermisos) {
+    if (!usuario.profesional_id) return;
+    const accion = usuario.activo ? "desactivar" : "activar";
+    if (!confirm(`¿Quieres ${accion} a ${usuario.nombre}?`)) return;
+    setSaving(usuario.usuario_id);
+    setError("");
+    setSuccess("");
+    try {
+      const data = await alternarEstadoProfesional(usuario.profesional_id);
+      const activo = Boolean(data.activo);
+      setUsuarios((actuales) => actuales.map((item) => (
+        item.usuario_id === usuario.usuario_id ? { ...item, activo } : item
+      )));
+      setSuccess(`${usuario.nombre} quedó ${activo ? "activo" : "inactivo"}.`);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "No fue posible cambiar el estado del profesional");
+    } finally {
+      setSaving(null);
+    }
+  }
+
   if (loading) return <Loading text="Cargando accesos..." />;
 
   return (
@@ -137,7 +158,24 @@ export function AccesosPage() {
                   </div>
                 </td>
                 <td>{usuario.rol}</td>
-                <td><span className={`pill ${usuario.activo ? "activo" : "inactivo"}`}>{usuario.activo ? "Activo" : "Inactivo"}</span></td>
+                <td>
+                  <div className="access-status-cell">
+                    <span className={`pill ${usuario.activo ? "activo" : "inactivo"}`}>{usuario.activo ? "Activo" : "Inactivo"}</span>
+                    {usuario.profesional_id ? (
+                      <button
+                        className={`status-toggle-btn ${usuario.activo ? "danger" : "success"}`}
+                        type="button"
+                        disabled={saving === usuario.usuario_id}
+                        onClick={() => cambiarEstadoProfesional(usuario)}
+                      >
+                        <Power size={14} />
+                        {usuario.activo ? "Desactivar" : "Activar"}
+                      </button>
+                    ) : (
+                      <small>Sin perfil</small>
+                    )}
+                  </div>
+                </td>
                 {permisos.map((permiso) => (
                   <td key={permiso.campo}>
                     <label className="toggle-permission" title={permiso.ayuda}>
