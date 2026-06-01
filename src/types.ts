@@ -334,6 +334,61 @@ export interface CapacitacionPregunta {
   opciones: CapacitacionOpcion[];
 }
 
+export interface CursoProfesionalCapacitacion {
+  id: number;
+  rama: string;
+  nombre: string;
+  descripcion: string | null;
+  vigencia_meses: number;
+  fecha_habilitacion: string | null;
+  fecha_vencimiento: string | null;
+  activo: number;
+  mi_nota: number | null;
+  aprobado: number | null;
+  fecha_presentacion: string | null;
+  num_archivos: number;
+}
+
+export interface ArchivoCapacitacionProfesional {
+  id: number;
+  capacitacion_id: number;
+  nombre_archivo: string;
+  ruta_archivo: string | null;
+  mime_type: string | null;
+}
+
+export interface OpcionExamenCapacitacion {
+  id: number;
+  opcion: string;
+  orden?: number | null;
+}
+
+export interface PreguntaExamenCapacitacion {
+  id: number;
+  pregunta: string;
+  orden?: number | null;
+  opciones: OpcionExamenCapacitacion[];
+}
+
+export interface ExamenCapacitacion {
+  success: boolean;
+  capacitacion: CapacitacionAdmin;
+  preguntas: PreguntaExamenCapacitacion[];
+}
+
+export interface EnviarExamenPayload {
+  capacitacion_id: number;
+  respuestas: Record<string, number>;
+}
+
+export interface ResultadoExamenCapacitacion {
+  success: boolean;
+  nota: number;
+  aprobado: number;
+  correctas: number;
+  total: number;
+}
+
 export interface AdherenciaCapacitacion {
   profesional_id: number;
   profesional: string;

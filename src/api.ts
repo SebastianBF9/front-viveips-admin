@@ -1,10 +1,13 @@
 import type {
   AdherenciaCapacitacionesResponse,
+  CursoProfesionalCapacitacion,
   CumplimientoServicio,
   CapacitacionAdmin,
   CapacitacionArchivo,
   CapacitacionAdminPayload,
   CapacitacionPregunta,
+  ExamenCapacitacion,
+  ArchivoCapacitacionProfesional,
   ProfesionalServicioPayload,
   PermisosAcceso,
   RelacionPayload,
@@ -14,6 +17,8 @@ import type {
   TalentoHumanoServicio,
   UsuarioPermisos,
   UsuarioPermisosPayload,
+  EnviarExamenPayload,
+  ResultadoExamenCapacitacion,
 } from "./types";
 
 const API_URL = import.meta.env.VITE_API_URL || "https://api-pruebas.viveips.com.co";
@@ -312,4 +317,23 @@ export async function obtenerAdherenciaCapacitaciones(params: {
   });
   const suffix = query.toString() ? `?${query.toString()}` : "";
   return apiCall<AdherenciaCapacitacionesResponse>("GET", `/capacitaciones/admin/adherencia${suffix}`);
+}
+
+// --- Capacitaciones del Profesional ---
+
+export async function listarMisCapacitaciones() {
+  return apiCall<{ success: boolean; cursos: CursoProfesionalCapacitacion[] }>("GET", "/capacitaciones/mis-cursos");
+}
+
+export async function obtenerArchivosCapacitacionProfesional(_capacitacionId: number) {
+  // TODO backend: falta endpoint publico/profesional para listar materiales por capacitacion.
+  return { success: false, archivos: [] as ArchivoCapacitacionProfesional[] };
+}
+
+export async function obtenerExamenCapacitacion(capacitacionId: number) {
+  return apiCall<ExamenCapacitacion>("GET", `/capacitaciones/examen/${capacitacionId}`);
+}
+
+export async function enviarExamenCapacitacion(payload: EnviarExamenPayload) {
+  return apiCall<ResultadoExamenCapacitacion>("POST", "/capacitaciones/enviar-examen", payload);
 }
