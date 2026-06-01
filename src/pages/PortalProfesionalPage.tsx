@@ -878,7 +878,7 @@ export function PortalProfesionalPage() {
             <strong>{form.nombre || "Profesional"}</strong>
             <span>{form.especialidad || "Profesional"}</span>
           </div>
-          <button className="topbar-soft-btn" type="button" onClick={() => navigate("/portal-profesional")}>Mi portal</button>
+          <button className="topbar-soft-btn active" type="button" onClick={() => navigate("/portal-profesional")}>Mi portal</button>
           <button className="topbar-soft-btn" type="button" onClick={() => navigate("/portal-profesional/capacitaciones")}>Capacitaciones</button>
           <button className="topbar-soft-btn navy" type="button" disabled>Mi Carnet</button>
           <button className="topbar-logout" type="button" onClick={cerrarSesion}><LogOut size={16} /> Salir</button>
