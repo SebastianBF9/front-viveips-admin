@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Política de Tratamiento de Datos Personales — VIVE IPS</title>
+  <link rel="stylesheet" href="css/main.css">
+  <style>
+    body { background: radial-gradient(circle at top left, rgba(27,170,181,.16), transparent 34%), var(--gris); color: var(--texto); }
+    .policy-shell { max-width: 1120px; margin: 0 auto; padding: 28px 18px 64px; }
+    .policy-hero { background: var(--gradiente); color: var(--blanco); border-radius: var(--radio-xl); padding: 30px; box-shadow: var(--sombra-lg); position: relative; overflow: hidden; }
+    .policy-hero::after { content: ''; position: absolute; width: 260px; height: 260px; border-radius: 50%; background: rgba(255,255,255,.12); right: -80px; top: -90px; }
+    .policy-brand { display: flex; align-items: center; gap: 18px; position: relative; z-index: 1; }
+    .policy-brand img { width: 108px; background: var(--blanco); border-radius: 18px; padding: 10px; box-shadow: 0 14px 34px rgba(0,0,0,.18); }
+    .policy-kicker { display: inline-block; background: rgba(255,255,255,.18); border: 1px solid rgba(255,255,255,.28); padding: 6px 12px; border-radius: 999px; font-size: 12px; font-weight: 800; letter-spacing: .8px; text-transform: uppercase; margin-bottom: 10px; }
+    .policy-hero h1 { font-family: 'Nunito', sans-serif; font-size: clamp(28px, 4vw, 44px); line-height: 1.05; margin: 0 0 10px; }
+    .policy-hero p { margin: 0; max-width: 720px; opacity: .94; line-height: 1.6; }
+    .policy-meta { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 22px; position: relative; z-index: 1; }
+    .policy-pill { background: rgba(255,255,255,.16); border: 1px solid rgba(255,255,255,.25); border-radius: 999px; padding: 8px 13px; font-size: 13px; font-weight: 700; }
+    .policy-layout { display: grid; grid-template-columns: 280px 1fr; gap: 22px; margin-top: 24px; align-items: start; }
+    .policy-side, .policy-content { background: var(--blanco); border: 1px solid var(--gris-borde); border-radius: var(--radio-lg); box-shadow: var(--sombra-md); }
+    .policy-side { padding: 18px; position: sticky; top: 18px; }
+    .policy-side h3 { color: var(--azul); margin-bottom: 12px; font-size: 16px; }
+    .policy-side a { display: block; color: var(--texto-suave); padding: 9px 10px; border-radius: 10px; font-size: 14px; font-weight: 600; }
+    .policy-side a:hover { background: var(--teal-light); color: var(--teal-dark); }
+    .policy-content { padding: 28px; line-height: 1.68; font-size: 15px; }
+    .notice { background: #fffbeb; color: #78350f; border: 1px solid #f59e0b; border-radius: var(--radio-md); padding: 14px 16px; margin-bottom: 22px; font-weight: 600; }
+    .summary-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; margin: 20px 0 8px; }
+    .summary-card { background: var(--azul-light); border: 1px solid rgba(27,58,107,.12); border-radius: var(--radio-md); padding: 16px; }
+    .summary-card strong { display:block; color: var(--azul); margin-bottom: 6px; }
+    .policy-content h2 { color: var(--azul); font-family: 'Nunito', sans-serif; font-size: 23px; margin: 30px 0 10px; padding-top: 4px; }
+    .policy-content ul { list-style: disc; padding-left: 22px; margin: 10px 0 0; }
+    .policy-content li { margin-bottom: 7px; }
+    .btn-row { display:flex; gap: 10px; flex-wrap: wrap; margin-top: 28px; padding-top: 20px; border-top: 1px solid var(--gris-borde); }
+    .btn-policy { display:inline-flex; align-items:center; justify-content:center; padding: 11px 18px; border-radius: 999px; font-weight: 800; text-decoration:none; }
+    .btn-primary-policy { background: var(--gradiente); color: var(--blanco); box-shadow: 0 6px 18px rgba(27,170,181,.28); }
+    .btn-secondary-policy { background: var(--teal-light); color: var(--teal-dark); }
+    @media (max-width: 860px) { .policy-layout { grid-template-columns: 1fr; } .policy-side { position: static; } .summary-grid { grid-template-columns: 1fr; } .policy-brand { align-items: flex-start; } }
+    @media (max-width: 560px) { .policy-hero, .policy-content { padding: 22px; } .policy-brand { flex-direction: column; } .policy-brand img { width: 92px; } }
+  </style>
+</head>
+<body>
+  <main class="policy-shell">
+    <section class="policy-hero">
+      <div class="policy-brand">
+        <img src="img/logo_carnet.png" alt="VIVE IPS">
+        <div>
+          <span class="policy-kicker">Protección de datos personales</span>
+          <h1>Política de Tratamiento de Datos Personales</h1>
+          <p>Información clara para profesionales, contratistas y colaboradores sobre cómo VIVE IPS recolecta, usa, almacena y protege sus datos dentro del portal.</p>
+        </div>
+      </div>
+      <div class="policy-meta">
+        <span class="policy-pill">GRUPO MÉDICO INTEGRAL VIVE IPS S.A.S.</span>
+        <span class="policy-pill">Versión 2026-05-12-v1</span>
+        <span class="policy-pill">Portal de pruebas</span>
+      </div>
+    </section>
+
+    <div class="policy-layout">
+      <aside class="policy-side">
+        <h3>Contenido</h3>
+        <a href="#responsable">Responsable</a>
+        <a href="#datos">Datos recolectados</a>
+        <a href="#sensibles">Datos sensibles</a>
+        <a href="#finalidades">Finalidades</a>
+        <a href="#derechos">Derechos</a>
+        <a href="#autorizacion">Autorización</a>
+        <a href="#seguridad">Conservación y seguridad</a>
+        <a href="#circulacion">Circulación de datos</a>
+        <a href="#reclamos">Consultas y reclamos</a>
+      </aside>
+
+      <section class="policy-content">
+        <div class="notice">Versión inicial para pruebas. Debe ser revisada y aprobada por el área jurídica, administrativa o de cumplimiento de VIVE IPS antes de su publicación definitiva.</div>
+
+        <div class="summary-grid">
+          <div class="summary-card"><strong>Finalidad clara</strong>Gestión documental, contractual, administrativa y de talento humano en salud.</div>
+          <div class="summary-card"><strong>Autorización trazable</strong>Se registra aceptación, fecha, versión de política e información técnica de acceso.</div>
+          <div class="summary-card"><strong>Datos sensibles</strong>Puede incluir RH, vacunación, firma clínica y soportes profesionales de salud.</div>
+        </div>
+
+        <h2 id="responsable">1. Responsable del tratamiento</h2>
+        <p>GRUPO MÉDICO INTEGRAL VIVE IPS S.A.S., en calidad de responsable del tratamiento, informa que recolecta, almacena, consulta, actualiza, usa y conserva datos personales de profesionales, contratistas, colaboradores y demás titulares que interactúan con la plataforma tecnológica de VIVE IPS.</p>
+        <p>Canal de atención para consultas, reclamos, actualización o supresión de datos: <strong>administracion@viveips.com.co</strong>. Este canal podrá ser ajustado por VIVE IPS según su procedimiento interno oficial.</p>
+
+        <h2 id="datos">2. Datos personales recolectados</h2>
+        <p>La plataforma podrá recolectar, entre otros, los siguientes datos:</p>
+        <ul>
+          <li>Datos de identificación: nombre, cédula, fecha y lugar de expedición, fecha de nacimiento.</li>
+          <li>Datos de contacto: correo electrónico, teléfono, ciudad, departamento y dirección.</li>
+          <li>Datos profesionales y académicos: cargo, especialidad, formación, diplomas, actas, tarjeta profesional, ReTHUS, experiencia laboral, cursos y certificaciones.</li>
+          <li>Datos administrativos y financieros: banco, tipo de cuenta, número de cuenta y titular de cuenta.</li>
+          <li>Documentos de soporte: hoja de vida, RUT, certificación bancaria, antecedentes, contrato, firmas, soportes de formación y demás documentos requeridos.</li>
+        </ul>
+
+        <h2 id="sensibles">3. Datos sensibles</h2>
+        <p>La plataforma podrá solicitar o almacenar información que pueda tener carácter sensible, como RH, soportes de vacunación, firma clínica, documentos relacionados con el ejercicio profesional en salud o información asociada al estado de salud o identificación biométrica.</p>
+        <p>El titular conoce que no está obligado a autorizar el tratamiento de datos sensibles salvo cuando estos sean necesarios para cumplir obligaciones legales, contractuales, administrativas, asistenciales o de habilitación/apoyo operativo propias de VIVE IPS y del sector salud.</p>
+
+        <h2 id="finalidades">4. Finalidades del tratamiento</h2>
+        <ul>
+          <li>Crear, administrar y actualizar el perfil del profesional en el portal.</li>
+          <li>Validar documentos de identificación, formación, experiencia, antecedentes, certificaciones y requisitos administrativos.</li>
+          <li>Gestionar procesos contractuales, administrativos, financieros, operativos y de talento humano en salud.</li>
+          <li>Generar hojas de vida documentales, reportes internos, carnets, contratos y soportes requeridos por VIVE IPS.</li>
+          <li>Verificar vigencias, vencimientos, cumplimiento documental y requisitos aplicables al cargo o servicio.</li>
+          <li>Cumplir obligaciones legales, contractuales, regulatorias, contables, administrativas y de auditoría.</li>
+          <li>Atender consultas, reclamos, actualización, rectificación, supresión o revocatoria de autorización cuando proceda.</li>
+        </ul>
+
+        <h2 id="derechos">5. Derechos del titular</h2>
+        <ul>
+          <li>Conocer, actualizar y rectificar sus datos personales.</li>
+          <li>Solicitar prueba de la autorización otorgada.</li>
+          <li>Ser informado sobre el uso dado a sus datos personales.</li>
+          <li>Presentar consultas o reclamos ante VIVE IPS.</li>
+          <li>Solicitar la supresión de datos o revocar la autorización cuando proceda.</li>
+          <li>Presentar quejas ante la Superintendencia de Industria y Comercio cuando lo considere procedente.</li>
+        </ul>
+
+        <h2 id="autorizacion">6. Autorización</h2>
+        <p>Al aceptar esta política en la plataforma, el titular autoriza de manera previa, expresa e informada a GRUPO MÉDICO INTEGRAL VIVE IPS S.A.S. para realizar el tratamiento de sus datos personales conforme a las finalidades aquí descritas.</p>
+        <p>La plataforma podrá conservar evidencia de la autorización, incluyendo fecha y hora de aceptación, versión de la política aceptada, usuario autenticado e información técnica de acceso como dirección IP.</p>
+
+        <h2 id="seguridad">7. Conservación y seguridad</h2>
+        <p>VIVE IPS conservará los datos personales durante el tiempo necesario para cumplir las finalidades autorizadas, las obligaciones legales, contractuales, contables, administrativas, de auditoría o defensa de derechos que resulten aplicables.</p>
+        <p>La plataforma implementará medidas técnicas, administrativas y organizacionales razonables para proteger la información contra acceso no autorizado, pérdida, alteración, divulgación o uso indebido.</p>
+
+        <h2 id="circulacion">8. Transferencia o circulación de datos</h2>
+        <p>Los datos podrán ser consultados por personal autorizado de VIVE IPS y, cuando sea necesario, compartidos con autoridades, entidades, auditores, aliados tecnológicos, encargados del tratamiento o terceros autorizados por el titular o por la ley, siempre conforme a las finalidades descritas y a los deberes de confidencialidad aplicables.</p>
+
+        <h2 id="reclamos">9. Consultas y reclamos</h2>
+        <p>Para ejercer sus derechos, el titular podrá comunicarse al canal dispuesto por VIVE IPS indicando su nombre completo, número de identificación, solicitud concreta, datos de contacto y soportes cuando sean necesarios.</p>
+
+        <div class="btn-row">
+          <a class="btn-policy btn-primary-policy" href="portal-profesionales/panel.html">Volver al portal</a>
+          <a class="btn-policy btn-secondary-policy" href="index.html">Ir al inicio</a>
+        </div>
+      </section>
+    </div>
+  </main>
+</body>
+</html>

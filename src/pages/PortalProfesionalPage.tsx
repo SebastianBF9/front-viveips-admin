@@ -20,6 +20,7 @@ import { useNavigate } from "react-router-dom";
 import {
   actualizarFechaDocumento,
   actualizarMiPerfilProfesional,
+  aceptarTratamientoDatos,
   clearSession,
   downloadBlob,
   eliminarFormacionPortal,
@@ -173,6 +174,9 @@ export function PortalProfesionalPage() {
   const [experiencias, setExperiencias] = useState<ExperienciaLaboral[]>([]);
   const [vacunas, setVacunas] = useState<Record<string, string>>({});
   const [formaciones, setFormaciones] = useState<FormacionPortal[]>([]);
+  const [showTratamientoModal, setShowTratamientoModal] = useState(false);
+  const [aceptaTratamiento, setAceptaTratamiento] = useState(false);
+  const [aceptandoTratamiento, setAceptandoTratamiento] = useState(false);
 
   const docsPorCodigo = useMemo(() => {
     return new Map(documentos.map((doc) => [doc.tipo_codigo, doc]));
@@ -207,7 +211,10 @@ export function PortalProfesionalPage() {
       ]);
       const p = perfilData.perfil;
       const departamentoActual = p.departamento || "";
+      const tratamientoAceptado = Boolean(p.acepta_tratamiento_datos);
       setPerfil(p);
+      setAceptaTratamiento(tratamientoAceptado);
+      setShowTratamientoModal(!tratamientoAceptado);
       setDepartamentos(deptData.departamentos || []);
       setForm({
         nombre: p.nombre || "",
@@ -269,6 +276,31 @@ export function PortalProfesionalPage() {
     }
   }
 
+  function manejarErrorDocumento(err: unknown, fallback: string) {
+    const message = err instanceof Error ? err.message : fallback;
+    if (message.includes("Tratamiento de Datos") || message.includes("tratamiento de datos")) {
+      setShowTratamientoModal(true);
+    }
+    setError(message);
+  }
+
+  async function aceptarPoliticaDatos() {
+    setAceptandoTratamiento(true);
+    setError("");
+    setSuccess("");
+    try {
+      await aceptarTratamientoDatos();
+      setAceptaTratamiento(true);
+      setShowTratamientoModal(false);
+      setSuccess("Autorizacion de tratamiento de datos registrada correctamente.");
+      await cargar();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "No fue posible registrar la autorizacion de datos");
+    } finally {
+      setAceptandoTratamiento(false);
+    }
+  }
+
   function actualizarReferencia(index: number, campo: keyof ReferenciaPersonal, valor: string) {
     setReferencias((actual) => actual.map((ref, i) => (i === index ? { ...ref, [campo]: valor } : ref)));
   }
@@ -292,7 +324,7 @@ export function PortalProfesionalPage() {
       } : exp)));
       setSuccess(data.ia_no_disponible ? "Certificado cargado; validacion IA no disponible, queda pendiente de revision." : "Certificado laboral cargado y validado con IA.");
     } catch (err) {
-      setError(err instanceof Error ? err.message : "No fue posible subir el certificado laboral");
+      manejarErrorDocumento(err, "No fue posible subir el certificado laboral");
     } finally {
       setUploading("");
     }
@@ -388,7 +420,7 @@ export function PortalProfesionalPage() {
       setSuccess(data.ia_no_disponible ? "Documento cargado; validacion IA no disponible, queda pendiente de revision." : "Documento cargado y validado con IA correctamente.");
       await cargar();
     } catch (err) {
-      setError(err instanceof Error ? err.message : "No fue posible subir el documento");
+      manejarErrorDocumento(err, "No fue posible subir el documento");
     } finally {
       setUploading("");
     }
@@ -462,6 +494,13 @@ export function PortalProfesionalPage() {
       <section className="professional-portal-content">
         {error && <div className="error-box">{error}</div>}
         {success && <div className="success-box">{success}</div>}
+        {!aceptaTratamiento && (
+          <div className="portal-consent-warning">
+            <strong>Autorizacion pendiente de tratamiento de datos</strong>
+            <span>Debes aceptar la politica antes de cargar documentos sensibles.</span>
+            <button type="button" onClick={() => setShowTratamientoModal(true)}>Aceptar ahora</button>
+          </div>
+        )}
 
         <section className="professional-welcome">
           <div>
@@ -640,6 +679,13 @@ export function PortalProfesionalPage() {
           </button>
         </div>
       </section>
+      {showTratamientoModal && (
+        <TratamientoDatosModal
+          loading={aceptandoTratamiento}
+          onAccept={aceptarPoliticaDatos}
+          onClose={aceptaTratamiento ? () => setShowTratamientoModal(false) : undefined}
+        />
+      )}
     </main>
   );
 }
@@ -651,6 +697,53 @@ function SectionTitle({ icon, title, subtitle }: { icon: ReactNode; title: strin
       <div>
         <h2>{title}</h2>
         <p>{subtitle}</p>
+      </div>
+    </div>
+  );
+}
+
+function TratamientoDatosModal({ loading, onAccept, onClose }: {
+  loading: boolean;
+  onAccept: () => void;
+  onClose?: () => void;
+}) {
+  const [checked, setChecked] = useState(false);
+  return (
+    <div className="portal-consent-modal">
+      <div className="portal-consent-card">
+        <div className="portal-consent-header">
+          <img src="/logo_carnet.png" alt="Vive IPS" />
+          <div>
+            <h2>Tratamiento de datos personales</h2>
+            <p>Version politica: 2026-05-12-v1</p>
+          </div>
+          {onClose && <button type="button" onClick={onClose}>×</button>}
+        </div>
+        <div className="portal-consent-body">
+          <p>
+            GRUPO MEDICO INTEGRAL VIVE IPS S.A.S. informa que los datos personales y documentos suministrados en esta
+            plataforma seran recolectados, almacenados, consultados, actualizados y utilizados para fines administrativos,
+            contractuales, asistenciales, validacion documental, cumplimiento normativo y gestion del talento humano en salud.
+          </p>
+          <p>
+            Algunos documentos pueden contener informacion sensible, como datos relacionados con salud, vacunacion, firma
+            clinica o soportes profesionales. Estos datos seran tratados conforme a la Politica de Tratamiento de Datos Personales.
+          </p>
+          <label className="portal-consent-check">
+            <input type="checkbox" checked={checked} onChange={(event) => setChecked(event.target.checked)} />
+            <span>
+              Acepto y autorizo de manera previa, expresa e informada el tratamiento de mis datos personales conforme a la
+              {" "}<a href="/politica-tratamiento-datos.html" target="_blank" rel="noopener noreferrer">Politica de Tratamiento de Datos Personales</a> de VIVE IPS.
+            </span>
+          </label>
+          <small>Esta autorizacion quedara registrada con fecha, version de politica e informacion tecnica de acceso.</small>
+        </div>
+        <div className="portal-consent-actions">
+          <a href="/politica-tratamiento-datos.html" target="_blank" rel="noopener noreferrer">Ver politica completa</a>
+          <button className="brand-action-btn" type="button" disabled={!checked || loading} onClick={onAccept}>
+            {loading ? "Guardando autorizacion..." : "Aceptar y continuar"}
+          </button>
+        </div>
       </div>
     </div>
   );

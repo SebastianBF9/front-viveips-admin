@@ -247,6 +247,9 @@ export interface ProfesionalPerfil {
   expedicion_cedula: string | null;
   departamento: string | null;
   foto?: string | null;
+  acepta_tratamiento_datos?: number | boolean | null;
+  version_politica_datos?: string | null;
+  fecha_acepta_tratamiento_datos?: string | null;
 }
 
 export interface ProfesionalPerfilPayload {

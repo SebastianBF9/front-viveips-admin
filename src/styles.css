@@ -1864,6 +1864,122 @@ td small { display: block; color: var(--muted); margin-top: 4px; }
 .vaccine-row {
   grid-template-columns: minmax(0, 1fr) 180px;
 }
+.portal-consent-warning {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  padding: 14px 16px;
+  border: 1px solid #fbbf24;
+  border-radius: 16px;
+  background: #fffbeb;
+  color: #92400e;
+}
+.portal-consent-warning strong {
+  color: #78350f;
+}
+.portal-consent-warning span {
+  flex: 1 1 280px;
+}
+.portal-consent-warning button {
+  border: 0;
+  border-radius: 999px;
+  padding: 10px 16px;
+  background: linear-gradient(135deg, var(--navy), var(--teal));
+  color: #fff;
+  font-weight: 900;
+  cursor: pointer;
+}
+.portal-consent-modal {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  display: grid;
+  place-items: center;
+  padding: 18px;
+  background: rgba(15, 23, 42, .68);
+  backdrop-filter: blur(6px);
+}
+.portal-consent-card {
+  width: min(760px, 100%);
+  max-height: calc(100vh - 36px);
+  overflow: auto;
+  border-radius: 24px;
+  background: #fff;
+  box-shadow: 0 24px 70px rgba(15, 23, 42, .32);
+}
+.portal-consent-header {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 22px 26px;
+  background: linear-gradient(105deg, #22aeb9, #1b3a6b);
+  color: #fff;
+}
+.portal-consent-header img {
+  width: 84px;
+  height: auto;
+}
+.portal-consent-header h2 {
+  margin: 0;
+  font-size: 22px;
+}
+.portal-consent-header p {
+  margin: 4px 0 0;
+  color: rgba(255,255,255,.82);
+}
+.portal-consent-header button {
+  margin-left: auto;
+  width: 40px;
+  height: 40px;
+  border: 0;
+  border-radius: 999px;
+  background: rgba(255,255,255,.18);
+  color: #fff;
+  font-size: 24px;
+  cursor: pointer;
+}
+.portal-consent-body {
+  display: grid;
+  gap: 14px;
+  padding: 24px 26px 12px;
+  color: #334155;
+}
+.portal-consent-body p {
+  margin: 0;
+  line-height: 1.55;
+}
+.portal-consent-check {
+  display: flex;
+  gap: 12px;
+  padding: 14px;
+  border-radius: 16px;
+  background: #f0f9ff;
+  color: var(--navy);
+  font-weight: 800;
+}
+.portal-consent-check input {
+  width: 18px;
+  height: 18px;
+  margin-top: 3px;
+  accent-color: var(--teal);
+}
+.portal-consent-check a,
+.portal-consent-actions a {
+  color: var(--navy);
+  font-weight: 950;
+}
+.portal-consent-body small {
+  color: #64748b;
+}
+.portal-consent-actions {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 14px;
+  padding: 18px 26px 24px;
+  flex-wrap: wrap;
+}
 
 @media (max-width: 980px) {
   .app-shell { grid-template-columns: 1fr; }

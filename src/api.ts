@@ -217,6 +217,10 @@ export async function actualizarMiPerfilProfesional(payload: ProfesionalPerfilPa
   return apiCall<{ success: boolean; mensaje: string }>("PUT", "/profesionales/mi-perfil", payload);
 }
 
+export async function aceptarTratamientoDatos() {
+  return apiCall<{ success: boolean; mensaje: string; version_politica_datos: string }>("POST", "/tratamiento-datos/aceptar");
+}
+
 export async function listarMisDocumentosProfesional() {
   return apiCall<{ success: boolean; documentos: DocumentoPortalProfesional[] }>("GET", "/documentos/mis-documentos");
 }
