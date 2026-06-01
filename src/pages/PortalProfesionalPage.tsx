@@ -1361,7 +1361,7 @@ function Field({ label, value, onChange, type = "text", required, disabled, clas
 }) {
   return (
     <label className={`portal-field ${className}`}>
-      {label} {required && <span>*</span>}
+      <span className="portal-field-label">{label} {required && <span className="portal-required">*</span>}</span>
       <input type={type} value={value} disabled={disabled} onChange={(event) => onChange?.(event.target.value)} />
     </label>
   );
@@ -1376,7 +1376,7 @@ function SelectField({ label, value, onChange, options, required }: {
 }) {
   return (
     <label className="portal-field">
-      {label} {required && <span>*</span>}
+      <span className="portal-field-label">{label} {required && <span className="portal-required">*</span>}</span>
       <select value={value} onChange={(event) => onChange(event.target.value)}>
         <option value="">Selecciona</option>
         {options.map((option) => <option key={option} value={option}>{option}</option>)}
@@ -1396,7 +1396,7 @@ function ObjectSelectField({ label, value, onChange, options, required, placehol
 }) {
   return (
     <label className="portal-field">
-      {label} {required && <span>*</span>}
+      <span className="portal-field-label">{label} {required && <span className="portal-required">*</span>}</span>
       <select value={value} disabled={disabled} onChange={(event) => onChange(event.target.value)}>
         <option value="">{placeholder}</option>
         {options.map((option) => <option key={`${option.value}-${option.label}`} value={option.value}>{option.label}</option>)}
