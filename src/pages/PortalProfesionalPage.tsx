@@ -10,6 +10,7 @@ import {
   FileText,
   GraduationCap,
   IdCard,
+  LayoutDashboard,
   LogOut,
   PenLine,
   Plus,
@@ -42,7 +43,9 @@ import {
   listarMisDocumentosProfesional,
   listarMunicipios,
   obtenerEstadoContratoProfesional,
+  obtenerMiAcceso,
   obtenerMiPerfilProfesional,
+  obtenerMisServiciosProfesional,
   subirFirmaContratoProfesional,
   subirDocumentoProfesional,
   subirFotoProfesional,
@@ -51,9 +54,11 @@ import type {
   DocumentoPortalProfesional,
   ExperienciaLaboral,
   FormacionPortal,
+  PermisosAcceso,
   ProfesionalPerfil,
   ProfesionalPerfilPayload,
   ReferenciaPersonal,
+  ServicioProfesionalAsignado,
   UbicacionDepartamento,
   UbicacionMunicipio,
   VacunaProfesional,
@@ -274,6 +279,8 @@ function dataUrlAArchivo(dataUrl: string, nombre: string) {
 export function PortalProfesionalPage() {
   const navigate = useNavigate();
   const [perfil, setPerfil] = useState<ProfesionalPerfil | null>(null);
+  const [acceso, setAcceso] = useState<PermisosAcceso | null>(null);
+  const [serviciosAsignados, setServiciosAsignados] = useState<ServicioProfesionalAsignado[]>([]);
   const [form, setForm] = useState<ProfesionalPerfilPayload>(CAMPOS_INICIALES);
   const [documentos, setDocumentos] = useState<DocumentoPortalProfesional[]>([]);
   const [loading, setLoading] = useState(true);
@@ -337,10 +344,16 @@ export function PortalProfesionalPage() {
         listarMisVacunas(),
         listarMisFormaciones(),
       ]);
+      obtenerMiAcceso()
+        .then(setAcceso)
+        .catch(() => setAcceso(null));
       obtenerEstadoContratoProfesional()
         .then((data) => setContrato(data.contrato))
         .catch(() => setContrato(null));
       const p = perfilData.perfil;
+      obtenerMisServiciosProfesional()
+        .then((data) => setServiciosAsignados(data.servicios || []))
+        .catch(() => setServiciosAsignados([]));
       const departamentoActual = p.departamento || "";
       const tratamientoAceptado = Boolean(p.acepta_tratamiento_datos);
       setPerfil(p);
@@ -868,6 +881,10 @@ export function PortalProfesionalPage() {
   if (loading) return <Loading text="Cargando portal profesional..." />;
 
   const primerNombre = form.nombre.split(" ").filter(Boolean)[0] || "Profesional";
+  const puedeEntrarAdmin = Boolean(acceso?.permiso_ver_todo);
+  const puedeEntrarTalento = Boolean(acceso?.permiso_ver_todo || acceso?.permiso_ver_profesionales || acceso?.permiso_crear_profesionales);
+  const puedeVerCapacitaciones = Boolean(acceso?.permiso_ver_todo || acceso?.permiso_ver_capacitaciones);
+  const serviciosVisibles = serviciosAsignados.filter((servicio) => servicio.estado !== "inactivo");
 
   return (
     <main className="professional-portal-page">
@@ -924,6 +941,42 @@ export function PortalProfesionalPage() {
             <article><strong>{stats.vencidos}</strong><span>Vencidos</span></article>
           </div>
         </section>
+
+        {(puedeEntrarAdmin || puedeEntrarTalento || puedeVerCapacitaciones || serviciosVisibles.length > 0) && (
+          <section className="portal-section-card portal-access-section">
+            <SectionTitle icon={<LayoutDashboard size={22} />} title="Accesos rápidos" subtitle="Entra a las herramientas disponibles para tu usuario." />
+            <div className="portal-access-grid">
+              {puedeEntrarAdmin && (
+                <button className="portal-access-card primary" type="button" onClick={() => navigate("/servicios")}>
+                  <LayoutDashboard size={20} />
+                  <span>Panel administrativo</span>
+                  <small>Acceso total a servicios, talento humano y permisos.</small>
+                </button>
+              )}
+              {puedeEntrarTalento && (
+                <button className="portal-access-card" type="button" onClick={() => navigate("/talento-humano")}>
+                  <UsersRound size={20} />
+                  <span>Talento Humano</span>
+                  <small>Gestionar profesionales y documentos autorizados.</small>
+                </button>
+              )}
+              {puedeVerCapacitaciones && (
+                <button className="portal-access-card" type="button" onClick={() => navigate("/portal-profesional/capacitaciones")}>
+                  <GraduationCap size={20} />
+                  <span>Capacitaciones</span>
+                  <small>Materiales, examenes y certificados.</small>
+                </button>
+              )}
+              {serviciosVisibles.map((servicio) => (
+                <button className="portal-access-card service" type="button" key={servicio.id} onClick={() => navigate(`/servicios/${servicio.codigo}`)}>
+                  <BriefcaseBusiness size={20} />
+                  <span>{servicio.codigo} - {servicio.nombre}</span>
+                  <small>{servicio.es_servicio_base ? "Servicio base" : "Servicio asignado"} - {servicio.rol_en_servicio || servicio.tipo_relacion || "Sin rol definido"}</small>
+                </button>
+              ))}
+            </div>
+          </section>
+        )}
 
         <section className="portal-section-card">
           <SectionTitle icon={<UserRound size={22} />} title="Información Personal" subtitle="Mantén tus datos actualizados para el equipo administrativo." />

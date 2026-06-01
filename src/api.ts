@@ -205,6 +205,13 @@ export async function obtenerServiciosProfesional(id: number) {
   );
 }
 
+export async function obtenerMisServiciosProfesional() {
+  return apiCall<{ success: boolean; servicios: ServicioProfesionalAsignado[]; total: number }>(
+    "GET",
+    "/profesionales/mis-servicios",
+  );
+}
+
 export async function obtenerFormacionProfesional(id: number) {
   return apiCall<{ success: boolean; formaciones: any[] }>("GET", `/formacion/${id}`);
 }
