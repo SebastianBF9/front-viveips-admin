@@ -345,25 +345,34 @@ export function CapacitacionesTalentoSection() {
                 </td>
                 <td>
                   <div className="table-actions training-actions">
-                    <button type="button" onClick={() => abrirEditarCapacitacion(capacitacion)} title="Editar capacitacion">
-                      <Pencil size={15} /> Editar
+                    <button
+                      type="button"
+                      onClick={() => abrirEditarCapacitacion(capacitacion)}
+                      className="training-icon-action edit"
+                      title="Editar capacitación"
+                      aria-label="Editar capacitación"
+                    >
+                      <Pencil size={15} />
                     </button>
                     <button
                       type="button"
                       onClick={() => cambiarEstado(capacitacion)}
+                      className={`training-icon-action power ${capacitacion.activo ? "active" : "inactive"}`}
                       disabled={accionLoading === `toggle-${capacitacion.id}`}
-                      title={capacitacion.activo ? "Desactivar" : "Activar"}
+                      title={capacitacion.activo ? "Desactivar capacitación" : "Activar capacitación"}
+                      aria-label={capacitacion.activo ? "Desactivar capacitación" : "Activar capacitación"}
                     >
-                      <Power size={15} /> {capacitacion.activo ? "Desactivar" : "Activar"}
+                      <Power size={15} />
                     </button>
                     <button
-                      className="danger"
                       type="button"
+                      className="training-icon-action delete"
                       onClick={() => eliminarCapacitacion(capacitacion)}
                       disabled={accionLoading === `eliminar-${capacitacion.id}`}
-                      title="Eliminar capacitacion"
+                      title="Eliminar capacitación"
+                      aria-label="Eliminar capacitación"
                     >
-                      <Trash2 size={15} /> Eliminar
+                      <Trash2 size={15} />
                     </button>
                   </div>
                 </td>

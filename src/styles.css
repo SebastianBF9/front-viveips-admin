@@ -387,6 +387,67 @@ td small { display: block; color: var(--muted); margin-top: 4px; }
   gap: 7px;
   flex-wrap: wrap;
 }
+
+.training-actions {
+  min-width: 136px;
+}
+
+.training-icon-action {
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  border: 1px solid var(--border);
+  background: #fff;
+  color: var(--navy);
+  transition: all 0.2s ease;
+  padding: 0;
+}
+
+.training-icon-action:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 10px rgba(15, 23, 42, .1);
+  border-color: var(--teal);
+}
+
+.training-icon-action.edit {
+  color: var(--navy);
+}
+.training-icon-action.edit:hover {
+  background-color: #eff6ff;
+  border-color: var(--teal);
+}
+
+.training-icon-action.power.active {
+  background-color: #d1fae5;
+  border-color: #86efac;
+  color: #047857;
+}
+.training-icon-action.power.active:hover {
+  background-color: #d1fae5;
+  border-color: #48bb78;
+}
+
+.training-icon-action.power.inactive {
+  background-color: #fef2f2;
+  border-color: #fecaca;
+  color: #dc2626;
+}
+.training-icon-action.power.inactive:hover {
+  background-color: #fef2f2;
+  border-color: #f56565;
+}
+
+.training-icon-action.delete {
+  color: #dc2626;
+}
+.training-icon-action.delete:hover {
+  background-color: #fee2e2;
+  border-color: #f56565;
+}
 .table-actions button,
 .doc-actions button {
   border: 1px solid var(--border);
