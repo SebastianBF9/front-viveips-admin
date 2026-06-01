@@ -1476,9 +1476,9 @@ td small { display: block; color: var(--muted); margin-top: 4px; }
   border: 1px solid var(--border);
 }
 .professional-portal-content {
-  width: min(1064px, calc(100% - 72px));
+  width: min(900px, 100%);
   margin: 0 auto;
-  padding: 12px 0 90px;
+  padding: 40px 24px 90px;
   display: grid;
   gap: 0;
 }
@@ -1491,7 +1491,7 @@ td small { display: block; color: var(--muted); margin-top: 4px; }
   padding: 36px 50px;
   border-radius: 32px;
   background: linear-gradient(135deg, #1BAAB5, #1B3A6B);
-  color: #fff;
+  color: #ffffff;
   box-shadow: none;
   margin-bottom: 32px;
   position: relative;
@@ -1527,6 +1527,7 @@ td small { display: block; color: var(--muted); margin-top: 4px; }
   font-size: 30px;
   font-weight: 900;
   line-height: 1.12;
+  color: #ffffff;
 }
 .professional-welcome p {
   margin: 0;
@@ -1534,7 +1535,7 @@ td small { display: block; color: var(--muted); margin-top: 4px; }
   font-size: 17px;
   font-weight: 700;
   line-height: 1.35;
-  color: rgba(255,255,255,.84);
+  color: rgba(255,255,255,.92);
 }
 .welcome-stats {
   display: flex;
