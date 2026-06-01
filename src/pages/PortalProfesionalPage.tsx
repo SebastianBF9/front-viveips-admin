@@ -552,6 +552,9 @@ export function PortalProfesionalPage() {
           <button className="brand-action-btn small-brand-btn" type="button" onClick={() => setReferencias((actual) => [...actual, { ...REFERENCIA_VACIA }])}><Plus size={17} /> Agregar referencia</button>
         </section>
 
+        <DocumentSection title="Documentos Personales" icon={<IdCard size={22} />} codes={DOCUMENTOS_PERSONALES} docs={docsPorCodigo} uploading={uploading} onUpload={subirDocumento} onDownload={descargarDocumento} />
+        <DocumentSection title="Documentos Académicos" icon={<GraduationCap size={22} />} codes={DOCUMENTOS_ACADEMICOS} docs={docsPorCodigo} uploading={uploading} onUpload={subirDocumento} onDownload={descargarDocumento} />
+
         <FormacionSection formaciones={formaciones} uploading={uploading} onSave={guardarFormacion} onDelete={eliminarFormacion} />
 
         <section className="portal-section-card">
@@ -600,9 +603,6 @@ export function PortalProfesionalPage() {
             ))}
           </div>
         </section>
-
-        <DocumentSection title="Documentos Personales" icon={<IdCard size={22} />} codes={DOCUMENTOS_PERSONALES} docs={docsPorCodigo} uploading={uploading} onUpload={subirDocumento} onDownload={descargarDocumento} />
-        <DocumentSection title="Documentos Académicos" icon={<GraduationCap size={22} />} codes={DOCUMENTOS_ACADEMICOS} docs={docsPorCodigo} uploading={uploading} onUpload={subirDocumento} onDownload={descargarDocumento} />
 
         <section className="portal-section-card">
           <SectionTitle icon={<BriefcaseBusiness size={22} />} title="Antecedentes" subtitle="Estos documentos se mantienen como soportes periódicos del profesional." />
