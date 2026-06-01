@@ -309,6 +309,16 @@ export interface CapacitacionAdminPayload {
   activo: number;
 }
 
+export interface CapacitacionArchivo {
+  id: number;
+  capacitacion_id: number;
+  nombre_archivo: string;
+  ruta_archivo: string | null;
+  mime_type: string | null;
+  fecha_subida?: string | null;
+  created_at?: string | null;
+}
+
 export interface AdherenciaCapacitacion {
   profesional_id: number;
   profesional: string;

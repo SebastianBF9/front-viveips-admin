@@ -2,6 +2,7 @@ import type {
   AdherenciaCapacitacionesResponse,
   CumplimientoServicio,
   CapacitacionAdmin,
+  CapacitacionArchivo,
   CapacitacionAdminPayload,
   ProfesionalServicioPayload,
   PermisosAcceso,
@@ -239,6 +240,44 @@ export async function toggleCapacitacionAdmin(id: number) {
 
 export async function eliminarCapacitacionAdmin(id: number) {
   return apiCall<{ success: boolean }>("DELETE", `/capacitaciones/admin/eliminar/${id}`);
+}
+
+export async function listarArchivosCapacitacionAdmin(id: number) {
+  return apiCall<{ success: boolean; archivos: CapacitacionArchivo[] }>("GET", `/capacitaciones/admin/archivos/${id}`);
+}
+
+export async function subirArchivoCapacitacionAdmin(capacitacionId: number, archivo: File) {
+  const token = getToken();
+  const form = new FormData();
+  form.set("capacitacion_id", String(capacitacionId));
+  form.set("archivo", archivo);
+
+  const headers: Record<string, string> = {};
+  if (token) headers.Authorization = `Bearer ${token}`;
+
+  const response = await fetch(`${API_URL}/capacitaciones/admin/archivo/subir`, {
+    method: "POST",
+    headers,
+    body: form,
+  });
+
+  let data: any = null;
+  try {
+    data = await response.json();
+  } catch {
+    data = null;
+  }
+
+  if (!response.ok) {
+    if (response.status === 401) clearSession();
+    throw new Error(data?.detail || data?.message || "No fue posible subir el material");
+  }
+
+  return data as { success: boolean };
+}
+
+export async function eliminarArchivoCapacitacionAdmin(id: number) {
+  return apiCall<{ success: boolean }>("DELETE", `/capacitaciones/admin/archivo/${id}`);
 }
 
 export async function obtenerAdherenciaCapacitaciones(params: {

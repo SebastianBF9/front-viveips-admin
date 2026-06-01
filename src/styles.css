@@ -423,6 +423,14 @@ td small { display: block; color: var(--muted); margin-top: 4px; }
   border-color: var(--teal);
 }
 
+.training-icon-action.file {
+  color: #0f766e;
+}
+.training-icon-action.file:hover {
+  background-color: #ecfeff;
+  border-color: var(--teal);
+}
+
 .training-icon-action.power.active {
   background-color: #d1fae5;
   border-color: #86efac;
@@ -1227,6 +1235,83 @@ td small { display: block; color: var(--muted); margin-top: 4px; }
 .training-form-grid textarea {
   min-height: 96px;
 }
+.training-file-heading {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 14px;
+  padding: 16px 18px;
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  background: #f8fafc;
+}
+.training-file-heading strong,
+.training-file-heading span {
+  display: block;
+}
+.training-file-heading span {
+  color: var(--muted);
+  margin-top: 3px;
+}
+.training-upload-box {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 14px;
+  align-items: end;
+  padding: 16px 18px;
+  border: 1px dashed #9bd8df;
+  border-radius: 16px;
+  background: #f0fdfa;
+}
+.training-upload-box label {
+  display: grid;
+  gap: 8px;
+  color: var(--navy);
+  font-weight: 900;
+}
+.training-upload-box input {
+  width: 100%;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 10px 12px;
+  background: #fff;
+}
+.training-file-list {
+  display: grid;
+  gap: 10px;
+}
+.training-file-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 14px;
+  padding: 13px 14px;
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  background: #fff;
+}
+.training-file-item > div:first-child {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+}
+.training-file-item strong,
+.training-file-item span {
+  display: block;
+}
+.training-file-item strong {
+  color: var(--navy);
+  overflow-wrap: anywhere;
+}
+.training-file-item span {
+  color: var(--muted);
+  font-size: 12px;
+  margin-top: 2px;
+}
+.compact-empty {
+  padding: 18px;
+}
 
 @media (max-width: 980px) {
   .app-shell { grid-template-columns: 1fr; }
@@ -1240,6 +1325,13 @@ td small { display: block; color: var(--muted); margin-top: 4px; }
   .page-header { display: grid; }
   .kpi-grid, .kpi-grid.four, .kpi-grid.five, .standards-grid, .form-grid, .detail-grid, .modal-docs-grid, .assigned-services-grid, .contract-form-grid, .create-user-form { grid-template-columns: 1fr; }
   .training-form-grid { grid-template-columns: 1fr; }
+  .training-upload-box {
+    grid-template-columns: 1fr;
+    align-items: stretch;
+  }
+  .training-file-item {
+    align-items: flex-start;
+  }
   .system-info-grid { grid-template-columns: 1fr; }
   .assigned-service-card dl { grid-template-columns: 1fr; }
   .contract-modal-body { padding: 22px; }

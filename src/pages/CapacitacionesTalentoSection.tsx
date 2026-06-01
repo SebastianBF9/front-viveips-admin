@@ -6,6 +6,7 @@ import {
   Download,
   FileQuestion,
   FileText,
+  Paperclip,
   Pencil,
   Plus,
   Power,
@@ -15,13 +16,23 @@ import {
 } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import {
+  downloadBlob,
+  eliminarArchivoCapacitacionAdmin,
   eliminarCapacitacionAdmin,
   guardarCapacitacionAdmin,
   listarCapacitacionesAdmin,
+  listarArchivosCapacitacionAdmin,
   obtenerAdherenciaCapacitaciones,
+  subirArchivoCapacitacionAdmin,
   toggleCapacitacionAdmin,
 } from "../api";
-import type { AdherenciaCapacitacion, AdherenciaCapacitacionesResponse, CapacitacionAdmin, CapacitacionAdminPayload } from "../types";
+import type {
+  AdherenciaCapacitacion,
+  AdherenciaCapacitacionesResponse,
+  CapacitacionAdmin,
+  CapacitacionArchivo,
+  CapacitacionAdminPayload,
+} from "../types";
 import { Loading } from "../ui/Loading";
 
 const RAMAS_CAPACITACION = [
@@ -104,6 +115,10 @@ export function CapacitacionesTalentoSection() {
   const [busquedaAdh, setBusquedaAdh] = useState("");
   const [estadoAdh, setEstadoAdh] = useState("");
   const [modalAbierto, setModalAbierto] = useState(false);
+  const [modalArchivos, setModalArchivos] = useState(false);
+  const [capacitacionArchivos, setCapacitacionArchivos] = useState<CapacitacionAdmin | null>(null);
+  const [archivos, setArchivos] = useState<CapacitacionArchivo[]>([]);
+  const [archivoSeleccionado, setArchivoSeleccionado] = useState<File | null>(null);
   const [form, setForm] = useState<CapacitacionAdminPayload>(CAPACITACION_FORM_INICIAL);
   const [loading, setLoading] = useState(true);
   const [accionLoading, setAccionLoading] = useState("");
@@ -255,6 +270,82 @@ export function CapacitacionesTalentoSection() {
     }
   }
 
+  async function abrirArchivosCapacitacion(capacitacion: CapacitacionAdmin) {
+    setCapacitacionArchivos(capacitacion);
+    setModalArchivos(true);
+    setArchivoSeleccionado(null);
+    setAccionLoading(`archivos-${capacitacion.id}`);
+    setError("");
+    setSuccess("");
+    try {
+      const data = await listarArchivosCapacitacionAdmin(capacitacion.id);
+      setArchivos(data.archivos || []);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "No fue posible cargar los materiales");
+    } finally {
+      setAccionLoading("");
+    }
+  }
+
+  async function recargarArchivos() {
+    if (!capacitacionArchivos) return;
+    const data = await listarArchivosCapacitacionAdmin(capacitacionArchivos.id);
+    setArchivos(data.archivos || []);
+  }
+
+  async function subirMaterial() {
+    if (!capacitacionArchivos || !archivoSeleccionado) {
+      setError("Selecciona un archivo para subir.");
+      return;
+    }
+
+    setAccionLoading("subir-material");
+    setError("");
+    setSuccess("");
+    try {
+      await subirArchivoCapacitacionAdmin(capacitacionArchivos.id, archivoSeleccionado);
+      setArchivoSeleccionado(null);
+      setSuccess("Material cargado correctamente.");
+      await recargarArchivos();
+      await cargar();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "No fue posible subir el material");
+    } finally {
+      setAccionLoading("");
+    }
+  }
+
+  async function descargarMaterial(archivo: CapacitacionArchivo) {
+    setAccionLoading(`descargar-material-${archivo.id}`);
+    setError("");
+    try {
+      await downloadBlob(`/capacitaciones/descargar-archivo/${archivo.id}`, archivo.nombre_archivo || `material_${archivo.id}`);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "No fue posible descargar el material");
+    } finally {
+      setAccionLoading("");
+    }
+  }
+
+  async function eliminarMaterial(archivo: CapacitacionArchivo) {
+    const confirmar = window.confirm(`Eliminar el material "${archivo.nombre_archivo}"?`);
+    if (!confirmar) return;
+
+    setAccionLoading(`eliminar-material-${archivo.id}`);
+    setError("");
+    setSuccess("");
+    try {
+      await eliminarArchivoCapacitacionAdmin(archivo.id);
+      setSuccess("Material eliminado correctamente.");
+      await recargarArchivos();
+      await cargar();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "No fue posible eliminar el material");
+    } finally {
+      setAccionLoading("");
+    }
+  }
+
   if (loading) return <Loading text="Cargando capacitaciones..." />;
 
   return (
@@ -345,6 +436,15 @@ export function CapacitacionesTalentoSection() {
                 </td>
                 <td>
                   <div className="table-actions training-actions">
+                    <button
+                      type="button"
+                      onClick={() => abrirArchivosCapacitacion(capacitacion)}
+                      className="training-icon-action file"
+                      title="Gestionar materiales"
+                      aria-label="Gestionar materiales"
+                    >
+                      <Paperclip size={15} />
+                    </button>
                     <button
                       type="button"
                       onClick={() => abrirEditarCapacitacion(capacitacion)}
@@ -532,6 +632,85 @@ export function CapacitacionesTalentoSection() {
                 <button className="primary-btn gradient-btn" type="button" onClick={guardarCapacitacion} disabled={accionLoading === "guardar-capacitacion"}>
                   Guardar capacitacion
                 </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {modalArchivos && capacitacionArchivos && (
+        <div className="modal-backdrop" onMouseDown={() => setModalArchivos(false)}>
+          <div className="modal training-modal" onMouseDown={(event) => event.stopPropagation()}>
+            <div className="professional-detail-title training-modal-title">
+              <h2><Paperclip size={22} /> Materiales de capacitacion</h2>
+              <button type="button" onClick={() => setModalArchivos(false)} aria-label="Cerrar modal">
+                <X size={22} />
+              </button>
+            </div>
+
+            <div className="training-modal-body">
+              <div className="training-file-heading">
+                <div>
+                  <strong>{capacitacionArchivos.nombre}</strong>
+                  <span>{capacitacionArchivos.rama || "Sin rama"}</span>
+                </div>
+                <span className="training-chip">{archivos.length} archivo(s)</span>
+              </div>
+
+              <div className="training-upload-box">
+                <label>
+                  Subir nuevo material
+                  <input
+                    type="file"
+                    accept=".pdf,.doc,.docx,.ppt,.pptx,.xls,.xlsx,.png,.jpg,.jpeg,.webp"
+                    onChange={(event) => setArchivoSeleccionado(event.target.files?.[0] || null)}
+                  />
+                </label>
+                <button
+                  className="primary-btn gradient-btn"
+                  type="button"
+                  onClick={subirMaterial}
+                  disabled={accionLoading === "subir-material" || !archivoSeleccionado}
+                >
+                  Subir material
+                </button>
+              </div>
+
+              <div className="training-file-list">
+                {archivos.map((archivo) => (
+                  <article className="training-file-item" key={archivo.id}>
+                    <div>
+                      <FileText size={18} />
+                      <div>
+                        <strong>{archivo.nombre_archivo || `Material ${archivo.id}`}</strong>
+                        <span>{archivo.mime_type || "Archivo"}</span>
+                      </div>
+                    </div>
+                    <div className="table-actions training-actions">
+                      <button
+                        type="button"
+                        className="training-icon-action edit"
+                        onClick={() => descargarMaterial(archivo)}
+                        disabled={accionLoading === `descargar-material-${archivo.id}`}
+                        title="Descargar material"
+                        aria-label="Descargar material"
+                      >
+                        <Download size={15} />
+                      </button>
+                      <button
+                        type="button"
+                        className="training-icon-action delete"
+                        onClick={() => eliminarMaterial(archivo)}
+                        disabled={accionLoading === `eliminar-material-${archivo.id}`}
+                        title="Eliminar material"
+                        aria-label="Eliminar material"
+                      >
+                        <Trash2 size={15} />
+                      </button>
+                    </div>
+                  </article>
+                ))}
+                {archivos.length === 0 && <div className="empty-state compact-empty">Esta capacitacion no tiene materiales cargados.</div>}
               </div>
             </div>
           </div>
