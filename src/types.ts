@@ -493,6 +493,200 @@ export interface ResultadoExamenCapacitacion {
   total: number;
 }
 
+export type EstadoEquipoBiomedico =
+  | "disponible"
+  | "asignacion_en_proceso"
+  | "asignado"
+  | "pendiente_revision"
+  | "en_mantenimiento"
+  | "fuera_de_servicio"
+  | "extraviado"
+  | "dado_de_baja"
+  | string;
+
+export interface EquipoBiomedico {
+  id: number;
+  codigo_interno: string | null;
+  nombre: string;
+  marca: string | null;
+  modelo: string | null;
+  serie: string | null;
+  registro_invima: string | null;
+  area: string | null;
+  servicio: string | null;
+  ubicacion_actual: string | null;
+  latitud?: number | null;
+  longitud?: number | null;
+  estado: EstadoEquipoBiomedico;
+  requiere_calibracion: number | boolean | null;
+  manual_usuario: string | null;
+  manual_tecnico: string | null;
+  foto_equipo?: string | null;
+  observaciones: string | null;
+  created_at?: string | null;
+  updated_at?: string | null;
+}
+
+export interface EquipoCategoria {
+  id?: number;
+  nombre: string;
+  activo?: number | boolean;
+}
+
+export interface EquipoAdquisicion {
+  forma_adquisicion?: string | null;
+  fecha_adquisicion?: string | null;
+  acta_recibo?: string | null;
+  fecha_instalacion?: string | null;
+  fecha_inicio_operacion?: string | null;
+  garantia_meses?: number | null;
+  vencimiento_garantia?: string | null;
+  costo?: number | null;
+  vida_util?: string | null;
+  proveedor?: string | null;
+  proveedor_nit?: string | null;
+  proveedor_direccion?: string | null;
+  proveedor_telefono?: string | null;
+  proveedor_email?: string | null;
+  fabricante?: string | null;
+  pais_fabricacion?: string | null;
+  observaciones?: string | null;
+}
+
+export interface EquipoDatosTecnicos {
+  tipo_equipo?: string | null;
+  fuente_alimentacion?: string | null;
+  tecnologia_predominante?: string | null;
+  voltaje_min?: string | null;
+  voltaje_max?: string | null;
+  corriente_min?: string | null;
+  corriente_max?: string | null;
+  potencia?: string | null;
+  frecuencia?: string | null;
+  presion?: string | null;
+  velocidad?: string | null;
+  peso?: string | null;
+  temperatura?: string | null;
+  otros_datos_instalacion?: string | null;
+  rango_voltaje?: string | null;
+  rango_corriente?: string | null;
+  rango_potencia?: string | null;
+  rango_presion?: string | null;
+  rango_velocidad?: string | null;
+  rango_temperatura?: string | null;
+  rango_humedad?: string | null;
+  recomendaciones_fabricante?: string | null;
+  observaciones?: string | null;
+}
+
+export interface EquipoApoyoTecnico {
+  manual_operacion?: number | boolean | null;
+  manual_mantenimiento?: number | boolean | null;
+  manual_partes?: number | boolean | null;
+  manual_despiece?: number | boolean | null;
+  plano_electronico?: number | boolean | null;
+  plano_electrico?: number | boolean | null;
+  plano_neumatico?: number | boolean | null;
+  plano_mecanico?: number | boolean | null;
+  clasificacion_biomedica?: string | null;
+  clasificacion_riesgo?: string | null;
+  periodicidad_mantenimiento?: string | null;
+  periodicidad_calibracion?: string | null;
+  requiere_calibracion?: number | boolean | null;
+  observaciones?: string | null;
+}
+
+export interface EquipoDocumento {
+  id?: number | null;
+  codigo?: string;
+  nombre?: string;
+  tipo_documento?: string | null;
+  documento_id?: number | null;
+  estado_anexo: "anexo" | "no_anexo" | "no_aplica" | string;
+  nombre_archivo?: string | null;
+  ruta_archivo?: string | null;
+  fecha_vencimiento?: string | null;
+  estado?: string | null;
+  observaciones?: string | null;
+}
+
+export interface EquipoMantenimiento {
+  id: number;
+  tipo: string | null;
+  numero_reporte?: string | null;
+  fecha_mantenimiento: string | null;
+  proxima_fecha: string | null;
+  responsable: string | null;
+  descripcion: string | null;
+  horas_hombre?: number | null;
+  horas_paro?: number | null;
+  repuestos: string | null;
+  costo_repuesto?: number | null;
+  costo: number | null;
+  soporte?: string | null;
+  estado_equipo_posterior: string | null;
+  firmado_por?: string | null;
+  firma_clinica?: string | null;
+}
+
+export interface EquipoCalibracion {
+  id: number;
+  fecha_calibracion: string | null;
+  proxima_calibracion: string | null;
+  certificado: string | null;
+  entidad_calibradora: string | null;
+  resultado: string | null;
+  observaciones: string | null;
+}
+
+export interface EquipoMovimiento {
+  id: number;
+  tipo_movimiento: string | null;
+  descripcion: string | null;
+  ubicacion_texto?: string | null;
+  latitud?: number | null;
+  longitud?: number | null;
+  created_at?: string | null;
+}
+
+export interface EquipoAsignacion {
+  id: number;
+  estado: string;
+  tipo_asignacion?: string | null;
+  paciente_nombre?: string | null;
+  paciente_documento?: string | null;
+  responsable_nombre?: string | null;
+  responsable_documento?: string | null;
+  direccion_entrega?: string | null;
+  ciudad?: string | null;
+  departamento?: string | null;
+  fecha_entrega?: string | null;
+  fecha_estimada_devolucion?: string | null;
+  pagare_estado?: string | null;
+}
+
+export interface EquipoHojaVida {
+  success: boolean;
+  equipo: EquipoBiomedico;
+  adquisicion: EquipoAdquisicion | null;
+  datos_tecnicos: EquipoDatosTecnicos | null;
+  apoyo_tecnico: EquipoApoyoTecnico | null;
+  documentos: EquipoDocumento[];
+  mantenimientos: EquipoMantenimiento[];
+  calibraciones: EquipoCalibracion[];
+  asignacion_activa: EquipoAsignacion | null;
+  movimientos: EquipoMovimiento[];
+}
+
+export interface EquipoAlertaResumen {
+  success: boolean;
+  mantenimientos: Array<EquipoBiomedico & { proxima_fecha?: string | null; dias_restantes?: number | null }>;
+  calibraciones: Array<EquipoBiomedico & { proxima_calibracion?: string | null; dias_restantes?: number | null }>;
+  asignaciones_vencidas: EquipoAsignacion[];
+  pendientes_revision: EquipoBiomedico[];
+  total: number;
+}
+
 export interface AdherenciaCapacitacion {
   profesional_id: number;
   profesional: string;

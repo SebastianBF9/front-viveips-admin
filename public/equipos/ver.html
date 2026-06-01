@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Consulta de Equipo - VIVE IPS</title>
+  <style>
+    body{background:#f6fafb;margin:0;font-family:Arial,sans-serif;color:#1f2937;}
+    .qr-page{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:24px;}
+    .qr-card{width:100%;max-width:760px;background:white;border-radius:24px;box-shadow:0 20px 60px rgba(15,23,42,.12);overflow:hidden;}
+    .qr-header{background:linear-gradient(135deg,#1B3A6B,#1BAAB5);color:white;padding:24px;display:flex;align-items:center;gap:16px;}
+    .logo-box{width:72px;height:72px;border-radius:18px;background:white;display:flex;align-items:center;justify-content:center;overflow:hidden;flex-shrink:0;padding:7px;}
+    .logo-box img{width:100%;height:100%;object-fit:contain;border-radius:10px;}
+    .qr-header h1{margin:0;font-size:22px;font-weight:900;}
+    .qr-header p{margin:4px 0 0;opacity:.9;font-size:14px;color:white;}
+    .qr-body{padding:24px;}
+    .equipo-foto{width:100%;height:260px;background:#f8fafc;border:1px solid #e5e7eb;border-radius:18px;display:flex;align-items:center;justify-content:center;overflow:hidden;margin-bottom:18px;color:#64748b;font-weight:700;}
+    .equipo-foto img{width:100%;height:100%;object-fit:contain;display:block;}
+    .grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:14px;}
+    .dato{background:#f8fafc;border:1px solid #e5e7eb;border-radius:14px;padding:12px;}
+    .dato span{display:block;font-size:11px;color:#64748b;text-transform:uppercase;font-weight:800;letter-spacing:.4px;}
+    .dato strong{display:block;margin-top:4px;font-size:15px;}
+    .badge{display:inline-flex;padding:6px 12px;border-radius:999px;font-weight:800;font-size:13px;background:#dcfce7;color:#166534;}
+    .badge.asignado{background:#fef3c7;color:#92400e;}
+    .acciones{display:flex;flex-wrap:wrap;gap:10px;margin-top:22px;}
+    .btn{border:none;border-radius:999px;padding:11px 18px;font-weight:800;cursor:pointer;text-decoration:none;display:inline-flex;align-items:center;gap:8px;}
+    .btn-primary{background:linear-gradient(135deg,#1B3A6B,#1BAAB5);color:white;}
+    .btn-secondary{background:#eff6ff;color:#1d4ed8;border:1px solid #bfdbfe;}
+    .privacy{margin-top:18px;background:#fffbeb;color:#92400e;border:1px solid #fed7aa;border-radius:14px;padding:12px;font-size:13px;line-height:1.45;}
+    .error{padding:30px;text-align:center;color:#b91c1c;}
+    @media(max-width:640px){.grid{grid-template-columns:1fr}.qr-header{align-items:flex-start}.equipo-foto{height:210px}}
+  </style>
+</head>
+<body>
+  <main class="qr-page">
+    <section class="qr-card">
+      <div class="qr-header">
+        <div class="logo-box"><img src="/logo_carnet.png" alt="VIVE IPS"></div>
+        <div><h1>Consulta de equipo biomedico</h1><p>Modulo de Tecnovigilancia</p></div>
+      </div>
+      <div class="qr-body" id="contenido"><div style="text-align:center;padding:30px;">Consultando equipo...</div></div>
+    </section>
+  </main>
+
+  <script>
+    const API_URL = window.location.hostname.includes("localhost")
+      ? "https://api-pruebas.viveips.com.co"
+      : `${window.location.protocol}//api-pruebas.viveips.com.co`;
+    const params = new URLSearchParams(window.location.search);
+    const codigo = params.get("codigo");
+
+    function archivoQr(tipo){ return `${API_URL}/qr/equipos/${encodeURIComponent(codigo)}/archivo/${tipo}`; }
+    function estadoLabel(estado){
+      const labels = {
+        disponible: "Disponible",
+        asignado: "Asignado",
+        asignacion_en_proceso: "Asignacion en proceso",
+        pendiente_revision: "Pendiente revision",
+        en_mantenimiento: "En mantenimiento",
+        fuera_de_servicio: "Fuera de servicio",
+        extraviado: "Extraviado",
+        dado_de_baja: "Dado de baja"
+      };
+      return labels[estado] || estado || "-";
+    }
+    function esc(v){
+      return String(v ?? "")
+        .replaceAll("&","&amp;")
+        .replaceAll("<","&lt;")
+        .replaceAll(">","&gt;")
+        .replaceAll('"',"&quot;")
+        .replaceAll("'","&#039;");
+    }
+    function loginGestion(){
+      window.location.href = `/login?next=${encodeURIComponent(`/infraestructura?codigo=${codigo || ""}`)}`;
+    }
+    async function cargar(){
+      const cont = document.getElementById("contenido");
+      if(!codigo){ cont.innerHTML = '<div class="error">No se recibio codigo de equipo.</div>'; return; }
+      try{
+        const res = await fetch(`${API_URL}/qr/equipos/${encodeURIComponent(codigo)}`);
+        const data = await res.json();
+        if(!res.ok) throw new Error(data.detail || "Equipo no encontrado");
+        const e = data.equipo || {};
+        const asignado = data.asignado;
+        cont.innerHTML = `
+          <div class="equipo-foto">${e.foto_equipo ? `<img src="${archivoQr("foto")}?v=${Date.now()}" alt="Foto del equipo" onerror="this.replaceWith(document.createTextNode('Foto no disponible'))">` : "Sin foto cargada"}</div>
+          <h2 style="margin:0;font-size:24px;">${esc(e.nombre)}</h2>
+          <p style="margin:6px 0 0;color:#64748b;">${esc(e.marca || "-")} - ${esc(e.modelo || "-")} - Serie: ${esc(e.serie || "-")}</p>
+          <div style="margin-top:12px;"><span class="badge ${asignado ? "asignado" : ""}">${estadoLabel(e.estado)}</span></div>
+          <div class="grid">
+            <div class="dato"><span>Codigo</span><strong>${esc(e.codigo_interno)}</strong></div>
+            <div class="dato"><span>Area / Servicio</span><strong>${esc(e.area || "-")} / ${esc(e.servicio || "-")}</strong></div>
+            <div class="dato"><span>Registro INVIMA</span><strong>${esc(e.registro_invima || "-")}</strong></div>
+            <div class="dato"><span>Asignacion</span><strong>${asignado ? "Asignado actualmente" : "Sin asignacion activa"}</strong></div>
+          </div>
+          <div class="acciones">
+            ${e.manual_usuario ? `<a class="btn btn-secondary" href="${archivoQr("manual-usuario")}" target="_blank">Manual de usuario</a>` : ""}
+            <button class="btn btn-primary" onclick="loginGestion()">Iniciar sesion para gestionar</button>
+          </div>
+          <div class="privacy">${esc(data.mensaje_privacidad || "Para gestionar este equipo inicia sesion con un usuario autorizado.")}</div>`;
+      }catch(err){
+        cont.innerHTML = `<div class="error">${esc(err.message)}</div>`;
+      }
+    }
+    cargar();
+  </script>
+</body>
+</html>

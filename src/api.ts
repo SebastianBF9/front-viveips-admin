@@ -11,6 +11,15 @@ import type {
   ProfesionalServicioPayload,
   PermisosAcceso,
   DocumentoPortalProfesional,
+  EquipoAdquisicion,
+  EquipoAlertaResumen,
+  EquipoApoyoTecnico,
+  EquipoBiomedico,
+  EquipoCategoria,
+  EquipoDatosTecnicos,
+  EquipoDocumento,
+  EquipoHojaVida,
+  EquipoMantenimiento,
   ExperienciaLaboral,
   FormacionPortal,
   ProfesionalPerfil,
@@ -111,6 +120,21 @@ export async function apiCall<T>(method: string, endpoint: string, body?: unknow
     throw new Error(detail || "No fue posible completar la solicitud");
   }
 
+  return data as T;
+}
+
+export async function apiFormCall<T>(method: string, endpoint: string, form: FormData): Promise<T> {
+  const token = getToken();
+  const headers: Record<string, string> = {};
+  if (token) headers.Authorization = `Bearer ${token}`;
+
+  const response = await fetch(`${API_URL}${endpoint}`, { method, headers, body: form });
+  const data = await response.json().catch(() => null);
+  if (!response.ok) {
+    if (response.status === 401) clearSession();
+    const detail = typeof data?.detail === "string" ? data.detail : data?.message;
+    throw new Error(detail || "No fue posible completar la solicitud");
+  }
   return data as T;
 }
 
@@ -506,4 +530,105 @@ export async function obtenerExamenCapacitacion(capacitacionId: number) {
 
 export async function enviarExamenCapacitacion(payload: EnviarExamenPayload) {
   return apiCall<ResultadoExamenCapacitacion>("POST", "/capacitaciones/enviar-examen", payload);
+}
+
+// --- Infraestructura / Tecnovigilancia ---
+
+export async function listarEquiposBiomedicos(params: {
+  estado?: string;
+  area?: string;
+  servicio?: string;
+  buscar?: string;
+} = {}) {
+  const query = new URLSearchParams();
+  Object.entries(params).forEach(([key, value]) => {
+    if (value !== undefined && value !== null && String(value).trim()) query.set(key, String(value));
+  });
+  const suffix = query.toString() ? `?${query.toString()}` : "";
+  return apiCall<{ success: boolean; equipos: EquipoBiomedico[]; total: number }>("GET", `/equipos${suffix}`);
+}
+
+export async function obtenerHojaVidaEquipo(equipoId: number) {
+  return apiCall<EquipoHojaVida>("GET", `/equipos/${equipoId}/hoja-vida`);
+}
+
+export async function crearEquipoBiomedico(payload: Partial<EquipoBiomedico>) {
+  return apiCall<{ success: boolean; mensaje: string; equipo_id: number; codigo_interno?: string }>("POST", "/equipos", payload);
+}
+
+export async function actualizarEquipoBiomedico(equipoId: number, payload: Partial<EquipoBiomedico>) {
+  return apiCall<{ success: boolean; mensaje: string }>("PUT", `/equipos/${equipoId}`, payload);
+}
+
+export async function darBajaEquipoBiomedico(equipoId: number, motivo: string) {
+  return apiCall<{ success: boolean; mensaje: string }>("PATCH", `/equipos/${equipoId}/dar-baja`, { motivo });
+}
+
+export async function listarCategoriasEquipo() {
+  return apiCall<{ success: boolean; categorias: EquipoCategoria[] }>("GET", "/equipos/categorias");
+}
+
+export async function crearCategoriaEquipo(nombre: string) {
+  return apiCall<{ success: boolean; categoria_id?: number; mensaje?: string }>("POST", "/equipos/categorias", { nombre });
+}
+
+export async function guardarAdquisicionEquipo(equipoId: number, payload: EquipoAdquisicion) {
+  return apiCall<{ success: boolean; mensaje: string }>("PUT", `/equipos/${equipoId}/adquisicion`, payload);
+}
+
+export async function guardarDatosTecnicosEquipo(equipoId: number, payload: EquipoDatosTecnicos) {
+  return apiCall<{ success: boolean; mensaje: string }>("PUT", `/equipos/${equipoId}/datos-tecnicos-completo`, payload);
+}
+
+export async function guardarApoyoTecnicoEquipo(equipoId: number, payload: EquipoApoyoTecnico) {
+  return apiCall<{ success: boolean; mensaje: string }>("PUT", `/equipos/${equipoId}/apoyo-tecnico`, payload);
+}
+
+export async function subirArchivoEquipo(equipoId: number, tipo: "foto" | "manual-usuario" | "manual-tecnico", archivo: File) {
+  const form = new FormData();
+  form.set("archivo", archivo);
+  return apiFormCall<{ success: boolean; mensaje?: string; ruta?: string }>("POST", `/equipos/${equipoId}/archivos/${tipo}`, form);
+}
+
+export async function listarAnexosEquipo(equipoId: number) {
+  return apiCall<{ success: boolean; anexos: EquipoDocumento[] }>("GET", `/equipos/${equipoId}/anexos/catalogo`);
+}
+
+export async function subirAnexoEquipo(equipoId: number, tipoAnexo: string, archivo: File) {
+  const form = new FormData();
+  form.set("archivo", archivo);
+  return apiFormCall<{ success: boolean; mensaje?: string; documento_id?: number }>(
+    "POST",
+    `/equipos/${equipoId}/anexos/${encodeURIComponent(tipoAnexo)}/upload`,
+    form,
+  );
+}
+
+export async function marcarAnexoNoAplica(equipoId: number, tipoAnexo: string) {
+  return apiCall<{ success: boolean; mensaje: string }>(
+    "POST",
+    `/equipos/${equipoId}/anexos/${encodeURIComponent(tipoAnexo)}/no-aplica`,
+  );
+}
+
+export async function registrarMantenimientoEquipo(equipoId: number, payload: Partial<EquipoMantenimiento>) {
+  return apiCall<{ success: boolean; mensaje?: string; numero_reporte?: string }>("POST", `/equipos/${equipoId}/historial`, payload);
+}
+
+export async function registrarCalibracionEquipo(
+  equipoId: number,
+  payload: {
+    fecha_calibracion: string;
+    proxima_calibracion?: string | null;
+    certificado?: string | null;
+    entidad_calibradora?: string | null;
+    resultado?: string | null;
+    observaciones?: string | null;
+  },
+) {
+  return apiCall<{ success: boolean; mensaje?: string; calibracion_id?: number }>("POST", `/equipos/${equipoId}/calibraciones`, payload);
+}
+
+export async function obtenerAlertasEquipos() {
+  return apiCall<EquipoAlertaResumen>("GET", "/equipos/alertas/resumen");
 }

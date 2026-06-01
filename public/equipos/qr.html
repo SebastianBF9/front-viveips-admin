@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>QR Equipo - VIVE IPS</title>
+  <style>
+    body{margin:0;background:#f3f7f9;font-family:Arial,sans-serif;color:#0f172a;}
+    .page{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:24px;}
+    .label{width:380px;background:white;border:2px solid #0f766e;border-radius:22px;padding:22px;text-align:center;box-shadow:0 18px 50px rgba(15,23,42,.14);}
+    .logo{width:86px;height:86px;object-fit:contain;margin:0 auto 10px;display:block;}
+    h1{margin:0;font-size:20px;color:#0f766e;font-weight:900;}
+    .sub{font-size:12px;color:#64748b;margin:4px 0 14px;}
+    #qr{width:260px;height:260px;margin:12px auto;background:white;border:1px solid #e5e7eb;border-radius:14px;padding:10px;display:flex;align-items:center;justify-content:center;}
+    #qr img{width:100%;height:100%;object-fit:contain;}
+    .nombre{font-size:18px;font-weight:900;margin-top:12px;}
+    .codigo{font-size:16px;font-weight:800;color:#1B3A6B;margin-top:4px;}
+    .help{font-size:12px;color:#475569;margin-top:10px;line-height:1.35;}
+    .actions{display:flex;justify-content:center;gap:10px;margin-top:18px;}
+    button{border:none;border-radius:999px;padding:10px 16px;font-weight:800;cursor:pointer;}
+    .primary{background:linear-gradient(135deg,#1B3A6B,#1BAAB5);color:white;}
+    .secondary{background:#e2e8f0;color:#334155;}
+    @media print{body{background:white}.page{padding:0}.label{box-shadow:none}.actions{display:none}}
+  </style>
+</head>
+<body>
+  <main class="page">
+    <section class="label">
+      <img class="logo" src="/logo_carnet.png" alt="VIVE IPS">
+      <h1>Equipo biomedico</h1>
+      <div class="sub">Escanea para consultar informacion del equipo</div>
+      <div id="qr">Generando QR...</div>
+      <div class="nombre" id="nombre">-</div>
+      <div class="codigo" id="codigo">-</div>
+      <div class="help">VIVE IPS - Modulo de Tecnovigilancia<br>Uso interno y consulta autorizada</div>
+      <div class="actions">
+        <button class="secondary" onclick="window.close()">Cerrar</button>
+        <button class="primary" onclick="window.print()">Imprimir</button>
+      </div>
+    </section>
+  </main>
+
+  <script>
+    const API_URL = window.location.hostname.includes("localhost")
+      ? "https://api-pruebas.viveips.com.co"
+      : `${window.location.protocol}//api-pruebas.viveips.com.co`;
+    const params = new URLSearchParams(window.location.search);
+    const codigo = params.get("codigo") || "";
+    const urlConsulta = `${window.location.origin}/equipos/ver.html?codigo=${encodeURIComponent(codigo)}`;
+    const qrApi = `https://api.qrserver.com/v1/create-qr-code/?size=520x520&margin=10&data=${encodeURIComponent(urlConsulta)}`;
+
+    async function cargar(){
+      document.getElementById("codigo").textContent = codigo || "Sin codigo";
+      document.getElementById("qr").innerHTML = `<img src="${qrApi}" alt="QR del equipo">`;
+      try{
+        const res = await fetch(`${API_URL}/qr/equipos/${encodeURIComponent(codigo)}`);
+        const data = await res.json();
+        document.getElementById("nombre").textContent = res.ok && data.equipo ? (data.equipo.nombre || "Equipo biomedico") : "Equipo biomedico";
+      }catch(_){
+        document.getElementById("nombre").textContent = "Equipo biomedico";
+      }
+    }
+    cargar();
+  </script>
+</body>
+</html>
