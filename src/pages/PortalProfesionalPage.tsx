@@ -290,7 +290,7 @@ export function PortalProfesionalPage() {
         documento_id: data.documento_id || exp.documento_id || null,
         nombre_archivo: data.nombre || archivo.name,
       } : exp)));
-      setSuccess("Certificado laboral cargado.");
+      setSuccess(data.ia_no_disponible ? "Certificado cargado; validacion IA no disponible, queda pendiente de revision." : "Certificado laboral cargado y validado con IA.");
     } catch (err) {
       setError(err instanceof Error ? err.message : "No fue posible subir el certificado laboral");
     } finally {
@@ -385,7 +385,7 @@ export function PortalProfesionalPage() {
     setSuccess("");
     try {
       const data = await subirDocumentoProfesional(codigo, archivo, fecha);
-      setSuccess(data.ia_no_disponible ? "Documento cargado; validación IA pendiente." : "Documento cargado y validado correctamente.");
+      setSuccess(data.ia_no_disponible ? "Documento cargado; validacion IA no disponible, queda pendiente de revision." : "Documento cargado y validado con IA correctamente.");
       await cargar();
     } catch (err) {
       setError(err instanceof Error ? err.message : "No fue posible subir el documento");

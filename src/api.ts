@@ -241,6 +241,9 @@ export async function subirDocumentoProfesional(tipoDocumentoCodigo: string, arc
   if (!response.ok) {
     if (response.status === 401) clearSession();
     const detail = data?.detail;
+    if (detail?.ia_rechazo) {
+      throw new Error(`Validación IA: ${detail.motivo || "el documento no corresponde al soporte solicitado"}`);
+    }
     throw new Error(typeof detail === "string" ? detail : JSON.stringify(detail || data || "No fue posible subir el documento"));
   }
   return data as { success: boolean; mensaje: string; estado: string; nombre: string; documento_id?: number; ia_no_disponible?: boolean };
