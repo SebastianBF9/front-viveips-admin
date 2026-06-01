@@ -389,7 +389,9 @@ td small { display: block; color: var(--muted); margin-top: 4px; }
 }
 
 .training-actions {
-  min-width: 136px;
+  width: max-content;
+  min-width: 0;
+  flex-wrap: nowrap;
 }
 
 .training-icon-action {
@@ -470,6 +472,15 @@ td small { display: block; color: var(--muted); margin-top: 4px; }
 }
 .table-actions button:disabled,
 .doc-actions button:disabled { opacity: .6; cursor: progress; }
+.table-actions .training-icon-action {
+  width: 36px;
+  height: 36px;
+  min-width: 36px;
+  padding: 0;
+  border-radius: 10px;
+  justify-content: center;
+  gap: 0;
+}
 .table-actions .contract-action.no-generado {
   background: #f8fafc;
   color: #64748b;
@@ -1174,9 +1185,6 @@ td small { display: block; color: var(--muted); margin-top: 4px; }
 .training-status.aprobado { background: #dcfce7; color: #166534; }
 .training-status.no_aprobado { background: #fee2e2; color: #991b1b; }
 .training-status.pendiente { background: #fef3c7; color: #92400e; }
-.training-actions {
-  min-width: 300px;
-}
 .training-modal {
   width: min(820px, 100%);
   padding: 0;
