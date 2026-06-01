@@ -897,6 +897,9 @@ export function PortalProfesionalPage() {
         )}
         {contrato?.estado === "pendiente_firma" && (
           <div className="portal-contract-warning">
+            <div className="portal-contract-icon">
+              <FileText size={25} />
+            </div>
             <div>
               <strong>Tienes un contrato pendiente de firma</strong>
               <span>Descarga el contrato, leelo y luego firma electronicamente para completar el proceso.</span>

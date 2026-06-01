@@ -1476,19 +1476,19 @@ td small { display: block; color: var(--muted); margin-top: 4px; }
   border: 1px solid var(--border);
 }
 .professional-portal-content {
-  width: min(1080px, calc(100% - 28px));
+  width: min(1064px, calc(100% - 32px));
   margin: 0 auto;
-  padding: 28px 0 90px;
+  padding: 30px 0 90px;
   display: grid;
-  gap: 20px;
+  gap: 24px;
 }
 .professional-welcome {
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 18px;
-  padding: 28px 34px;
-  border-radius: 22px;
+  padding: 45px 50px;
+  border-radius: 38px;
   background:
     radial-gradient(circle at 84% 98%, rgba(255,255,255,.10) 0 18%, transparent 19%),
     radial-gradient(circle at 94% 0, rgba(255,255,255,.12) 0 22%, transparent 23%),
@@ -1530,11 +1530,11 @@ td small { display: block; color: var(--muted); margin-top: 4px; }
   color: rgba(255,255,255,.82);
 }
 .portal-section-card {
-  padding: 24px;
+  padding: 50px;
   border: 1px solid var(--border);
-  border-radius: 18px;
+  border-radius: 38px;
   background: #fff;
-  box-shadow: 0 10px 28px rgba(15, 23, 42, .05);
+  box-shadow: 0 16px 44px rgba(15, 23, 42, .06);
 }
 .portal-section-title {
   display: flex;
@@ -2053,25 +2053,59 @@ td small { display: block; color: var(--muted); margin-top: 4px; }
 .portal-contract-warning {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 20px;
   flex-wrap: wrap;
-  padding: 16px;
+  padding: 25px 28px 25px 34px;
   border: 1.5px solid #f59e0b;
-  border-radius: 16px;
+  border-radius: 18px;
   background: #fffbeb;
   color: #92400e;
 }
-.portal-contract-warning div {
-  flex: 1 1 320px;
+.portal-contract-warning .portal-contract-icon {
+  flex: 0 0 32px;
+  width: 32px;
+  height: 32px;
+  display: grid;
+  place-items: center;
+  color: #8b5cf6;
+  background: #ede9fe;
+  border-radius: 0;
+}
+.portal-contract-warning > div:not(.portal-contract-icon) {
+  flex: 1 1 430px;
 }
 .portal-contract-warning strong,
 .portal-contract-warning span {
   display: block;
 }
+.portal-contract-warning strong {
+  color: #9a4b00;
+  font-size: 18px;
+  font-weight: 950;
+}
 .portal-contract-warning span {
+  max-width: 460px;
   margin-top: 4px;
-  font-size: 14px;
+  font-size: 15px;
+  line-height: 1.35;
   color: #78350f;
+}
+.portal-contract-warning .secondary-btn,
+.portal-contract-warning .primary-btn {
+  min-height: 42px;
+  border: 0;
+  border-radius: 12px;
+  padding: 12px 20px;
+  font-weight: 950;
+  box-shadow: none;
+}
+.portal-contract-warning .secondary-btn {
+  background: var(--navy);
+  color: #fff;
+}
+.portal-contract-warning .primary-btn {
+  background: #f59e0b;
+  color: #fff;
 }
 .portal-camera-modal,
 .portal-signature-modal {
@@ -2385,6 +2419,23 @@ td small { display: block; color: var(--muted); margin-top: 4px; }
   }
   .professional-topbar-user div {
     text-align: left;
+  }
+  .professional-portal-content {
+    width: min(100% - 24px, 1064px);
+    padding-top: 18px;
+  }
+  .professional-welcome,
+  .portal-section-card {
+    padding: 24px;
+    border-radius: 24px;
+  }
+  .portal-contract-warning {
+    padding: 18px;
+  }
+  .portal-contract-warning .secondary-btn,
+  .portal-contract-warning .primary-btn {
+    width: 100%;
+    justify-content: center;
   }
   .portal-form-grid,
   .portal-doc-grid {
