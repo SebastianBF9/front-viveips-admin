@@ -883,13 +883,21 @@ export function PortalProfesionalPage() {
   const primerNombre = form.nombre.split(" ").filter(Boolean)[0] || "Profesional";
   const puedeEntrarAdmin = Boolean(acceso?.permiso_ver_todo);
   const puedeEntrarTalento = Boolean(acceso?.permiso_ver_todo || acceso?.permiso_ver_profesionales || acceso?.permiso_crear_profesionales);
-  const puedeVerCapacitaciones = Boolean(acceso?.permiso_ver_todo || acceso?.permiso_ver_capacitaciones);
   const serviciosVisibles = serviciosAsignados.filter((servicio) => servicio.estado !== "inactivo");
+  const adminTarget = puedeEntrarAdmin ? "/servicios" : "/talento-humano";
+  const adminLabel = puedeEntrarAdmin ? "Panel administrativo" : "Talento Humano";
 
   return (
     <main className="professional-portal-page">
       <header className="professional-topbar">
-        <img src="/logo_carnet.png" alt="Vive IPS" />
+        <div className="professional-topbar-brand">
+          <img src="/logo_carnet.png" alt="Vive IPS" />
+          {puedeEntrarTalento && (
+            <button className="topbar-soft-btn topbar-admin-btn" type="button" onClick={() => navigate(adminTarget)}>
+              <LayoutDashboard size={16} /> {adminLabel}
+            </button>
+          )}
+        </div>
         <div className="professional-topbar-user">
           <div>
             <strong>{form.nombre || "Profesional"}</strong>
@@ -942,37 +950,16 @@ export function PortalProfesionalPage() {
           </div>
         </section>
 
-        {(puedeEntrarAdmin || puedeEntrarTalento || puedeVerCapacitaciones || serviciosVisibles.length > 0) && (
-          <section className="portal-section-card portal-access-section">
-            <SectionTitle icon={<LayoutDashboard size={22} />} title="Accesos rápidos" subtitle="Entra a las herramientas disponibles para tu usuario." />
-            <div className="portal-access-grid">
-              {puedeEntrarAdmin && (
-                <button className="portal-access-card primary" type="button" onClick={() => navigate("/servicios")}>
-                  <LayoutDashboard size={20} />
-                  <span>Panel administrativo</span>
-                  <small>Acceso total a servicios, talento humano y permisos.</small>
-                </button>
-              )}
-              {puedeEntrarTalento && (
-                <button className="portal-access-card" type="button" onClick={() => navigate("/talento-humano")}>
-                  <UsersRound size={20} />
-                  <span>Talento Humano</span>
-                  <small>Gestionar profesionales y documentos autorizados.</small>
-                </button>
-              )}
-              {puedeVerCapacitaciones && (
-                <button className="portal-access-card" type="button" onClick={() => navigate("/portal-profesional/capacitaciones")}>
-                  <GraduationCap size={20} />
-                  <span>Capacitaciones</span>
-                  <small>Materiales, examenes y certificados.</small>
-                </button>
-              )}
+        {serviciosVisibles.length > 0 && (
+          <section className="portal-section-card portal-services-section">
+            <SectionTitle icon={<BriefcaseBusiness size={22} />} title="Servicios asignados" subtitle="Servicios vinculados a tu perfil profesional." />
+            <div className="portal-services-grid">
               {serviciosVisibles.map((servicio) => (
-                <button className="portal-access-card service" type="button" key={servicio.id} onClick={() => navigate(`/servicios/${servicio.codigo}`)}>
+                <article className="portal-service-info-card" key={servicio.id}>
                   <BriefcaseBusiness size={20} />
                   <span>{servicio.codigo} - {servicio.nombre}</span>
                   <small>{servicio.es_servicio_base ? "Servicio base" : "Servicio asignado"} - {servicio.rol_en_servicio || servicio.tipo_relacion || "Sin rol definido"}</small>
-                </button>
+                </article>
               ))}
             </div>
           </section>

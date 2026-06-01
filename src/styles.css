@@ -1427,6 +1427,12 @@ td small { display: block; color: var(--muted); margin-top: 4px; }
   height: 56px;
   width: auto;
 }
+.professional-topbar-brand {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  flex-wrap: wrap;
+}
 .professional-topbar-user {
   display: flex;
   align-items: center;
@@ -1466,6 +1472,14 @@ td small { display: block; color: var(--muted); margin-top: 4px; }
 .topbar-soft-btn.active {
   background: var(--navy);
   color: #fff;
+}
+.topbar-admin-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  background: #eef4ff;
+  color: var(--navy);
+  border: 1px solid #dbe6f0;
 }
 .topbar-soft-btn:disabled {
   opacity: .75;
@@ -1576,16 +1590,16 @@ td small { display: block; color: var(--muted); margin-top: 4px; }
   font-weight: 800;
   color: rgba(255,255,255,.82);
 }
-.portal-access-section {
+.portal-services-section {
   padding-top: 28px;
   padding-bottom: 30px;
 }
-.portal-access-grid {
+.portal-services-grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 14px;
 }
-.portal-access-card {
+.portal-service-info-card {
   min-width: 0;
   min-height: 96px;
   display: grid;
@@ -1596,48 +1610,29 @@ td small { display: block; color: var(--muted); margin-top: 4px; }
   border: 1.5px solid #dbe6f0;
   border-radius: 16px;
   padding: 16px 18px;
-  background: #f8fafc;
+  background: #f0fdfa;
   color: var(--navy);
-  cursor: pointer;
+  border-color: #ccfbf1;
   box-shadow: 0 4px 12px rgba(27, 58, 107, .05);
-  transition: transform .18s ease, box-shadow .18s ease, border-color .18s ease;
 }
-.portal-access-card:hover {
-  transform: translateY(-2px);
-  border-color: #b9d7f5;
-  box-shadow: 0 10px 22px rgba(27, 58, 107, .1);
-}
-.portal-access-card svg {
+.portal-service-info-card svg {
   grid-row: span 2;
   color: var(--teal);
 }
-.portal-access-card span,
-.portal-access-card small {
+.portal-service-info-card span,
+.portal-service-info-card small {
   display: block;
   min-width: 0;
 }
-.portal-access-card span {
+.portal-service-info-card span {
   font-size: 16px;
   font-weight: 950;
   overflow-wrap: anywhere;
 }
-.portal-access-card small {
+.portal-service-info-card small {
   color: #526579;
   font-weight: 750;
   line-height: 1.35;
-}
-.portal-access-card.primary {
-  background: var(--navy);
-  color: #fff;
-  border-color: var(--navy);
-}
-.portal-access-card.primary svg,
-.portal-access-card.primary small {
-  color: rgba(255, 255, 255, .85);
-}
-.portal-access-card.service {
-  background: #f0fdfa;
-  border-color: #ccfbf1;
 }
 .professional-training-content .professional-welcome h1 {
   display: inline-flex;
@@ -2746,6 +2741,7 @@ td small { display: block; color: var(--muted); margin-top: 4px; }
   .table-card { overflow-x: auto; }
   table { min-width: 760px; }
   .professional-topbar,
+  .professional-topbar-brand,
   .professional-topbar-user,
   .professional-welcome,
   .profile-photo-row {
@@ -2774,7 +2770,7 @@ td small { display: block; color: var(--muted); margin-top: 4px; }
   }
   .portal-form-grid,
   .portal-doc-grid,
-  .portal-access-grid,
+  .portal-services-grid,
   .professional-training-filters {
     grid-template-columns: 1fr;
   }
