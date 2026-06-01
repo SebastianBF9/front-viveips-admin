@@ -30,6 +30,7 @@ import {
   aceptarTratamientoDatos,
   clearSession,
   downloadBlob,
+  downloadUrl,
   eliminarFormacionPortal,
   guardarFormacionPortal,
   guardarMisExperiencias,
@@ -878,6 +879,10 @@ export function PortalProfesionalPage() {
     navigate("/login", { replace: true });
   }
 
+  function abrirMiCarnet() {
+    window.open(downloadUrl("/carnet/mi-carnet"), "_blank", "noopener,noreferrer");
+  }
+
   if (loading) return <Loading text="Cargando portal profesional..." />;
 
   const primerNombre = form.nombre.split(" ").filter(Boolean)[0] || "Profesional";
@@ -905,7 +910,7 @@ export function PortalProfesionalPage() {
           </div>
           <button className="topbar-soft-btn active" type="button" onClick={() => navigate("/portal-profesional")}>Mi portal</button>
           <button className="topbar-soft-btn" type="button" onClick={() => navigate("/portal-profesional/capacitaciones")}>Capacitaciones</button>
-          <button className="topbar-soft-btn navy" type="button" disabled>Mi Carnet</button>
+          <button className="topbar-soft-btn navy" type="button" onClick={abrirMiCarnet}>Mi Carnet</button>
           <button className="topbar-logout" type="button" onClick={cerrarSesion}><LogOut size={16} /> Salir</button>
         </div>
       </header>

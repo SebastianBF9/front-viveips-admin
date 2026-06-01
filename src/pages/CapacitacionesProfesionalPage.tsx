@@ -17,6 +17,7 @@ import { useNavigate } from "react-router-dom";
 import {
   clearSession,
   downloadBlob,
+  downloadUrl,
   enviarExamenCapacitacion,
   listarMisCapacitaciones,
   obtenerArchivosCapacitacionProfesional,
@@ -134,6 +135,10 @@ export function CapacitacionesProfesionalPage() {
     navigate("/login", { replace: true });
   }
 
+  function abrirMiCarnet() {
+    window.open(downloadUrl("/carnet/mi-carnet"), "_blank", "noopener,noreferrer");
+  }
+
   async function abrirMateriales(curso: CursoProfesionalCapacitacion) {
     setError("");
     setMaterialesModal({ curso, archivos: [], loading: true });
@@ -237,7 +242,7 @@ export function CapacitacionesProfesionalPage() {
           </div>
           <button className="topbar-soft-btn" type="button" onClick={() => navigate("/portal-profesional")}>Mi portal</button>
           <button className="topbar-soft-btn navy active" type="button">Capacitaciones</button>
-          <button className="topbar-soft-btn navy" type="button" disabled>Mi Carnet</button>
+          <button className="topbar-soft-btn navy" type="button" onClick={abrirMiCarnet}>Mi Carnet</button>
           <button className="topbar-logout" type="button" onClick={cerrarSesion}><LogOut size={16} /> Salir</button>
         </div>
       </header>
