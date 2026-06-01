@@ -326,8 +326,10 @@ export async function listarMisCapacitaciones() {
 }
 
 export async function obtenerArchivosCapacitacionProfesional(_capacitacionId: number) {
-  // TODO backend: falta endpoint publico/profesional para listar materiales por capacitacion.
-  return { success: false, archivos: [] as ArchivoCapacitacionProfesional[] };
+  return apiCall<{ success: boolean; archivos: ArchivoCapacitacionProfesional[] }>(
+    "GET",
+    `/capacitaciones/archivos/${_capacitacionId}`,
+  );
 }
 
 export async function obtenerExamenCapacitacion(capacitacionId: number) {
