@@ -1,8 +1,10 @@
 import {
   Banknote,
+  Bot,
   BriefcaseBusiness,
   Camera,
   Download,
+  ExternalLink,
   FileCheck2,
   GraduationCap,
   IdCard,
@@ -14,6 +16,7 @@ import {
   Upload,
   UserRound,
   UsersRound,
+  XCircle,
 } from "lucide-react";
 import { ChangeEvent, ReactNode, useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
@@ -70,6 +73,10 @@ const LISTA_VACUNAS = [
 
 type UploadFeedback = {
   status: "validating" | "success" | "error";
+  message: string;
+};
+
+type IaRejectionModal = {
   message: string;
 };
 
@@ -163,6 +170,14 @@ function iniciales(nombre?: string | null) {
     .toUpperCase();
 }
 
+function mensajeIa(message: string) {
+  return /validaci/i.test(message) && /ia/i.test(message);
+}
+
+function limpiarMensajeIa(message: string) {
+  return message.replace(/^validaci\S*\s+ia:\s*/i, "").trim() || "El documento no corresponde al soporte solicitado.";
+}
+
 export function PortalProfesionalPage() {
   const navigate = useNavigate();
   const [perfil, setPerfil] = useState<ProfesionalPerfil | null>(null);
@@ -183,6 +198,7 @@ export function PortalProfesionalPage() {
   const [aceptaTratamiento, setAceptaTratamiento] = useState(false);
   const [aceptandoTratamiento, setAceptandoTratamiento] = useState(false);
   const [uploadFeedback, setUploadFeedback] = useState<Record<string, UploadFeedback>>({});
+  const [iaRejectionModal, setIaRejectionModal] = useState<IaRejectionModal | null>(null);
 
   const docsPorCodigo = useMemo(() => {
     return new Map(documentos.map((doc) => [doc.tipo_codigo, doc]));
@@ -321,6 +337,10 @@ export function PortalProfesionalPage() {
     if (!archivo) return;
     setUploading(`exp-${index}`);
     setError("");
+    setUploadFeedback((actual) => ({
+      ...actual,
+      [`exp-${index}`]: { status: "validating", message: "Validando con IA..." },
+    }));
     try {
       const data = await subirDocumentoProfesional("cert_experiencia", archivo, null);
       setExperiencias((actual) => actual.map((exp, i) => (i === index ? {
@@ -328,8 +348,23 @@ export function PortalProfesionalPage() {
         documento_id: data.documento_id || exp.documento_id || null,
         nombre_archivo: data.nombre || archivo.name,
       } : exp)));
+      setUploadFeedback((actual) => ({
+        ...actual,
+        [`exp-${index}`]: {
+          status: "success",
+          message: data.ia_no_disponible ? "IA no disponible; queda pendiente de revision." : "Certificado validado con IA correctamente.",
+        },
+      }));
       setSuccess(data.ia_no_disponible ? "Certificado cargado; validacion IA no disponible, queda pendiente de revision." : "Certificado laboral cargado y validado con IA.");
     } catch (err) {
+      const message = err instanceof Error ? err.message : "No fue posible subir el certificado laboral";
+      setUploadFeedback((actual) => ({
+        ...actual,
+        [`exp-${index}`]: { status: "error", message },
+      }));
+      if (mensajeIa(message)) {
+        setIaRejectionModal({ message: limpiarMensajeIa(message) });
+      }
       manejarErrorDocumento(err, "No fue posible subir el certificado laboral");
     } finally {
       setUploading("");
@@ -440,6 +475,9 @@ export function PortalProfesionalPage() {
         ...actual,
         [codigo]: { status: "error", message },
       }));
+      if (mensajeIa(message)) {
+        setIaRejectionModal({ message: limpiarMensajeIa(message) });
+      }
       manejarErrorDocumento(err, "No fue posible subir el documento");
     } finally {
       setUploading("");
@@ -453,6 +491,26 @@ export function PortalProfesionalPage() {
     } catch (err) {
       setError(err instanceof Error ? err.message : "No fue posible abrir el documento");
     }
+  }
+
+  async function descargarDocumentoPorId(documentoId?: number | null, filename = "documento") {
+    if (!documentoId) return;
+    try {
+      await downloadBlob(`/documentos/descargar/${documentoId}`, filename, true);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "No fue posible abrir el documento");
+    }
+  }
+
+  function abrirRethus() {
+    const cedula = perfil?.cedula || "";
+    if (cedula) {
+      navigator.clipboard?.writeText(cedula).catch(() => {});
+      setSuccess(`Cedula ${cedula} copiada. Pegala en Numero de Identificacion en ReTHUS.`);
+    } else {
+      setSuccess("Abriendo consulta ReTHUS. No hay cedula disponible para copiar automaticamente.");
+    }
+    window.open("https://web.sispro.gov.co/THS/Cliente/ConsultasPublicas/ConsultaPublicaDeTHxIdentificacion.aspx", "_blank", "noopener,noreferrer");
   }
 
   async function cambiarFechaDocumento(doc: DocumentoPortalProfesional, fecha: string) {
@@ -612,7 +670,7 @@ export function PortalProfesionalPage() {
         </section>
 
         <DocumentSection title="Documentos Personales" icon={<IdCard size={22} />} codes={DOCUMENTOS_PERSONALES} docs={docsPorCodigo} uploading={uploading} feedback={uploadFeedback} onUpload={subirDocumento} onDownload={descargarDocumento} />
-        <DocumentSection title="Documentos Académicos" icon={<GraduationCap size={22} />} codes={DOCUMENTOS_ACADEMICOS} docs={docsPorCodigo} uploading={uploading} feedback={uploadFeedback} onUpload={subirDocumento} onDownload={descargarDocumento} />
+        <DocumentSection title="Documentos Académicos" icon={<GraduationCap size={22} />} codes={DOCUMENTOS_ACADEMICOS} docs={docsPorCodigo} uploading={uploading} feedback={uploadFeedback} onUpload={subirDocumento} onDownload={descargarDocumento} onOpenRethus={abrirRethus} />
 
         <FormacionSection formaciones={formaciones} uploading={uploading} onSave={guardarFormacion} onDelete={eliminarFormacion} />
 
@@ -638,9 +696,17 @@ export function PortalProfesionalPage() {
                 <div className="file-inline-row">
                   <span>{exp.nombre_archivo || "Sin certificado laboral"}</span>
                   <input id={`exp-file-${index}`} type="file" accept=".pdf,.jpg,.jpeg,.png" hidden onChange={(event) => subirCertificadoExperiencia(index, event)} />
-                  <button className="secondary-btn" type="button" onClick={() => document.getElementById(`exp-file-${index}`)?.click()}>
+                  <button className="secondary-btn" type="button" disabled={uploading === `exp-${index}`} onClick={() => document.getElementById(`exp-file-${index}`)?.click()}>
                     <Upload size={15} /> {uploading === `exp-${index}` ? "Subiendo..." : "Subir certificado"}
                   </button>
+                  {exp.documento_id && (
+                    <button className="secondary-btn" type="button" onClick={() => descargarDocumentoPorId(exp.documento_id, exp.nombre_archivo || `certificado_laboral_${index + 1}`)}>
+                      <Download size={15} /> Ver
+                    </button>
+                  )}
+                  {uploadFeedback[`exp-${index}`] && uploadFeedback[`exp-${index}`].status !== "validating" && (
+                    <small className={`portal-row-feedback ${uploadFeedback[`exp-${index}`].status}`}>{uploadFeedback[`exp-${index}`].message}</small>
+                  )}
                 </div>
               </article>
             )) : <div className="empty-state compact-empty">Aún no has agregado experiencia laboral.</div>}
@@ -707,7 +773,35 @@ export function PortalProfesionalPage() {
           onClose={aceptaTratamiento ? () => setShowTratamientoModal(false) : undefined}
         />
       )}
+      {iaRejectionModal && (
+        <IaRejectionDialog
+          message={iaRejectionModal.message}
+          onClose={() => setIaRejectionModal(null)}
+        />
+      )}
     </main>
+  );
+}
+
+function IaRejectionDialog({ message, onClose }: {
+  message: string;
+  onClose: () => void;
+}) {
+  return (
+    <div className="portal-ia-modal" role="dialog" aria-modal="true" aria-labelledby="ia-rejection-title">
+      <div className="portal-ia-card">
+        <div className="portal-ia-symbols" aria-hidden="true">
+          <span><Bot size={46} /></span>
+          <XCircle size={62} />
+        </div>
+        <h2 id="ia-rejection-title">Documento rechazado por IA</h2>
+        <p className="portal-ia-message">{message}</p>
+        <p className="portal-ia-help">Por favor verifica que estas subiendo el documento correcto y que sea legible.</p>
+        <button className="portal-ia-action" type="button" onClick={onClose}>
+          Entendido, volver a intentar
+        </button>
+      </div>
+    </div>
   );
 }
 
@@ -930,7 +1024,7 @@ function FormacionSection({ formaciones, uploading, onSave, onDelete }: {
   );
 }
 
-function DocumentSection({ title, icon, codes, docs, uploading, feedback, onUpload, onDownload }: {
+function DocumentSection({ title, icon, codes, docs, uploading, feedback, onUpload, onDownload, onOpenRethus }: {
   title: string;
   icon: ReactNode;
   codes: string[];
@@ -939,30 +1033,33 @@ function DocumentSection({ title, icon, codes, docs, uploading, feedback, onUplo
   feedback: Record<string, UploadFeedback>;
   onUpload: (codigo: string, event: ChangeEvent<HTMLInputElement>) => void;
   onDownload: (doc: DocumentoPortalProfesional) => void;
+  onOpenRethus?: () => void;
 }) {
   return (
     <section className="portal-section-card">
       <SectionTitle icon={icon} title={title} subtitle="Carga, reemplaza o consulta tus soportes actuales." />
       <div className="portal-doc-grid">
         {codes.map((codigo) => (
-          <DocumentCard key={codigo} codigo={codigo} doc={docs.get(codigo)} uploading={uploading} feedback={feedback[codigo]} onUpload={onUpload} onDownload={onDownload} />
+          <DocumentCard key={codigo} codigo={codigo} doc={docs.get(codigo)} uploading={uploading} feedback={feedback[codigo]} onUpload={onUpload} onDownload={onDownload} onOpenRethus={onOpenRethus} />
         ))}
       </div>
     </section>
   );
 }
 
-function DocumentCard({ codigo, doc, uploading, feedback, onUpload, onDownload }: {
+function DocumentCard({ codigo, doc, uploading, feedback, onUpload, onDownload, onOpenRethus }: {
   codigo: string;
   doc?: DocumentoPortalProfesional;
   uploading: string;
   feedback?: UploadFeedback;
   onUpload: (codigo: string, event: ChangeEvent<HTMLInputElement>) => void;
   onDownload: (doc: DocumentoPortalProfesional) => void;
+  onOpenRethus?: () => void;
 }) {
   const inputId = `doc-${codigo}`;
   const cargado = Boolean(doc?.id);
   const isValidating = uploading === codigo || feedback?.status === "validating";
+  const esRethus = codigo === "rethus";
   return (
     <article className={`portal-doc-card state-${doc?.estado || "sin_cargar"} ${feedback ? `upload-${feedback.status}` : ""}`}>
       <div className="portal-doc-head">
@@ -977,6 +1074,11 @@ function DocumentCard({ codigo, doc, uploading, feedback, onUpload, onDownload }
       <input id={inputId} type="file" accept=".pdf,.jpg,.jpeg,.png" hidden onChange={(event) => onUpload(codigo, event)} />
       {feedback && feedback.status !== "validating" && (
         <div className={`portal-upload-feedback ${feedback.status}`}>{feedback.message}</div>
+      )}
+      {esRethus && onOpenRethus && (
+        <button className="portal-rethus-btn" type="button" onClick={onOpenRethus}>
+          <ExternalLink size={15} /> Consultar en ReTHUS
+        </button>
       )}
       {cargado && (
         <div className="portal-doc-actions">
