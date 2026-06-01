@@ -4,6 +4,7 @@ import {
   CheckCircle2,
   Clock3,
   Download,
+  FileUp,
   FileQuestion,
   FileText,
   Paperclip,
@@ -19,9 +20,12 @@ import {
   downloadBlob,
   eliminarArchivoCapacitacionAdmin,
   eliminarCapacitacionAdmin,
+  eliminarPreguntaCapacitacionAdmin,
   guardarCapacitacionAdmin,
+  guardarPreguntaCapacitacionAdmin,
   listarCapacitacionesAdmin,
   listarArchivosCapacitacionAdmin,
+  listarPreguntasCapacitacionAdmin,
   obtenerAdherenciaCapacitaciones,
   subirArchivoCapacitacionAdmin,
   toggleCapacitacionAdmin,
@@ -32,6 +36,8 @@ import type {
   CapacitacionAdmin,
   CapacitacionArchivo,
   CapacitacionAdminPayload,
+  CapacitacionOpcion,
+  CapacitacionPregunta,
 } from "../types";
 import { Loading } from "../ui/Loading";
 
@@ -55,6 +61,8 @@ const CAPACITACION_FORM_INICIAL: CapacitacionAdminPayload = {
   fecha_vencimiento: "",
   activo: 0,
 };
+
+const OPCIONES_NUEVA_PREGUNTA = ["", "", "", ""];
 
 function normalizar(valor?: string | null) {
   return (valor || "")
@@ -106,6 +114,15 @@ function exportarCsv(rows: AdherenciaCapacitacion[]) {
   URL.revokeObjectURL(url);
 }
 
+function opcionesEditables(opciones?: CapacitacionOpcion[]) {
+  const base = (opciones || []).filter((opcion) => opcion && opcion.opcion !== undefined);
+  const completas = [...base];
+  while (completas.length < 4) {
+    completas.push({ opcion: "", es_correcta: false });
+  }
+  return completas.slice(0, 4);
+}
+
 export function CapacitacionesTalentoSection() {
   const [capacitaciones, setCapacitaciones] = useState<CapacitacionAdmin[]>([]);
   const [adherencia, setAdherencia] = useState<AdherenciaCapacitacionesResponse | null>(null);
@@ -118,7 +135,12 @@ export function CapacitacionesTalentoSection() {
   const [modalArchivos, setModalArchivos] = useState(false);
   const [capacitacionArchivos, setCapacitacionArchivos] = useState<CapacitacionAdmin | null>(null);
   const [archivos, setArchivos] = useState<CapacitacionArchivo[]>([]);
-  const [archivoSeleccionado, setArchivoSeleccionado] = useState<File | null>(null);
+  const [modalPreguntas, setModalPreguntas] = useState(false);
+  const [capacitacionPreguntas, setCapacitacionPreguntas] = useState<CapacitacionAdmin | null>(null);
+  const [preguntas, setPreguntas] = useState<CapacitacionPregunta[]>([]);
+  const [nuevaPregunta, setNuevaPregunta] = useState("");
+  const [nuevasOpciones, setNuevasOpciones] = useState<string[]>(OPCIONES_NUEVA_PREGUNTA);
+  const [nuevaCorrecta, setNuevaCorrecta] = useState(0);
   const [form, setForm] = useState<CapacitacionAdminPayload>(CAPACITACION_FORM_INICIAL);
   const [loading, setLoading] = useState(true);
   const [accionLoading, setAccionLoading] = useState("");
@@ -273,7 +295,6 @@ export function CapacitacionesTalentoSection() {
   async function abrirArchivosCapacitacion(capacitacion: CapacitacionAdmin) {
     setCapacitacionArchivos(capacitacion);
     setModalArchivos(true);
-    setArchivoSeleccionado(null);
     setAccionLoading(`archivos-${capacitacion.id}`);
     setError("");
     setSuccess("");
@@ -293,9 +314,9 @@ export function CapacitacionesTalentoSection() {
     setArchivos(data.archivos || []);
   }
 
-  async function subirMaterial() {
-    if (!capacitacionArchivos || !archivoSeleccionado) {
-      setError("Selecciona un archivo para subir.");
+  async function subirMateriales(files: FileList | null) {
+    if (!capacitacionArchivos || !files?.length) {
+      setError("Selecciona al menos un archivo para subir.");
       return;
     }
 
@@ -303,9 +324,10 @@ export function CapacitacionesTalentoSection() {
     setError("");
     setSuccess("");
     try {
-      await subirArchivoCapacitacionAdmin(capacitacionArchivos.id, archivoSeleccionado);
-      setArchivoSeleccionado(null);
-      setSuccess("Material cargado correctamente.");
+      for (const file of Array.from(files)) {
+        await subirArchivoCapacitacionAdmin(capacitacionArchivos.id, file);
+      }
+      setSuccess(files.length === 1 ? "Material cargado correctamente." : "Materiales cargados correctamente.");
       await recargarArchivos();
       await cargar();
     } catch (err) {
@@ -341,6 +363,155 @@ export function CapacitacionesTalentoSection() {
       await cargar();
     } catch (err) {
       setError(err instanceof Error ? err.message : "No fue posible eliminar el material");
+    } finally {
+      setAccionLoading("");
+    }
+  }
+
+  async function abrirPreguntasCapacitacion(capacitacion: CapacitacionAdmin) {
+    setCapacitacionPreguntas(capacitacion);
+    setModalPreguntas(true);
+    setNuevaPregunta("");
+    setNuevasOpciones([...OPCIONES_NUEVA_PREGUNTA]);
+    setNuevaCorrecta(0);
+    setAccionLoading(`preguntas-${capacitacion.id}`);
+    setError("");
+    setSuccess("");
+    try {
+      const data = await listarPreguntasCapacitacionAdmin(capacitacion.id);
+      setPreguntas((data.preguntas || []).map((pregunta) => ({
+        ...pregunta,
+        opciones: opcionesEditables(pregunta.opciones),
+      })));
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "No fue posible cargar las preguntas");
+    } finally {
+      setAccionLoading("");
+    }
+  }
+
+  async function recargarPreguntas() {
+    if (!capacitacionPreguntas) return;
+    const data = await listarPreguntasCapacitacionAdmin(capacitacionPreguntas.id);
+    setPreguntas((data.preguntas || []).map((pregunta) => ({
+      ...pregunta,
+      opciones: opcionesEditables(pregunta.opciones),
+    })));
+  }
+
+  function actualizarPreguntaTexto(id: number, valor: string) {
+    setPreguntas((actuales) => actuales.map((pregunta) => (
+      pregunta.id === id ? { ...pregunta, pregunta: valor } : pregunta
+    )));
+  }
+
+  function actualizarOpcionPregunta(id: number, index: number, valor: string) {
+    setPreguntas((actuales) => actuales.map((pregunta) => {
+      if (pregunta.id !== id) return pregunta;
+      const opciones = opcionesEditables(pregunta.opciones);
+      opciones[index] = { ...opciones[index], opcion: valor };
+      return { ...pregunta, opciones };
+    }));
+  }
+
+  function marcarOpcionCorrecta(id: number, index: number) {
+    setPreguntas((actuales) => actuales.map((pregunta) => {
+      if (pregunta.id !== id) return pregunta;
+      return {
+        ...pregunta,
+        opciones: opcionesEditables(pregunta.opciones).map((opcion, i) => ({
+          ...opcion,
+          es_correcta: i === index,
+        })),
+      };
+    }));
+  }
+
+  function validarPregunta(pregunta: string, opciones: Array<{ opcion: string; es_correcta: boolean | number }>) {
+    const opcionesValidas = opciones.filter((opcion) => opcion.opcion.trim());
+    if (!pregunta.trim()) return "Escribe la pregunta.";
+    if (opcionesValidas.length < 2) return "Agrega al menos dos opciones.";
+    if (!opcionesValidas.some((opcion) => Boolean(opcion.es_correcta))) return "Marca la respuesta correcta.";
+    return "";
+  }
+
+  async function guardarPreguntaExistente(pregunta: CapacitacionPregunta) {
+    const opciones = opcionesEditables(pregunta.opciones)
+      .map((opcion) => ({ opcion: opcion.opcion.trim(), es_correcta: Boolean(opcion.es_correcta) }))
+      .filter((opcion) => opcion.opcion);
+    const errorValidacion = validarPregunta(pregunta.pregunta, opciones);
+    if (errorValidacion) {
+      setError(errorValidacion);
+      return;
+    }
+
+    setAccionLoading(`guardar-pregunta-${pregunta.id}`);
+    setError("");
+    setSuccess("");
+    try {
+      await guardarPreguntaCapacitacionAdmin({
+        id: pregunta.id,
+        capacitacion_id: pregunta.capacitacion_id,
+        pregunta: pregunta.pregunta.trim(),
+        opciones,
+      });
+      setSuccess("Pregunta guardada correctamente.");
+      await recargarPreguntas();
+      await cargar();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "No fue posible guardar la pregunta");
+    } finally {
+      setAccionLoading("");
+    }
+  }
+
+  async function guardarNuevaPregunta() {
+    if (!capacitacionPreguntas) return;
+    const opciones = nuevasOpciones
+      .map((opcion, index) => ({ opcion: opcion.trim(), es_correcta: index === nuevaCorrecta }))
+      .filter((opcion) => opcion.opcion);
+    const errorValidacion = validarPregunta(nuevaPregunta, opciones);
+    if (errorValidacion) {
+      setError(errorValidacion);
+      return;
+    }
+
+    setAccionLoading("guardar-nueva-pregunta");
+    setError("");
+    setSuccess("");
+    try {
+      await guardarPreguntaCapacitacionAdmin({
+        capacitacion_id: capacitacionPreguntas.id,
+        pregunta: nuevaPregunta.trim(),
+        opciones,
+      });
+      setNuevaPregunta("");
+      setNuevasOpciones([...OPCIONES_NUEVA_PREGUNTA]);
+      setNuevaCorrecta(0);
+      setSuccess("Pregunta agregada correctamente.");
+      await recargarPreguntas();
+      await cargar();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "No fue posible agregar la pregunta");
+    } finally {
+      setAccionLoading("");
+    }
+  }
+
+  async function eliminarPregunta(pregunta: CapacitacionPregunta) {
+    const confirmar = window.confirm("Eliminar esta pregunta?");
+    if (!confirmar) return;
+
+    setAccionLoading(`eliminar-pregunta-${pregunta.id}`);
+    setError("");
+    setSuccess("");
+    try {
+      await eliminarPreguntaCapacitacionAdmin(pregunta.id);
+      setSuccess("Pregunta eliminada correctamente.");
+      await recargarPreguntas();
+      await cargar();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "No fue posible eliminar la pregunta");
     } finally {
       setAccionLoading("");
     }
@@ -425,8 +596,28 @@ export function CapacitacionesTalentoSection() {
                   <strong>{capacitacion.nombre}</strong>
                   {capacitacion.descripcion && <small>{capacitacion.descripcion}</small>}
                 </td>
-                <td>{capacitacion.num_archivos || 0}</td>
-                <td>{capacitacion.num_preguntas || 0}</td>
+                <td>
+                  <button
+                    type="button"
+                    className="training-count-btn materials"
+                    onClick={() => abrirArchivosCapacitacion(capacitacion)}
+                    title="Gestionar materiales"
+                  >
+                    <strong>{capacitacion.num_archivos || 0}</strong>
+                    <Paperclip size={14} />
+                  </button>
+                </td>
+                <td>
+                  <button
+                    type="button"
+                    className="training-count-btn questions"
+                    onClick={() => abrirPreguntasCapacitacion(capacitacion)}
+                    title="Gestionar preguntas"
+                  >
+                    <strong>{capacitacion.num_preguntas || 0}</strong>
+                    <FileQuestion size={14} />
+                  </button>
+                </td>
                 <td>{formatearFecha(capacitacion.fecha_habilitacion)}</td>
                 <td>{formatearFecha(capacitacion.fecha_vencimiento)}</td>
                 <td>
@@ -436,15 +627,6 @@ export function CapacitacionesTalentoSection() {
                 </td>
                 <td>
                   <div className="table-actions training-actions">
-                    <button
-                      type="button"
-                      onClick={() => abrirArchivosCapacitacion(capacitacion)}
-                      className="training-icon-action file"
-                      title="Gestionar materiales"
-                      aria-label="Gestionar materiales"
-                    >
-                      <Paperclip size={15} />
-                    </button>
                     <button
                       type="button"
                       onClick={() => abrirEditarCapacitacion(capacitacion)}
@@ -658,22 +840,21 @@ export function CapacitacionesTalentoSection() {
               </div>
 
               <div className="training-upload-box">
-                <label>
-                  Subir nuevo material
-                  <input
-                    type="file"
-                    accept=".pdf,.doc,.docx,.ppt,.pptx,.xls,.xlsx,.png,.jpg,.jpeg,.webp"
-                    onChange={(event) => setArchivoSeleccionado(event.target.files?.[0] || null)}
-                  />
+                <input
+                  id="training-material-input"
+                  type="file"
+                  accept=".pdf,.ppt,.pptx"
+                  multiple
+                  onChange={(event) => {
+                    subirMateriales(event.target.files);
+                    event.target.value = "";
+                  }}
+                />
+                <label htmlFor="training-material-input">
+                  <FileUp size={16} />
+                  Subir presentacion (PDF / PPT)
                 </label>
-                <button
-                  className="primary-btn gradient-btn"
-                  type="button"
-                  onClick={subirMaterial}
-                  disabled={accionLoading === "subir-material" || !archivoSeleccionado}
-                >
-                  Subir material
-                </button>
+                <span>Puedes subir multiples archivos</span>
               </div>
 
               <div className="training-file-list">
@@ -711,6 +892,121 @@ export function CapacitacionesTalentoSection() {
                   </article>
                 ))}
                 {archivos.length === 0 && <div className="empty-state compact-empty">Esta capacitacion no tiene materiales cargados.</div>}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {modalPreguntas && capacitacionPreguntas && (
+        <div className="modal-backdrop" onMouseDown={() => setModalPreguntas(false)}>
+          <div className="modal training-modal training-questions-modal" onMouseDown={(event) => event.stopPropagation()}>
+            <div className="professional-detail-title training-modal-title">
+              <h2><FileQuestion size={22} /> Preguntas del examen</h2>
+              <button type="button" onClick={() => setModalPreguntas(false)} aria-label="Cerrar modal">
+                <X size={22} />
+              </button>
+            </div>
+
+            <div className="training-modal-body">
+              <div className="training-file-heading">
+                <div>
+                  <strong>{capacitacionPreguntas.nombre}</strong>
+                  <span>{capacitacionPreguntas.rama || "Sin rama"}</span>
+                </div>
+                <span className="training-chip">{preguntas.length} pregunta(s)</span>
+              </div>
+
+              <div className="training-question-list">
+                {preguntas.map((pregunta, index) => (
+                  <article className="training-question-card" key={pregunta.id}>
+                    <div className="training-question-title-row">
+                      <strong>{index + 1}.</strong>
+                      <input
+                        value={pregunta.pregunta}
+                        onChange={(event) => actualizarPreguntaTexto(pregunta.id, event.target.value)}
+                        placeholder="Escribe la pregunta"
+                      />
+                      <button
+                        type="button"
+                        className="training-icon-action delete"
+                        onClick={() => eliminarPregunta(pregunta)}
+                        disabled={accionLoading === `eliminar-pregunta-${pregunta.id}`}
+                        title="Eliminar pregunta"
+                        aria-label="Eliminar pregunta"
+                      >
+                        <Trash2 size={15} />
+                      </button>
+                    </div>
+
+                    <div className="training-option-list">
+                      {opcionesEditables(pregunta.opciones).map((opcion, opcionIndex) => (
+                        <label className="training-option-row" key={`${pregunta.id}-${opcionIndex}`}>
+                          <input
+                            type="radio"
+                            name={`correcta-${pregunta.id}`}
+                            checked={Boolean(opcion.es_correcta)}
+                            onChange={() => marcarOpcionCorrecta(pregunta.id, opcionIndex)}
+                          />
+                          <input
+                            value={opcion.opcion}
+                            onChange={(event) => actualizarOpcionPregunta(pregunta.id, opcionIndex, event.target.value)}
+                            placeholder={`Opcion ${opcionIndex + 1}`}
+                          />
+                        </label>
+                      ))}
+                    </div>
+
+                    <button
+                      type="button"
+                      className="primary-btn gradient-btn compact-action"
+                      onClick={() => guardarPreguntaExistente(pregunta)}
+                      disabled={accionLoading === `guardar-pregunta-${pregunta.id}`}
+                    >
+                      Guardar
+                    </button>
+                  </article>
+                ))}
+
+                <article className="training-question-card new-question-card">
+                  <div className="training-question-title-row">
+                    <strong>Nueva</strong>
+                    <input
+                      value={nuevaPregunta}
+                      onChange={(event) => setNuevaPregunta(event.target.value)}
+                      placeholder="Escribe la pregunta"
+                    />
+                  </div>
+
+                  <div className="training-option-list">
+                    {nuevasOpciones.map((opcion, index) => (
+                      <label className="training-option-row" key={index}>
+                        <input
+                          type="radio"
+                          name="nueva-correcta"
+                          checked={nuevaCorrecta === index}
+                          onChange={() => setNuevaCorrecta(index)}
+                        />
+                        <input
+                          value={opcion}
+                          onChange={(event) => setNuevasOpciones((actuales) => actuales.map((item, i) => i === index ? event.target.value : item))}
+                          placeholder={`Opcion ${index + 1}`}
+                        />
+                      </label>
+                    ))}
+                  </div>
+
+                  <button
+                    type="button"
+                    className="primary-btn gradient-btn compact-action"
+                    onClick={guardarNuevaPregunta}
+                    disabled={accionLoading === "guardar-nueva-pregunta"}
+                  >
+                    Agregar pregunta
+                  </button>
+                </article>
+
+                {preguntas.length === 0 && <div className="empty-state compact-empty">Aun no hay preguntas guardadas para esta capacitacion.</div>}
               </div>
             </div>
           </div>

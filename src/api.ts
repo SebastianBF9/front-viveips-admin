@@ -4,6 +4,7 @@ import type {
   CapacitacionAdmin,
   CapacitacionArchivo,
   CapacitacionAdminPayload,
+  CapacitacionPregunta,
   ProfesionalServicioPayload,
   PermisosAcceso,
   RelacionPayload,
@@ -278,6 +279,23 @@ export async function subirArchivoCapacitacionAdmin(capacitacionId: number, arch
 
 export async function eliminarArchivoCapacitacionAdmin(id: number) {
   return apiCall<{ success: boolean }>("DELETE", `/capacitaciones/admin/archivo/${id}`);
+}
+
+export async function listarPreguntasCapacitacionAdmin(id: number) {
+  return apiCall<{ success: boolean; preguntas: CapacitacionPregunta[] }>("GET", `/capacitaciones/admin/preguntas/${id}`);
+}
+
+export async function guardarPreguntaCapacitacionAdmin(payload: {
+  id?: number;
+  capacitacion_id: number;
+  pregunta: string;
+  opciones: Array<{ opcion: string; es_correcta: boolean | number }>;
+}) {
+  return apiCall<{ success: boolean }>("POST", "/capacitaciones/admin/pregunta/guardar", payload);
+}
+
+export async function eliminarPreguntaCapacitacionAdmin(id: number) {
+  return apiCall<{ success: boolean }>("DELETE", `/capacitaciones/admin/pregunta/${id}`);
 }
 
 export async function obtenerAdherenciaCapacitaciones(params: {

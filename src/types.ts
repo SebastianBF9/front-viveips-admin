@@ -319,6 +319,21 @@ export interface CapacitacionArchivo {
   created_at?: string | null;
 }
 
+export interface CapacitacionOpcion {
+  id?: number;
+  opcion: string;
+  es_correcta: number | boolean;
+  orden?: number | null;
+}
+
+export interface CapacitacionPregunta {
+  id: number;
+  capacitacion_id: number;
+  pregunta: string;
+  orden?: number | null;
+  opciones: CapacitacionOpcion[];
+}
+
 export interface AdherenciaCapacitacion {
   profesional_id: number;
   profesional: string;
