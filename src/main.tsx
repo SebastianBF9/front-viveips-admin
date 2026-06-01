@@ -3,6 +3,7 @@ import { createRoot } from "react-dom/client";
 import { Navigate, RouterProvider, createBrowserRouter } from "react-router-dom";
 import { AppLayout } from "./ui/AppLayout";
 import { AccesosPage } from "./pages/AccesosPage";
+import { CapacitacionesProfesionalPage } from "./pages/CapacitacionesProfesionalPage";
 import { LoginPage } from "./pages/LoginPage";
 import { PortalProfesionalPage } from "./pages/PortalProfesionalPage";
 import { ServicioDetallePage } from "./pages/ServicioDetallePage";
@@ -13,6 +14,7 @@ import "./styles.css";
 const router = createBrowserRouter([
   { path: "/login", element: <LoginPage /> },
   { path: "/portal-profesional", element: <PortalProfesionalPage /> },
+  { path: "/portal-profesional/capacitaciones", element: <CapacitacionesProfesionalPage /> },
   {
     path: "/",
     element: <AppLayout />,
