@@ -68,6 +68,11 @@ const LISTA_VACUNAS = [
   { id: "vac_covid", nombre: "COVID-19" },
 ];
 
+type UploadFeedback = {
+  status: "validating" | "success" | "error";
+  message: string;
+};
+
 const TODOS_LOS_CURSOS = [
   { id: "seg_paciente", nombre: "Seguridad del Paciente", vigencia: 12 },
   { id: "atencion_violencia", nombre: "Atención Víctimas Violencia Sexual", vigencia: 24 },
@@ -177,6 +182,7 @@ export function PortalProfesionalPage() {
   const [showTratamientoModal, setShowTratamientoModal] = useState(false);
   const [aceptaTratamiento, setAceptaTratamiento] = useState(false);
   const [aceptandoTratamiento, setAceptandoTratamiento] = useState(false);
+  const [uploadFeedback, setUploadFeedback] = useState<Record<string, UploadFeedback>>({});
 
   const docsPorCodigo = useMemo(() => {
     return new Map(documentos.map((doc) => [doc.tipo_codigo, doc]));
@@ -415,11 +421,25 @@ export function PortalProfesionalPage() {
     setUploading(codigo);
     setError("");
     setSuccess("");
+    setUploadFeedback((actual) => ({
+      ...actual,
+      [codigo]: { status: "validating", message: "Validando con IA..." },
+    }));
     try {
       const data = await subirDocumentoProfesional(codigo, archivo, fecha);
+      const message = data.ia_no_disponible ? "IA no disponible; queda pendiente de revision." : "Documento validado con IA correctamente.";
+      setUploadFeedback((actual) => ({
+        ...actual,
+        [codigo]: { status: "success", message },
+      }));
       setSuccess(data.ia_no_disponible ? "Documento cargado; validacion IA no disponible, queda pendiente de revision." : "Documento cargado y validado con IA correctamente.");
       await cargar();
     } catch (err) {
+      const message = err instanceof Error ? err.message : "No fue posible subir el documento";
+      setUploadFeedback((actual) => ({
+        ...actual,
+        [codigo]: { status: "error", message },
+      }));
       manejarErrorDocumento(err, "No fue posible subir el documento");
     } finally {
       setUploading("");
@@ -591,8 +611,8 @@ export function PortalProfesionalPage() {
           <button className="brand-action-btn small-brand-btn" type="button" onClick={() => setReferencias((actual) => [...actual, { ...REFERENCIA_VACIA }])}><Plus size={17} /> Agregar referencia</button>
         </section>
 
-        <DocumentSection title="Documentos Personales" icon={<IdCard size={22} />} codes={DOCUMENTOS_PERSONALES} docs={docsPorCodigo} uploading={uploading} onUpload={subirDocumento} onDownload={descargarDocumento} />
-        <DocumentSection title="Documentos Académicos" icon={<GraduationCap size={22} />} codes={DOCUMENTOS_ACADEMICOS} docs={docsPorCodigo} uploading={uploading} onUpload={subirDocumento} onDownload={descargarDocumento} />
+        <DocumentSection title="Documentos Personales" icon={<IdCard size={22} />} codes={DOCUMENTOS_PERSONALES} docs={docsPorCodigo} uploading={uploading} feedback={uploadFeedback} onUpload={subirDocumento} onDownload={descargarDocumento} />
+        <DocumentSection title="Documentos Académicos" icon={<GraduationCap size={22} />} codes={DOCUMENTOS_ACADEMICOS} docs={docsPorCodigo} uploading={uploading} feedback={uploadFeedback} onUpload={subirDocumento} onDownload={descargarDocumento} />
 
         <FormacionSection formaciones={formaciones} uploading={uploading} onSave={guardarFormacion} onDelete={eliminarFormacion} />
 
@@ -647,7 +667,7 @@ export function PortalProfesionalPage() {
           <SectionTitle icon={<BriefcaseBusiness size={22} />} title="Antecedentes" subtitle="Estos documentos se mantienen como soportes periódicos del profesional." />
           <div className="portal-list-grid">
             {ANTECEDENTES.map((codigo) => (
-              <ListDocumentRow key={codigo} codigo={codigo} doc={docsPorCodigo.get(codigo)} uploading={uploading} onUpload={subirDocumento} onDownload={descargarDocumento} />
+              <ListDocumentRow key={codigo} codigo={codigo} doc={docsPorCodigo.get(codigo)} uploading={uploading} feedback={uploadFeedback[codigo]} onUpload={subirDocumento} onDownload={descargarDocumento} />
             ))}
           </div>
         </section>
@@ -664,6 +684,7 @@ export function PortalProfesionalPage() {
                   doc={doc}
                   label={`${curso.nombre} · vigencia ${curso.vigencia} meses`}
                   uploading={uploading}
+                  feedback={uploadFeedback[curso.id]}
                   onUpload={subirDocumento}
                   onDownload={descargarDocumento}
                   onDateChange={cambiarFechaDocumento}
@@ -909,12 +930,13 @@ function FormacionSection({ formaciones, uploading, onSave, onDelete }: {
   );
 }
 
-function DocumentSection({ title, icon, codes, docs, uploading, onUpload, onDownload }: {
+function DocumentSection({ title, icon, codes, docs, uploading, feedback, onUpload, onDownload }: {
   title: string;
   icon: ReactNode;
   codes: string[];
   docs: Map<string, DocumentoPortalProfesional>;
   uploading: string;
+  feedback: Record<string, UploadFeedback>;
   onUpload: (codigo: string, event: ChangeEvent<HTMLInputElement>) => void;
   onDownload: (doc: DocumentoPortalProfesional) => void;
 }) {
@@ -923,34 +945,39 @@ function DocumentSection({ title, icon, codes, docs, uploading, onUpload, onDown
       <SectionTitle icon={icon} title={title} subtitle="Carga, reemplaza o consulta tus soportes actuales." />
       <div className="portal-doc-grid">
         {codes.map((codigo) => (
-          <DocumentCard key={codigo} codigo={codigo} doc={docs.get(codigo)} uploading={uploading} onUpload={onUpload} onDownload={onDownload} />
+          <DocumentCard key={codigo} codigo={codigo} doc={docs.get(codigo)} uploading={uploading} feedback={feedback[codigo]} onUpload={onUpload} onDownload={onDownload} />
         ))}
       </div>
     </section>
   );
 }
 
-function DocumentCard({ codigo, doc, uploading, onUpload, onDownload }: {
+function DocumentCard({ codigo, doc, uploading, feedback, onUpload, onDownload }: {
   codigo: string;
   doc?: DocumentoPortalProfesional;
   uploading: string;
+  feedback?: UploadFeedback;
   onUpload: (codigo: string, event: ChangeEvent<HTMLInputElement>) => void;
   onDownload: (doc: DocumentoPortalProfesional) => void;
 }) {
   const inputId = `doc-${codigo}`;
   const cargado = Boolean(doc?.id);
+  const isValidating = uploading === codigo || feedback?.status === "validating";
   return (
-    <article className={`portal-doc-card state-${doc?.estado || "sin_cargar"}`}>
+    <article className={`portal-doc-card state-${doc?.estado || "sin_cargar"} ${feedback ? `upload-${feedback.status}` : ""}`}>
       <div className="portal-doc-head">
         <strong>{doc?.tipo_nombre || codigo}</strong>
         <span className={`portal-doc-badge ${doc?.estado || "sin_cargar"}`}>{estadoTexto(doc?.estado)}</span>
       </div>
-      <button className={`portal-upload-zone ${cargado ? "has-file" : ""}`} type="button" onClick={() => document.getElementById(inputId)?.click()}>
-        <Upload size={18} />
-        <span>{uploading === codigo ? "Subiendo..." : cargado ? doc?.nombre_archivo : "Haz clic para subir archivo"}</span>
+      <button className={`portal-upload-zone ${cargado ? "has-file" : ""} ${isValidating ? "validating" : ""}`} type="button" disabled={isValidating} onClick={() => document.getElementById(inputId)?.click()}>
+        {isValidating ? <span className="portal-ia-icon">🤖</span> : <Upload size={18} />}
+        <span>{isValidating ? "Validando con IA..." : cargado ? doc?.nombre_archivo : "Haz clic para subir archivo"}</span>
         <small>PDF, JPG o PNG · Máx. 10MB</small>
       </button>
       <input id={inputId} type="file" accept=".pdf,.jpg,.jpeg,.png" hidden onChange={(event) => onUpload(codigo, event)} />
+      {feedback && feedback.status !== "validating" && (
+        <div className={`portal-upload-feedback ${feedback.status}`}>{feedback.message}</div>
+      )}
       {cargado && (
         <div className="portal-doc-actions">
           <button type="button" onClick={() => onDownload(doc!)}><Download size={15} /> Ver</button>
@@ -961,30 +988,33 @@ function DocumentCard({ codigo, doc, uploading, onUpload, onDownload }: {
   );
 }
 
-function ListDocumentRow({ codigo, doc, label, uploading, onUpload, onDownload, onDateChange }: {
+function ListDocumentRow({ codigo, doc, label, uploading, feedback, onUpload, onDownload, onDateChange }: {
   codigo: string;
   doc?: DocumentoPortalProfesional;
   label?: string;
   uploading: string;
+  feedback?: UploadFeedback;
   onUpload: (codigo: string, event: ChangeEvent<HTMLInputElement>) => void;
   onDownload: (doc: DocumentoPortalProfesional) => void;
   onDateChange?: (doc: DocumentoPortalProfesional, fecha: string) => void;
 }) {
   const inputId = `row-doc-${codigo}`;
   const cargado = Boolean(doc?.id);
+  const isValidating = uploading === codigo || feedback?.status === "validating";
   return (
-    <article className={`portal-list-row state-${doc?.estado || "sin_cargar"}`}>
+    <article className={`portal-list-row state-${doc?.estado || "sin_cargar"} ${feedback ? `upload-${feedback.status}` : ""}`}>
       <div>
         <strong>{label || doc?.tipo_nombre || codigo}</strong>
-        <span>{doc?.fecha_vencimiento ? `Vence: ${fechaCorta(doc.fecha_vencimiento)}` : cargado ? "Cargado" : "Sin fecha"}</span>
+        <span>{isValidating ? "Validando con IA..." : doc?.fecha_vencimiento ? `Vence: ${fechaCorta(doc.fecha_vencimiento)}` : cargado ? "Cargado" : "Sin fecha"}</span>
+        {feedback && feedback.status !== "validating" && <small className={`portal-row-feedback ${feedback.status}`}>{feedback.message}</small>}
       </div>
       {onDateChange && doc?.id && (
         <input className="portal-date-input" id={`venc-${codigo}`} type="date" defaultValue={fechaCorta(doc.fecha_vencimiento)} onChange={(event) => onDateChange(doc, event.target.value)} />
       )}
       <span className={`portal-doc-badge ${doc?.estado || "sin_cargar"}`}>{estadoTexto(doc?.estado)}</span>
       <input id={inputId} type="file" accept=".pdf,.jpg,.jpeg,.png" hidden onChange={(event) => onUpload(codigo, event)} />
-      <button className="secondary-btn" type="button" onClick={() => document.getElementById(inputId)?.click()}>
-        <Upload size={15} /> {uploading === codigo ? "Subiendo..." : cargado ? "Reemplazar" : "Subir"}
+      <button className="secondary-btn" type="button" disabled={isValidating} onClick={() => document.getElementById(inputId)?.click()}>
+        <Upload size={15} /> {isValidating ? "Validando..." : cargado ? "Reemplazar" : "Subir"}
       </button>
       {cargado && <button className="secondary-btn" type="button" onClick={() => onDownload(doc!)}><Download size={15} /> Ver</button>}
     </article>
