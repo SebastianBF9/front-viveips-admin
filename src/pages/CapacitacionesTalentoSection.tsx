@@ -1,8 +1,49 @@
-import { AlertCircle, BookOpenCheck, CheckCircle2, Clock3, Download, FileQuestion, FileText, Search } from "lucide-react";
+import {
+  AlertCircle,
+  BookOpenCheck,
+  CheckCircle2,
+  Clock3,
+  Download,
+  FileQuestion,
+  FileText,
+  Pencil,
+  Plus,
+  Power,
+  Search,
+  Trash2,
+  X,
+} from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
-import { listarCapacitacionesAdmin, obtenerAdherenciaCapacitaciones } from "../api";
-import type { AdherenciaCapacitacion, AdherenciaCapacitacionesResponse, CapacitacionAdmin } from "../types";
+import {
+  eliminarCapacitacionAdmin,
+  guardarCapacitacionAdmin,
+  listarCapacitacionesAdmin,
+  obtenerAdherenciaCapacitaciones,
+  toggleCapacitacionAdmin,
+} from "../api";
+import type { AdherenciaCapacitacion, AdherenciaCapacitacionesResponse, CapacitacionAdmin, CapacitacionAdminPayload } from "../types";
 import { Loading } from "../ui/Loading";
+
+const RAMAS_CAPACITACION = [
+  "Gestion Ambiental",
+  "Guias de Practicas Clinicas",
+  "Farmacovigilancia",
+  "Procesos Prioritarios",
+  "Servicios Propios",
+  "Talento Humano",
+  "Tecnovigilancia",
+];
+
+const CAPACITACION_FORM_INICIAL: CapacitacionAdminPayload = {
+  capacitacion_id: null,
+  rama: "Talento Humano",
+  nombre: "",
+  descripcion: "",
+  vigencia_meses: 12,
+  fecha_habilitacion: "",
+  fecha_vencimiento: "",
+  activo: 0,
+};
 
 function normalizar(valor?: string | null) {
   return (valor || "")
@@ -62,8 +103,12 @@ export function CapacitacionesTalentoSection() {
   const [estadoCurso, setEstadoCurso] = useState("");
   const [busquedaAdh, setBusquedaAdh] = useState("");
   const [estadoAdh, setEstadoAdh] = useState("");
+  const [modalAbierto, setModalAbierto] = useState(false);
+  const [form, setForm] = useState<CapacitacionAdminPayload>(CAPACITACION_FORM_INICIAL);
   const [loading, setLoading] = useState(true);
+  const [accionLoading, setAccionLoading] = useState("");
   const [error, setError] = useState("");
+  const [success, setSuccess] = useState("");
 
   async function cargar() {
     setLoading(true);
@@ -120,11 +165,102 @@ export function CapacitacionesTalentoSection() {
   const totalArchivos = capacitaciones.reduce((total, capacitacion) => total + Number(capacitacion.num_archivos || 0), 0);
   const totalPreguntas = capacitaciones.reduce((total, capacitacion) => total + Number(capacitacion.num_preguntas || 0), 0);
 
+  function abrirNuevaCapacitacion() {
+    setForm(CAPACITACION_FORM_INICIAL);
+    setModalAbierto(true);
+    setError("");
+    setSuccess("");
+  }
+
+  function abrirEditarCapacitacion(capacitacion: CapacitacionAdmin) {
+    setForm({
+      capacitacion_id: capacitacion.id,
+      rama: capacitacion.rama || "Talento Humano",
+      nombre: capacitacion.nombre || "",
+      descripcion: capacitacion.descripcion || "",
+      vigencia_meses: Number(capacitacion.vigencia_meses || 12),
+      fecha_habilitacion: capacitacion.fecha_habilitacion ? String(capacitacion.fecha_habilitacion).slice(0, 10) : "",
+      fecha_vencimiento: capacitacion.fecha_vencimiento ? String(capacitacion.fecha_vencimiento).slice(0, 10) : "",
+      activo: capacitacion.activo ? 1 : 0,
+    });
+    setModalAbierto(true);
+    setError("");
+    setSuccess("");
+  }
+
+  function actualizarForm(campo: keyof CapacitacionAdminPayload, valor: string | number) {
+    setForm((actual) => ({ ...actual, [campo]: valor }));
+  }
+
+  async function guardarCapacitacion() {
+    const payload = {
+      ...form,
+      rama: String(form.rama || "").trim(),
+      nombre: String(form.nombre || "").trim(),
+      descripcion: String(form.descripcion || "").trim(),
+      vigencia_meses: Number(form.vigencia_meses || 12),
+      activo: Number(form.activo || 0),
+    };
+
+    if (!payload.rama || !payload.nombre) {
+      setError("Completa rama y nombre de la capacitacion.");
+      return;
+    }
+
+    setAccionLoading("guardar-capacitacion");
+    setError("");
+    setSuccess("");
+    try {
+      await guardarCapacitacionAdmin(payload);
+      setSuccess(payload.capacitacion_id ? "Capacitacion actualizada correctamente." : "Capacitacion creada correctamente.");
+      setModalAbierto(false);
+      await cargar();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "No fue posible guardar la capacitacion");
+    } finally {
+      setAccionLoading("");
+    }
+  }
+
+  async function cambiarEstado(capacitacion: CapacitacionAdmin) {
+    setAccionLoading(`toggle-${capacitacion.id}`);
+    setError("");
+    setSuccess("");
+    try {
+      const data = await toggleCapacitacionAdmin(capacitacion.id);
+      setSuccess(data.activo ? "Capacitacion activada correctamente." : "Capacitacion desactivada correctamente.");
+      await cargar();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "No fue posible cambiar el estado");
+    } finally {
+      setAccionLoading("");
+    }
+  }
+
+  async function eliminarCapacitacion(capacitacion: CapacitacionAdmin) {
+    const confirmar = window.confirm(`Eliminar la capacitacion "${capacitacion.nombre}"? Esta accion no se puede deshacer.`);
+    if (!confirmar) return;
+
+    setAccionLoading(`eliminar-${capacitacion.id}`);
+    setError("");
+    setSuccess("");
+    try {
+      await eliminarCapacitacionAdmin(capacitacion.id);
+      setSuccess("Capacitacion eliminada correctamente.");
+      await cargar();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "No fue posible eliminar la capacitacion");
+    } finally {
+      setAccionLoading("");
+    }
+  }
+
   if (loading) return <Loading text="Cargando capacitaciones..." />;
 
   return (
     <div className="training-section">
       {error && <div className="error-box">{error}</div>}
+      {success && <div className="success-box">{success}</div>}
 
       <div className="kpi-grid four training-kpis">
         <article className="kpi-card compact success">
@@ -155,6 +291,10 @@ export function CapacitacionesTalentoSection() {
             <h2>Capacitaciones internas</h2>
             <p>Cursos, vigencias, materiales y preguntas disponibles para el equipo.</p>
           </div>
+          <button className="brand-action-btn" type="button" onClick={abrirNuevaCapacitacion}>
+            <Plus size={17} />
+            Nueva capacitacion
+          </button>
         </div>
 
         <div className="toolbar padded-toolbar">
@@ -183,6 +323,7 @@ export function CapacitacionesTalentoSection() {
               <th>Habilitacion</th>
               <th>Vencimiento</th>
               <th>Estado</th>
+              <th>Acciones</th>
             </tr>
           </thead>
           <tbody>
@@ -201,6 +342,30 @@ export function CapacitacionesTalentoSection() {
                   <span className={`pill ${capacitacion.activo ? "activo" : "inactivo"}`}>
                     {capacitacion.activo ? "Activo" : "Inactivo"}
                   </span>
+                </td>
+                <td>
+                  <div className="table-actions training-actions">
+                    <button type="button" onClick={() => abrirEditarCapacitacion(capacitacion)} title="Editar capacitacion">
+                      <Pencil size={15} /> Editar
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => cambiarEstado(capacitacion)}
+                      disabled={accionLoading === `toggle-${capacitacion.id}`}
+                      title={capacitacion.activo ? "Desactivar" : "Activar"}
+                    >
+                      <Power size={15} /> {capacitacion.activo ? "Desactivar" : "Activar"}
+                    </button>
+                    <button
+                      className="danger"
+                      type="button"
+                      onClick={() => eliminarCapacitacion(capacitacion)}
+                      disabled={accionLoading === `eliminar-${capacitacion.id}`}
+                      title="Eliminar capacitacion"
+                    >
+                      <Trash2 size={15} /> Eliminar
+                    </button>
+                  </div>
                 </td>
               </tr>
             ))}
@@ -278,6 +443,91 @@ export function CapacitacionesTalentoSection() {
         </table>
         {adherenciaFiltrada.length === 0 && <div className="empty-state">No hay registros de adherencia con esos filtros.</div>}
       </section>
+
+      {modalAbierto && (
+        <div className="modal-backdrop" onMouseDown={() => setModalAbierto(false)}>
+          <div className="modal training-modal" onMouseDown={(event) => event.stopPropagation()}>
+            <div className="professional-detail-title training-modal-title">
+              <h2><BookOpenCheck size={22} /> {form.capacitacion_id ? "Editar capacitacion" : "Nueva capacitacion"}</h2>
+              <button type="button" onClick={() => setModalAbierto(false)} aria-label="Cerrar modal">
+                <X size={22} />
+              </button>
+            </div>
+
+            <div className="training-modal-body">
+              <div className="training-form-grid">
+                <label>
+                  Rama <span>*</span>
+                  <select value={form.rama} onChange={(event) => actualizarForm("rama", event.target.value)}>
+                    {RAMAS_CAPACITACION.map((item) => (
+                      <option key={item} value={item}>{item}</option>
+                    ))}
+                  </select>
+                </label>
+
+                <label>
+                  Vigencia
+                  <select value={form.vigencia_meses} onChange={(event) => actualizarForm("vigencia_meses", Number(event.target.value))}>
+                    <option value={1}>1 mes</option>
+                    <option value={3}>3 meses</option>
+                    <option value={6}>6 meses</option>
+                    <option value={12}>12 meses</option>
+                    <option value={24}>24 meses</option>
+                  </select>
+                </label>
+
+                <label className="wide-field">
+                  Nombre del curso <span>*</span>
+                  <input value={form.nombre} onChange={(event) => actualizarForm("nombre", event.target.value)} placeholder="Ej: Seguridad del paciente" />
+                </label>
+
+                <label className="wide-field">
+                  Descripcion / informacion del curso
+                  <textarea
+                    rows={3}
+                    value={form.descripcion || ""}
+                    onChange={(event) => actualizarForm("descripcion", event.target.value)}
+                    placeholder="Descripcion opcional..."
+                  />
+                </label>
+
+                <label>
+                  Fecha habilitacion
+                  <input
+                    type="date"
+                    value={form.fecha_habilitacion || ""}
+                    onChange={(event) => actualizarForm("fecha_habilitacion", event.target.value)}
+                  />
+                </label>
+
+                <label>
+                  Fecha vencimiento
+                  <input
+                    type="date"
+                    value={form.fecha_vencimiento || ""}
+                    onChange={(event) => actualizarForm("fecha_vencimiento", event.target.value)}
+                  />
+                </label>
+
+                <label>
+                  Estado
+                  <select value={form.activo} onChange={(event) => actualizarForm("activo", Number(event.target.value))}>
+                    <option value={0}>Inactivo</option>
+                    <option value={1}>Activo</option>
+                  </select>
+                </label>
+              </div>
+
+              <div className="modal-actions contract-actions">
+                <button className="secondary-btn pill-btn" type="button" onClick={() => setModalAbierto(false)}>Cancelar</button>
+                <button className="primary-btn gradient-btn" type="button" onClick={guardarCapacitacion} disabled={accionLoading === "guardar-capacitacion"}>
+                  Guardar capacitacion
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

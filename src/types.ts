@@ -298,6 +298,17 @@ export interface CapacitacionAdmin {
   num_preguntas: number;
 }
 
+export interface CapacitacionAdminPayload {
+  capacitacion_id?: number | string | null;
+  rama: string;
+  nombre: string;
+  descripcion?: string | null;
+  vigencia_meses: number;
+  fecha_habilitacion?: string | null;
+  fecha_vencimiento?: string | null;
+  activo: number;
+}
+
 export interface AdherenciaCapacitacion {
   profesional_id: number;
   profesional: string;

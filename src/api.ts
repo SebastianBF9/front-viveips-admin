@@ -2,6 +2,7 @@ import type {
   AdherenciaCapacitacionesResponse,
   CumplimientoServicio,
   CapacitacionAdmin,
+  CapacitacionAdminPayload,
   ProfesionalServicioPayload,
   PermisosAcceso,
   RelacionPayload,
@@ -194,6 +195,50 @@ export async function obtenerFormacionProfesional(id: number) {
 
 export async function listarCapacitacionesAdmin() {
   return apiCall<{ success: boolean; capacitaciones: CapacitacionAdmin[] }>("GET", "/capacitaciones/admin/lista");
+}
+
+export async function guardarCapacitacionAdmin(payload: CapacitacionAdminPayload) {
+  const token = getToken();
+  const form = new FormData();
+  if (payload.capacitacion_id) form.set("capacitacion_id", String(payload.capacitacion_id));
+  form.set("rama", payload.rama);
+  form.set("nombre", payload.nombre);
+  form.set("descripcion", payload.descripcion || "");
+  form.set("vigencia_meses", String(payload.vigencia_meses || 12));
+  form.set("fecha_habilitacion", payload.fecha_habilitacion || "");
+  form.set("fecha_vencimiento", payload.fecha_vencimiento || "");
+  form.set("activo", String(payload.activo ? 1 : 0));
+
+  const headers: Record<string, string> = {};
+  if (token) headers.Authorization = `Bearer ${token}`;
+
+  const response = await fetch(`${API_URL}/capacitaciones/admin/guardar`, {
+    method: "POST",
+    headers,
+    body: form,
+  });
+
+  let data: any = null;
+  try {
+    data = await response.json();
+  } catch {
+    data = null;
+  }
+
+  if (!response.ok) {
+    if (response.status === 401) clearSession();
+    throw new Error(data?.detail || data?.message || "No fue posible guardar la capacitacion");
+  }
+
+  return data as { success: boolean };
+}
+
+export async function toggleCapacitacionAdmin(id: number) {
+  return apiCall<{ success: boolean; activo: number }>("POST", `/capacitaciones/admin/toggle/${id}`);
+}
+
+export async function eliminarCapacitacionAdmin(id: number) {
+  return apiCall<{ success: boolean }>("DELETE", `/capacitaciones/admin/eliminar/${id}`);
 }
 
 export async function obtenerAdherenciaCapacitaciones(params: {
