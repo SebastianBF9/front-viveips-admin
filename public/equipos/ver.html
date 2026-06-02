@@ -71,8 +71,20 @@
         .replaceAll('"',"&quot;")
         .replaceAll("'","&#039;");
     }
+    function portalViejoBase(){
+      const host = window.location.hostname;
+      const path = window.location.pathname;
+      if (host.includes("localhost") || host.includes("127.0.0.1") || host.includes("admin-pruebas") || host.includes("pruebas")) {
+        return "https://portal.viveips.com.co/pruebas";
+      }
+      if (host.includes("admin.")) return "https://portal.viveips.com.co";
+      if (host === "portal.viveips.com.co") return `${window.location.origin}${path.startsWith("/pruebas/") ? "/pruebas" : ""}`;
+      return "https://portal.viveips.com.co/pruebas";
+    }
     function loginGestion(){
-      window.location.href = `/login?next=${encodeURIComponent(`/infraestructura?codigo=${codigo || ""}`)}`;
+      const base = portalViejoBase();
+      const gestion = `${base}/equipos/gestionar.html?codigo=${encodeURIComponent(codigo || "")}&accion=asignar`;
+      window.location.href = `${base}/login/login.html?next=${encodeURIComponent(gestion)}`;
     }
     async function cargar(){
       const cont = document.getElementById("contenido");

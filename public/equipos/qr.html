@@ -46,7 +46,17 @@
       : `${window.location.protocol}//api-pruebas.viveips.com.co`;
     const params = new URLSearchParams(window.location.search);
     const codigo = params.get("codigo") || "";
-    const urlConsulta = `${window.location.origin}/equipos/ver.html?codigo=${encodeURIComponent(codigo)}`;
+    function portalViejoBase(){
+      const host = window.location.hostname;
+      const path = window.location.pathname;
+      if (host.includes("localhost") || host.includes("127.0.0.1") || host.includes("admin-pruebas") || host.includes("pruebas")) {
+        return "https://portal.viveips.com.co/pruebas";
+      }
+      if (host.includes("admin.")) return "https://portal.viveips.com.co";
+      if (host === "portal.viveips.com.co") return `${window.location.origin}${path.startsWith("/pruebas/") ? "/pruebas" : ""}`;
+      return "https://portal.viveips.com.co/pruebas";
+    }
+    const urlConsulta = `${portalViejoBase()}/equipos/ver.html?codigo=${encodeURIComponent(codigo)}`;
     const qrApi = `https://api.qrserver.com/v1/create-qr-code/?size=520x520&margin=10&data=${encodeURIComponent(urlConsulta)}`;
 
     async function cargar(){
