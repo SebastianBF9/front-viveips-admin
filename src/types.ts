@@ -514,6 +514,9 @@ export interface EquipoBiomedico {
   registro_invima: string | null;
   area: string | null;
   servicio: string | null;
+  servicio_ips_id?: number | null;
+  servicio_codigo?: string | null;
+  servicio_nombre?: string | null;
   ubicacion_actual: string | null;
   latitud?: number | null;
   longitud?: number | null;

@@ -36,6 +36,7 @@ import {
   listarAnexosEquipo,
   listarCategoriasEquipo,
   listarEquiposBiomedicos,
+  listarServiciosIps,
   marcarAnexoNoAplica,
   obtenerAlertasEquipos,
   obtenerHojaVidaEquipo,
@@ -53,6 +54,7 @@ import type {
   EquipoDocumento,
   EquipoHojaVida,
   EquipoMantenimiento,
+  ServicioIps,
 } from "../types";
 import { Loading } from "../ui/Loading";
 
@@ -83,6 +85,7 @@ type EquipoForm = {
   registro_invima: string;
   area: string;
   servicio: string;
+  servicio_ips_id: string;
   ubicacion_actual: string;
   observaciones: string;
   requiere_calibracion: boolean;
@@ -248,6 +251,7 @@ function inicialForm(equipo?: EquipoBiomedico | null, hoja?: EquipoHojaVida | nu
     registro_invima: equipo?.registro_invima || "",
     area: equipo?.area || "",
     servicio: equipo?.servicio || "",
+    servicio_ips_id: equipo?.servicio_ips_id ? String(equipo.servicio_ips_id) : "",
     ubicacion_actual: equipo?.ubicacion_actual || UBICACION_INICIAL,
     observaciones: equipo?.observaciones || "",
     requiere_calibracion: boolEquipo(equipo?.requiere_calibracion || apoyo.requiere_calibracion),
@@ -345,6 +349,7 @@ function InfoItem({ label, value }: { label: string; value?: string | number | n
 export function InfraestructuraPage() {
   const [equipos, setEquipos] = useState<EquipoBiomedico[]>([]);
   const [categorias, setCategorias] = useState<string[]>(CATEGORIAS_FALLBACK);
+  const [serviciosIps, setServiciosIps] = useState<ServicioIps[]>([]);
   const [alertas, setAlertas] = useState<EquipoAlertaResumen | null>(null);
   const [query, setQuery] = useState("");
   const [estado, setEstado] = useState("");
@@ -370,11 +375,17 @@ export function InfraestructuraPage() {
     setLoading(true);
     setError("");
     try {
-      const [inventario, categoriasData] = await Promise.all([
+      const [inventario, categoriasData, serviciosData] = await Promise.all([
         listarEquiposBiomedicos(),
         listarCategoriasEquipo().catch(() => ({ categorias: [] })),
+        listarServiciosIps().catch(() => ({ servicios: [] })),
       ]);
       setEquipos(inventario.equipos || []);
+      setServiciosIps(
+        (serviciosData.servicios || [])
+          .filter((servicio) => servicio.estado === "habilitado" && (!servicio.tipo || servicio.tipo === "individual"))
+          .sort((a, b) => String(a.codigo).localeCompare(String(b.codigo), "es")),
+      );
       const categoriasNuevas = (categoriasData.categorias || [])
         .map((cat) => normalizarCategoria(cat.nombre))
         .filter(Boolean);
@@ -576,6 +587,7 @@ export function InfraestructuraPage() {
         registro_invima: limpio(form.registro_invima),
         area: limpio(form.area),
         servicio: limpio(form.servicio),
+        servicio_ips_id: form.servicio_ips_id ? Number(form.servicio_ips_id) : null,
         ubicacion_actual: limpio(form.ubicacion_actual) || UBICACION_INICIAL,
         requiere_calibracion: form.requiere_calibracion,
         observaciones: limpio(form.observaciones),
@@ -962,7 +974,22 @@ export function InfraestructuraPage() {
                 </label>
                 <label>
                   Servicio
-                  <input value={form.servicio} onChange={(event) => actualizarForm("servicio", event.target.value)} placeholder="Terapia respiratoria" />
+                  <select
+                    value={form.servicio_ips_id}
+                    onChange={(event) => {
+                      const valor = event.target.value;
+                      const seleccionado = serviciosIps.find((servicio) => String(servicio.id) === valor);
+                      actualizarForm("servicio_ips_id", valor);
+                      actualizarForm("servicio", seleccionado ? `${seleccionado.codigo} - ${seleccionado.nombre}` : "");
+                    }}
+                  >
+                    <option value="">Selecciona servicio individual</option>
+                    {serviciosIps.map((servicio) => (
+                      <option key={servicio.id} value={servicio.id}>
+                        {servicio.codigo} - {servicio.nombre}
+                      </option>
+                    ))}
+                  </select>
                 </label>
                 <label>
                   Tipo
