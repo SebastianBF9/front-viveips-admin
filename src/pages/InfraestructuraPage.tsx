@@ -786,7 +786,7 @@ export function InfraestructuraPage() {
           <button className="secondary-btn" type="button" onClick={cargar} disabled={loading}>
             <RefreshCw size={17} /> Actualizar
           </button>
-          <button className="primary-btn" type="button" onClick={abrirCrear}>
+          <button className="brand-action-btn" type="button" onClick={abrirCrear}>
             <Plus size={17} /> Nuevo equipo
           </button>
         </div>
