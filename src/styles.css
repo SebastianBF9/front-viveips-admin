@@ -3297,6 +3297,46 @@ td small { display: block; color: var(--muted); margin-top: 4px; }
   background: #b91c1c;
 }
 
+.delete-modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 12px;
+  padding: 18px 42px 22px 24px;
+}
+
+.delete-modal-actions .secondary-btn {
+  min-height: 42px;
+  padding: 10px 20px;
+  border-radius: 999px;
+  font-size: 14px;
+  font-weight: 900;
+}
+
+.delete-modal-actions .danger-action-btn {
+  border: 0;
+  min-height: 42px;
+  padding: 10px 22px;
+  border-radius: 999px;
+  background: linear-gradient(135deg, #dc2626, #b91c1c);
+  color: #fff;
+  font-size: 14px;
+  font-weight: 900;
+  box-shadow: 0 10px 22px rgba(220, 38, 38, .20);
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  transition: transform .18s ease, box-shadow .18s ease, filter .18s ease;
+}
+
+.delete-modal-actions .danger-action-btn:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 14px 26px rgba(185, 28, 28, .22);
+  filter: brightness(.98);
+}
+
 @media (max-width: 980px) {
   .app-shell { grid-template-columns: 1fr; }
   .sidebar { position: static; height: auto; }
@@ -3666,6 +3706,17 @@ td small { display: block; color: var(--muted); margin-top: 4px; }
 
   .infra-modal .modal-actions .secondary-btn,
   .infra-modal .modal-actions .infra-save-btn {
+    width: 100%;
+  }
+
+  .delete-modal-actions {
+    padding: 16px 20px 22px;
+    flex-direction: column-reverse;
+    align-items: stretch;
+  }
+
+  .delete-modal-actions .secondary-btn,
+  .delete-modal-actions .danger-action-btn {
     width: 100%;
   }
 }

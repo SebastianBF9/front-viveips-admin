@@ -1390,11 +1390,11 @@ export function InfraestructuraPage() {
             Motivo obligatorio *
             <textarea value={motivoBaja} onChange={(event) => setMotivoBaja(event.target.value)} rows={4} maxLength={500} />
           </label>
-          <div className="modal-actions">
+          <div className="modal-actions delete-modal-actions">
             <button className="secondary-btn" type="button" onClick={() => setBajaEquipo(null)}>
               Cancelar
             </button>
-            <button className="primary-btn danger-btn" type="button" onClick={confirmarBaja} disabled={accion === "baja"}>
+            <button className="primary-btn danger-btn danger-action-btn" type="button" onClick={confirmarBaja} disabled={accion === "baja"}>
               Confirmar eliminacion
             </button>
           </div>
