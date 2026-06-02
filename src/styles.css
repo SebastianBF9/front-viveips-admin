@@ -3547,7 +3547,7 @@ td small { display: block; color: var(--muted); margin-top: 4px; }
   min-width: 0;
 }
 
-@media (max-width: 1200px) {
+@media (max-width: 1380px) {
   .equipos-table-view {
     display: none;
   }
