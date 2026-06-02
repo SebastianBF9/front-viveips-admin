@@ -3261,3 +3261,50 @@ td small { display: block; color: var(--muted); margin-top: 4px; }
     width: 100%;
   }
 }
+
+/* ================================================================
+   Botones pequeños para carga de archivos en formularios
+   ================================================================ */
+
+.infra-form-grid input[type="file"] {
+  width: 100%;
+  min-height: 52px;
+  padding: 9px 12px;
+  border: 1px solid #dbe6f0;
+  border-radius: 14px;
+  background: #fff;
+  color: #334155;
+  font-weight: 800;
+}
+
+.infra-form-grid input[type="file"]::file-selector-button {
+  border: 0;
+  border-radius: 999px;
+  background: linear-gradient(135deg, var(--teal), var(--navy));
+  color: #fff;
+  font-weight: 900;
+  padding: 9px 16px;
+  margin-right: 12px;
+  cursor: pointer;
+  box-shadow: 0 8px 18px rgba(27, 170, 181, .18);
+  transition: transform .18s ease, box-shadow .18s ease, filter .18s ease;
+}
+
+.infra-form-grid input[type="file"]::file-selector-button:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 12px 24px rgba(27, 58, 107, .18);
+  filter: brightness(.99);
+}
+
+.infra-form-grid input[type="file"]::-webkit-file-upload-button {
+  border: 0;
+  border-radius: 999px;
+  background: linear-gradient(135deg, var(--teal), var(--navy));
+  color: #fff;
+  font-weight: 900;
+  padding: 9px 16px;
+  margin-right: 12px;
+  cursor: pointer;
+  box-shadow: 0 8px 18px rgba(27, 170, 181, .18);
+}
+
