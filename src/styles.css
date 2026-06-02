@@ -2975,41 +2975,47 @@ td small { display: block; color: var(--muted); margin-top: 4px; }
 .infra-form-body,
 .infra-hv-body {
   display: grid;
-  gap: 18px;
+  gap: 20px;
   padding: 22px 24px;
 }
 
 .infra-form-section {
   display: grid;
-  gap: 12px;
-  padding-bottom: 18px;
-  border-bottom: 1px solid var(--border);
+  gap: 15px;
+  border: 1px solid #dbe6f0;
+  border-radius: 8px;
+  padding: 18px 20px 20px;
+  background: #f8fbfe;
+  box-shadow: 0 1px 0 rgba(15, 23, 42, .03);
 }
 
 .infra-form-section:last-child {
-  border-bottom: 0;
+  border-bottom: 1px solid #dbe6f0;
 }
 
 .infra-form-section h3 {
-  margin: 0;
-  color: var(--navy);
+  margin: 0 0 2px;
+  color: #08243a;
   font-family: "Nunito", sans-serif;
-  font-size: 18px;
+  font-size: 17px;
+  font-weight: 900;
+  line-height: 1.2;
 }
 
 .infra-form-grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 14px;
+  gap: 15px 16px;
 }
 
 .infra-form-grid label,
 .infra-small-modal label {
   display: grid;
-  gap: 7px;
-  color: #334155;
+  gap: 8px;
+  color: #1f3b53;
   font-size: 13px;
   font-weight: 900;
+  line-height: 1.25;
 }
 
 .infra-form-grid input,
@@ -3020,6 +3026,19 @@ td small { display: block; color: var(--muted); margin-top: 4px; }
 .infra-small-modal textarea {
   width: 100%;
   min-width: 0;
+  border-color: #cfddea;
+}
+
+.infra-form-grid input,
+.infra-form-grid select,
+.infra-small-modal input,
+.infra-small-modal select {
+  min-height: 44px;
+}
+
+.infra-form-grid textarea,
+.infra-small-modal textarea {
+  line-height: 1.4;
 }
 
 .infra-category-row {
@@ -3042,13 +3061,23 @@ td small { display: block; color: var(--muted); margin-top: 4px; }
   grid-template-columns: auto minmax(0, 1fr);
   align-items: center;
   align-content: center;
-  min-height: 42px;
+  min-height: 44px;
+  border: 1px solid #dbe6f0;
+  border-radius: 8px;
+  background: #fff;
+  padding: 10px 12px;
 }
 
 .infra-check-field input {
   width: 18px;
   height: 18px;
   accent-color: var(--teal);
+}
+
+.infra-check-highlight {
+  border-color: #99e2e8;
+  background: #eefcfd;
+  color: #075985;
 }
 
 .infra-info-item {

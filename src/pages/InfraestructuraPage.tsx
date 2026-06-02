@@ -60,6 +60,14 @@ import { Loading } from "../ui/Loading";
 
 const UBICACION_INICIAL = "Oficina / Bodega principal VIVE IPS";
 const PERIODICIDADES = ["Mensual", "Bimestral", "Trimestral", "Cuatrimestral", "Semestral", "Anual", "Cada 2 anos", "No aplica"];
+const CLASIFICACIONES_BIOMEDICAS = [
+  "Equipo biomedico",
+  "Equipo industrial de uso hospitalario",
+  "Equipo de comunicaciones e informatica",
+  "Mobiliario asistencial",
+  "Otro",
+];
+const CLASIFICACIONES_RIESGO = ["I", "IIA", "IIB", "III", "No aplica"];
 const CATEGORIAS_FALLBACK = [
   "TENSIOMETRO ANEROIDE",
   "FONENDOSCOPIO",
@@ -438,7 +446,12 @@ export function InfraestructuraPage() {
   }
 
   function actualizarForm(campo: keyof EquipoForm, valor: string | boolean | File | null) {
-    setForm((actual) => (actual ? { ...actual, [campo]: valor } : actual));
+    setForm((actual) => {
+      if (!actual) return actual;
+      const siguiente = { ...actual, [campo]: valor };
+      if (campo === "requiere_calibracion" && valor === false) siguiente.periodicidad_calibracion = "";
+      return siguiente;
+    });
   }
 
   function actualizarFile(campo: "foto" | "manualUsuario" | "manualTecnico", event: ChangeEvent<HTMLInputElement>) {
@@ -998,10 +1011,6 @@ export function InfraestructuraPage() {
                     <option value="fijo">Fijo</option>
                   </select>
                 </label>
-                <label className="infra-check-field">
-                  <input checked={form.requiere_calibracion} onChange={(event) => actualizarForm("requiere_calibracion", event.target.checked)} type="checkbox" />
-                  Requiere calibracion
-                </label>
                 <label>
                   Foto del equipo
                   <input accept="image/*" onChange={(event) => actualizarFile("foto", event)} type="file" />
@@ -1068,7 +1077,7 @@ export function InfraestructuraPage() {
                 </label>
               </FormSection>
 
-              <FormSection title="Registro tecnico">
+              <FormSection title="Registro tecnico de instalacion">
                 {[
                   ["fuente_alimentacion", "Fuente alimentacion"],
                   ["tecnologia_predominante", "Tecnologia predominante"],
@@ -1082,6 +1091,20 @@ export function InfraestructuraPage() {
                   ["velocidad", "Velocidad"],
                   ["peso", "Peso"],
                   ["temperatura", "Temperatura"],
+                ].map(([key, label]) => (
+                  <label key={key}>
+                    {label}
+                    <input value={String(form[key as keyof EquipoForm] || "")} onChange={(event) => actualizarForm(key as keyof EquipoForm, event.target.value)} />
+                  </label>
+                ))}
+                <label className="wide-field">
+                  Otros datos de instalacion
+                  <textarea value={form.otros_datos_instalacion} onChange={(event) => actualizarForm("otros_datos_instalacion", event.target.value)} rows={2} />
+                </label>
+              </FormSection>
+
+              <FormSection title="Registro tecnico de funcionamiento">
+                {[
                   ["rango_voltaje", "Rango voltaje"],
                   ["rango_corriente", "Rango corriente"],
                   ["rango_potencia", "Rango potencia"],
@@ -1096,11 +1119,7 @@ export function InfraestructuraPage() {
                   </label>
                 ))}
                 <label className="wide-field">
-                  Otros datos de instalacion
-                  <textarea value={form.otros_datos_instalacion} onChange={(event) => actualizarForm("otros_datos_instalacion", event.target.value)} rows={2} />
-                </label>
-                <label className="wide-field">
-                  Recomendaciones fabricante
+                  Otras recomendaciones del fabricante
                   <textarea value={form.recomendaciones_fabricante} onChange={(event) => actualizarForm("recomendaciones_fabricante", event.target.value)} rows={2} />
                 </label>
               </FormSection>
@@ -1108,11 +1127,31 @@ export function InfraestructuraPage() {
               <FormSection title="Apoyo tecnico y clasificacion">
                 <label>
                   Clasificacion biomedica
-                  <input value={form.clasificacion_biomedica} onChange={(event) => actualizarForm("clasificacion_biomedica", event.target.value)} />
+                  <select value={form.clasificacion_biomedica} onChange={(event) => actualizarForm("clasificacion_biomedica", event.target.value)}>
+                    <option value="">Selecciona clasificacion</option>
+                    {form.clasificacion_biomedica && !CLASIFICACIONES_BIOMEDICAS.includes(form.clasificacion_biomedica) && (
+                      <option value={form.clasificacion_biomedica}>{form.clasificacion_biomedica}</option>
+                    )}
+                    {CLASIFICACIONES_BIOMEDICAS.map((clasificacion) => (
+                      <option key={clasificacion} value={clasificacion}>
+                        {clasificacion}
+                      </option>
+                    ))}
+                  </select>
                 </label>
                 <label>
                   Clasificacion riesgo
-                  <input value={form.clasificacion_riesgo} onChange={(event) => actualizarForm("clasificacion_riesgo", event.target.value)} />
+                  <select value={form.clasificacion_riesgo} onChange={(event) => actualizarForm("clasificacion_riesgo", event.target.value)}>
+                    <option value="">Selecciona riesgo</option>
+                    {form.clasificacion_riesgo && !CLASIFICACIONES_RIESGO.includes(form.clasificacion_riesgo) && (
+                      <option value={form.clasificacion_riesgo}>{form.clasificacion_riesgo}</option>
+                    )}
+                    {CLASIFICACIONES_RIESGO.map((riesgo) => (
+                      <option key={riesgo} value={riesgo}>
+                        {riesgo}
+                      </option>
+                    ))}
+                  </select>
                 </label>
                 <label>
                   Periodicidad mantenimiento
@@ -1147,6 +1186,10 @@ export function InfraestructuraPage() {
                 <label className="infra-check-field">
                   <input checked={form.manual_mantenimiento} onChange={(event) => actualizarForm("manual_mantenimiento", event.target.checked)} type="checkbox" />
                   Tiene manual de mantenimiento
+                </label>
+                <label className="infra-check-field infra-check-highlight">
+                  <input checked={form.requiere_calibracion} onChange={(event) => actualizarForm("requiere_calibracion", event.target.checked)} type="checkbox" />
+                  Requiere calibracion
                 </label>
               </FormSection>
             </div>
