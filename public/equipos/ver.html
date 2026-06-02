@@ -76,10 +76,18 @@
       const esPruebas = host === "pruebas.portal.viveips.com.co" || host.includes("localhost") || host.includes("127.0.0.1") || host.includes("admin-pruebas");
       return esPruebas ? "https://pruebas.portal.viveips.com.co" : "https://portal.viveips.com.co";
     }
+    function normalizarRutaPortalViejo(path){
+      let ruta = String(path || "");
+      ruta = ruta.replace(/^https?:\/\/pruebas\.portal\.viveips\.com\.co\/pruebas/i, "");
+      ruta = ruta.replace(/^https?:\/\/pruebas\.portal\.viveips\.com\.co/i, "");
+      ruta = ruta.replace(/^\/pruebas\//, "/");
+      if (!ruta.startsWith("/")) ruta = `/${ruta}`;
+      return ruta;
+    }
     function loginGestion(){
       const base = portalViejoBase();
-      const gestion = `/equipos/gestionar.html?codigo=${encodeURIComponent(codigo || "")}&accion=asignar`;
-      window.location.href = `${base}/login/login.html?redirect=${encodeURIComponent(gestion)}`;
+      const next = normalizarRutaPortalViejo(`/equipos/gestionar.html?codigo=${encodeURIComponent(codigo || "")}&accion=asignar`);
+      window.location.href = `${base}/login/login.html?next=${encodeURIComponent(next)}`;
     }
     async function cargar(){
       const cont = document.getElementById("contenido");
