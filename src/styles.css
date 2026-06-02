@@ -3376,35 +3376,3 @@ td small { display: block; color: var(--muted); margin-top: 4px; }
   border-radius: 16px;
 }
 
-
-/* Botones compactos dentro del modal de infraestructura */
-.infra-modal .modal-actions {
-  padding: 22px 42px 26px 28px;
-  display: flex;
-  justify-content: flex-end;
-  align-items: center;
-  gap: 16px;
-}
-
-.infra-modal .modal-actions .modal-save-btn {
-  min-height: 48px;
-  padding: 12px 24px;
-  border-radius: 18px;
-  font-size: 15px;
-  line-height: 1;
-  box-shadow: 0 10px 22px rgba(27, 170, 181, .18);
-}
-
-.infra-modal .modal-actions .modal-save-btn svg {
-  width: 18px;
-  height: 18px;
-}
-
-.infra-modal .modal-actions .secondary-btn {
-  min-height: 48px;
-  padding: 12px 22px;
-  border-radius: 18px;
-  font-size: 15px;
-  line-height: 1;
-}
-
