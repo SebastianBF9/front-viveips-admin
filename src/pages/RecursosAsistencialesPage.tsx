@@ -460,7 +460,7 @@ export function RecursosAsistencialesPage() {
           <h1>Recursos Asistenciales</h1>
           <p>Catálogo base de medicamentos, dispositivos médicos, insumos, proveedores y relación con servicios IPS.</p>
         </div>
-        <div className="infra-header-actions">
+        <div className="infra-header-actions recursos-header-actions">
           <button className="secondary-btn" type="button" onClick={cargar} disabled={loading}>
             Actualizar
           </button>

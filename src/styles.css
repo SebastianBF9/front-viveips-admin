@@ -3304,6 +3304,22 @@ td small { display: block; color: var(--muted); margin-top: 4px; }
   padding: 0 10px;
 }
 
+.recursos-page .page-header > div:first-child {
+  min-width: 0;
+}
+
+.recursos-header-actions {
+  flex: 0 0 auto;
+  justify-content: flex-end;
+  flex-wrap: nowrap;
+}
+
+.recursos-header-actions .secondary-btn,
+.recursos-header-actions .brand-action-btn {
+  width: auto;
+  white-space: nowrap;
+}
+
 .recursos-grid,
 .recursos-provider-grid {
   display: grid;
@@ -3947,6 +3963,24 @@ td small { display: block; color: var(--muted); margin-top: 4px; }
   }
 
   .recursos-actions button {
+    width: 100%;
+  }
+
+  .recursos-page .page-header {
+    display: grid;
+    grid-template-columns: 1fr;
+    align-items: stretch;
+  }
+
+  .recursos-header-actions {
+    display: grid;
+    grid-template-columns: 1fr;
+    justify-content: stretch;
+    width: 100%;
+  }
+
+  .recursos-header-actions .secondary-btn,
+  .recursos-header-actions .brand-action-btn {
     width: 100%;
   }
 }
