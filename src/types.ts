@@ -690,6 +690,147 @@ export interface EquipoAlertaResumen {
   total: number;
 }
 
+export type TipoRecursoAsistencial = "medicamento" | "dispositivo_medico" | "insumo";
+export type EstadoRecursoAsistencial = "activo" | "inactivo" | "en_revision" | "rechazado";
+export type EstadoProveedorRecurso = "activo" | "inactivo" | "en_revision" | "bloqueado";
+
+export interface RecursoServicioRelacion {
+  id?: number;
+  recurso_id?: number;
+  servicio_ips_id: number;
+  obligatorio?: number | boolean;
+  tipo_relacion?: "base" | "apoyo" | "interdependencia" | "relacionado" | string;
+  cantidad_minima?: number | null;
+  cantidad_maxima?: number | null;
+  estado?: string;
+  observaciones?: string | null;
+  servicio_codigo?: string | null;
+  servicio_nombre?: string | null;
+  servicio_estado?: string | null;
+  servicio_tipo?: string | null;
+}
+
+export interface RecursoProveedorRelacion {
+  id?: number;
+  recurso_id?: number;
+  proveedor_id: number;
+  precio_referencia?: number | null;
+  tiempo_entrega_dias?: number | null;
+  proveedor_preferido?: number | boolean;
+  estado?: string;
+  observaciones?: string | null;
+  nombre?: string | null;
+  nit?: string | null;
+  telefono?: string | null;
+  correo?: string | null;
+}
+
+export interface FichaTecnicaRecurso {
+  id: number;
+  recurso_id: number;
+  archivo: string | null;
+  nombre_archivo: string | null;
+  version: string | null;
+  fecha_documento: string | null;
+  fecha_cargue: string | null;
+  estado: string;
+  observaciones: string | null;
+}
+
+export interface RecursoAsistencial {
+  id: number;
+  codigo: string | null;
+  nombre: string;
+  tipo_recurso: TipoRecursoAsistencial | string;
+  descripcion: string | null;
+  presentacion: string | null;
+  unidad_medida: string | null;
+  concentracion: string | null;
+  principio_activo: string | null;
+  registro_sanitario: string | null;
+  fecha_vencimiento_registro_sanitario: string | null;
+  requiere_registro_sanitario: number | boolean;
+  requiere_cadena_frio: number | boolean;
+  temperatura_min: number | null;
+  temperatura_max: number | null;
+  humedad_min: number | null;
+  humedad_max: number | null;
+  es_lasa: number | boolean;
+  alto_riesgo: number | boolean;
+  requiere_formula: number | boolean;
+  requiere_ficha_tecnica: number | boolean;
+  stock_minimo: number | null;
+  stock_maximo: number | null;
+  punto_reorden: number | null;
+  tiempo_reposicion_dias: number | null;
+  estado: EstadoRecursoAsistencial | string;
+  observaciones: string | null;
+  servicios_resumen?: string | null;
+  proveedores_resumen?: string | null;
+  proveedor_principal?: string | null;
+  servicios?: RecursoServicioRelacion[];
+  proveedores?: RecursoProveedorRelacion[];
+  fichas_tecnicas?: FichaTecnicaRecurso[];
+}
+
+export interface RecursoAsistencialPayload {
+  codigo?: string | null;
+  nombre: string;
+  tipo_recurso: TipoRecursoAsistencial | string;
+  descripcion?: string | null;
+  presentacion?: string | null;
+  unidad_medida?: string | null;
+  concentracion?: string | null;
+  principio_activo?: string | null;
+  registro_sanitario?: string | null;
+  fecha_vencimiento_registro_sanitario?: string | null;
+  requiere_registro_sanitario?: boolean;
+  requiere_cadena_frio?: boolean;
+  temperatura_min?: number | null;
+  temperatura_max?: number | null;
+  humedad_min?: number | null;
+  humedad_max?: number | null;
+  es_lasa?: boolean;
+  alto_riesgo?: boolean;
+  requiere_formula?: boolean;
+  requiere_ficha_tecnica?: boolean;
+  stock_minimo?: number | null;
+  stock_maximo?: number | null;
+  punto_reorden?: number | null;
+  tiempo_reposicion_dias?: number | null;
+  estado: EstadoRecursoAsistencial | string;
+  observaciones?: string | null;
+}
+
+export interface ProveedorRecurso {
+  id: number;
+  nombre: string;
+  nit: string | null;
+  contacto_nombre: string | null;
+  contacto_cargo: string | null;
+  telefono: string | null;
+  correo: string | null;
+  direccion: string | null;
+  ciudad: string | null;
+  departamento: string | null;
+  estado: EstadoProveedorRecurso | string;
+  observaciones: string | null;
+}
+
+export interface ProveedorRecursoPayload {
+  nombre: string;
+  nit?: string | null;
+  contacto_nombre?: string | null;
+  contacto_cargo?: string | null;
+  telefono?: string | null;
+  correo?: string | null;
+  direccion?: string | null;
+  ciudad?: string | null;
+  departamento?: string | null;
+  estado: EstadoProveedorRecurso | string;
+  observaciones?: string | null;
+}
+
 export interface AdherenciaCapacitacion {
   profesional_id: number;
   profesional: string;

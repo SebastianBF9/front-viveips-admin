@@ -7,6 +7,7 @@ import { CapacitacionesProfesionalPage } from "./pages/CapacitacionesProfesional
 import { InfraestructuraPage } from "./pages/InfraestructuraPage";
 import { LoginPage } from "./pages/LoginPage";
 import { PortalProfesionalPage } from "./pages/PortalProfesionalPage";
+import { RecursosAsistencialesPage } from "./pages/RecursosAsistencialesPage";
 import { ServicioDetallePage } from "./pages/ServicioDetallePage";
 import { ServiciosPage } from "./pages/ServiciosPage";
 import { TalentoHumanoPage } from "./pages/TalentoHumanoPage";
@@ -25,6 +26,7 @@ const router = createBrowserRouter([
       { path: "servicios/:codigo", element: <ServicioDetallePage /> },
       { path: "talento-humano", element: <TalentoHumanoPage /> },
       { path: "infraestructura", element: <InfraestructuraPage /> },
+      { path: "recursos-asistenciales", element: <RecursosAsistencialesPage /> },
       { path: "accesos", element: <AccesosPage /> },
     ],
   },

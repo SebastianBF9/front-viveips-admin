@@ -3297,6 +3297,219 @@ td small { display: block; color: var(--muted); margin-top: 4px; }
   background: #b91c1c;
 }
 
+.recursos-tabs {
+  background: #fff;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 0 10px;
+}
+
+.recursos-grid,
+.recursos-provider-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+}
+
+.recurso-card,
+.proveedor-card {
+  min-width: 0;
+  display: grid;
+  gap: 14px;
+  border: 1px solid #dbe6f0;
+  border-radius: 8px;
+  background: #fff;
+  padding: 18px;
+  box-shadow: 0 10px 26px rgba(15, 23, 42, .06);
+}
+
+.recurso-card-head {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: center;
+  gap: 13px;
+}
+
+.recurso-card-head strong,
+.proveedor-card strong {
+  display: block;
+  color: #08243a;
+  font-size: 16px;
+  font-weight: 950;
+  overflow-wrap: anywhere;
+}
+
+.recurso-card-head span,
+.proveedor-card span {
+  display: block;
+  color: #5f718b;
+  font-size: 13px;
+  font-weight: 750;
+  margin-top: 2px;
+  overflow-wrap: anywhere;
+}
+
+.recurso-icon {
+  width: 46px;
+  height: 46px;
+  border-radius: 999px;
+  display: grid;
+  place-items: center;
+  background: linear-gradient(135deg, #1baab5, #1b3a6b);
+  color: #fff;
+}
+
+.tag.cold {
+  background: #e0f2fe;
+  color: #075985;
+}
+
+.tag.lasa {
+  background: #dbeafe;
+  color: #1d4ed8;
+}
+
+.recurso-dl {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+  margin: 0;
+}
+
+.recurso-dl div {
+  min-width: 0;
+  border: 1px solid #e5eef6;
+  border-radius: 8px;
+  background: #f8fbfe;
+  padding: 10px 11px;
+}
+
+.recurso-dl dt {
+  color: #64748b;
+  font-size: 11px;
+  font-weight: 950;
+  text-transform: uppercase;
+  margin-bottom: 5px;
+}
+
+.recurso-dl dd {
+  margin: 0;
+  color: #08243a;
+  font-size: 13px;
+  font-weight: 850;
+  overflow-wrap: anywhere;
+}
+
+.recursos-actions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.recursos-actions button {
+  min-height: 34px;
+  border: 1px solid #dbe6f0;
+  border-radius: 8px;
+  background: #fff;
+  color: var(--navy);
+  padding: 7px 11px;
+  font-weight: 900;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  cursor: pointer;
+}
+
+.recursos-actions button.danger {
+  color: #b91c1c;
+  background: #fff7f7;
+  border-color: #fecaca;
+}
+
+.recursos-placeholder {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 20px;
+}
+
+.recursos-form-section {
+  display: grid;
+  gap: 15px;
+  border: 1px solid #dbe6f0;
+  border-radius: 8px;
+  padding: 18px 20px 20px;
+  background: #f8fbfe;
+}
+
+.recursos-form-section h3 {
+  margin: 0;
+  color: #08243a;
+  font-family: "Nunito", sans-serif;
+  font-size: 17px;
+  font-weight: 900;
+}
+
+.recursos-form-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 15px 16px;
+}
+
+.recursos-form-grid label {
+  display: grid;
+  gap: 8px;
+  color: #1f3b53;
+  font-size: 13px;
+  font-weight: 900;
+}
+
+.recursos-form-grid input,
+.recursos-form-grid select,
+.recursos-form-grid textarea {
+  width: 100%;
+  min-width: 0;
+  border-color: #cfddea;
+}
+
+.recursos-check-list {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 9px;
+  max-height: 220px;
+  overflow: auto;
+  border: 1px solid #dbe6f0;
+  border-radius: 8px;
+  background: #fff;
+  padding: 12px;
+}
+
+.recursos-check-list label {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: start;
+  gap: 8px;
+  font-size: 13px;
+  font-weight: 800;
+}
+
+.recursos-check-list input {
+  width: auto;
+  min-height: 0;
+  margin-top: 2px;
+  accent-color: var(--teal);
+}
+
+.recursos-lasa-alert {
+  border: 1px solid #bfdbfe;
+  background: #eff6ff;
+  color: #1d4ed8;
+  border-radius: 8px;
+  padding: 12px;
+  font-weight: 850;
+}
+
 .delete-modal-actions {
   display: flex;
   justify-content: flex-end;
@@ -3717,6 +3930,23 @@ td small { display: block; color: var(--muted); margin-top: 4px; }
 
   .delete-modal-actions .secondary-btn,
   .delete-modal-actions .danger-action-btn {
+    width: 100%;
+  }
+
+  .recursos-grid,
+  .recursos-provider-grid,
+  .recurso-dl,
+  .recursos-form-grid,
+  .recursos-check-list {
+    grid-template-columns: 1fr;
+  }
+
+  .recursos-actions {
+    display: grid;
+    grid-template-columns: 1fr;
+  }
+
+  .recursos-actions button {
     width: 100%;
   }
 }

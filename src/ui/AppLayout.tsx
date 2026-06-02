@@ -1,4 +1,4 @@
-import { Building2, LogOut, ShieldCheck, Stethoscope, UsersRound } from "lucide-react";
+import { Building2, LogOut, PackagePlus, ShieldCheck, Stethoscope, UsersRound } from "lucide-react";
 import { useEffect, useState } from "react";
 import { Navigate, NavLink, Outlet, useNavigate } from "react-router-dom";
 import { clearSession, getToken, obtenerMiAcceso } from "../api";
@@ -37,6 +37,7 @@ export function AppLayout() {
   const puedeVerTalento = Boolean(acceso?.permiso_ver_todo || acceso?.permiso_ver_profesionales || acceso?.permiso_crear_profesionales);
   const puedeVerAccesos = Boolean(acceso?.permiso_ver_todo);
   const puedeVerInfraestructura = Boolean(acceso?.permiso_ver_todo || acceso?.permiso_tecnovigilancia);
+  const puedeVerRecursos = Boolean(acceso?.permiso_ver_todo);
 
   return (
     <div className="app-shell">
@@ -65,6 +66,12 @@ export function AppLayout() {
             <NavLink to="/infraestructura" className={({ isActive }) => `nav-link ${isActive ? "active" : ""}`}>
               <Building2 size={18} />
               Infraestructura
+            </NavLink>
+          )}
+          {puedeVerRecursos && (
+            <NavLink to="/recursos-asistenciales" className={({ isActive }) => `nav-link ${isActive ? "active" : ""}`}>
+              <PackagePlus size={18} />
+              Recursos Asistenciales
             </NavLink>
           )}
           {puedeVerAccesos && (

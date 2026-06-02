@@ -26,6 +26,12 @@ import type {
   ProfesionalPerfilPayload,
   ReferenciaPersonal,
   RelacionPayload,
+  RecursoAsistencial,
+  RecursoAsistencialPayload,
+  RecursoProveedorRelacion,
+  RecursoServicioRelacion,
+  ProveedorRecurso,
+  ProveedorRecursoPayload,
   ServicioDetalle,
   ServicioIps,
   ServicioProfesionalAsignado,
@@ -530,6 +536,87 @@ export async function obtenerExamenCapacitacion(capacitacionId: number) {
 
 export async function enviarExamenCapacitacion(payload: EnviarExamenPayload) {
   return apiCall<ResultadoExamenCapacitacion>("POST", "/capacitaciones/enviar-examen", payload);
+}
+
+// --- Recursos Asistenciales ---
+
+export async function listarRecursosAsistenciales(params: {
+  tipo_recurso?: string;
+  estado?: string;
+  servicio_ips_id?: number | string;
+  proveedor_id?: number | string;
+  requiere_cadena_frio?: boolean | string;
+  es_lasa?: boolean | string;
+  busqueda?: string;
+} = {}) {
+  const query = new URLSearchParams();
+  Object.entries(params).forEach(([key, value]) => {
+    if (value !== undefined && value !== null && String(value).trim()) query.set(key, String(value));
+  });
+  const suffix = query.toString() ? `?${query.toString()}` : "";
+  return apiCall<{ success: boolean; recursos: RecursoAsistencial[]; total: number }>("GET", `/recursos-asistenciales${suffix}`);
+}
+
+export async function obtenerRecursoAsistencial(id: number) {
+  return apiCall<{ success: boolean; recurso: RecursoAsistencial }>("GET", `/recursos-asistenciales/${id}`);
+}
+
+export async function crearRecursoAsistencial(payload: RecursoAsistencialPayload) {
+  return apiCall<{ success: boolean; mensaje: string; recurso_id: number }>("POST", "/recursos-asistenciales", payload);
+}
+
+export async function actualizarRecursoAsistencial(id: number, payload: RecursoAsistencialPayload) {
+  return apiCall<{ success: boolean; mensaje: string }>("PUT", `/recursos-asistenciales/${id}`, payload);
+}
+
+export async function eliminarRecursoAsistencial(id: number) {
+  return apiCall<{ success: boolean; mensaje: string }>("DELETE", `/recursos-asistenciales/${id}`);
+}
+
+export async function listarProveedoresRecursos(params: { estado?: string; busqueda?: string } = {}) {
+  const query = new URLSearchParams();
+  Object.entries(params).forEach(([key, value]) => {
+    if (value !== undefined && value !== null && String(value).trim()) query.set(key, String(value));
+  });
+  const suffix = query.toString() ? `?${query.toString()}` : "";
+  return apiCall<{ success: boolean; proveedores: ProveedorRecurso[]; total: number }>("GET", `/proveedores-recursos${suffix}`);
+}
+
+export async function crearProveedorRecurso(payload: ProveedorRecursoPayload) {
+  return apiCall<{ success: boolean; mensaje: string; proveedor_id: number }>("POST", "/proveedores-recursos", payload);
+}
+
+export async function actualizarProveedorRecurso(id: number, payload: ProveedorRecursoPayload) {
+  return apiCall<{ success: boolean; mensaje: string }>("PUT", `/proveedores-recursos/${id}`, payload);
+}
+
+export async function eliminarProveedorRecurso(id: number) {
+  return apiCall<{ success: boolean; mensaje: string }>("DELETE", `/proveedores-recursos/${id}`);
+}
+
+export async function asociarProveedorRecurso(recursoId: number, payload: Partial<RecursoProveedorRelacion> & { proveedor_id: number }) {
+  return apiCall<{ success: boolean; mensaje: string }>("POST", `/recursos-asistenciales/${recursoId}/proveedores`, payload);
+}
+
+export async function eliminarProveedorDeRecurso(recursoId: number, proveedorId: number) {
+  return apiCall<{ success: boolean; mensaje: string }>("DELETE", `/recursos-asistenciales/${recursoId}/proveedores/${proveedorId}`);
+}
+
+export async function asociarServicioRecurso(recursoId: number, payload: Partial<RecursoServicioRelacion> & { servicio_ips_id: number }) {
+  return apiCall<{ success: boolean; mensaje: string }>("POST", `/recursos-asistenciales/${recursoId}/servicios`, payload);
+}
+
+export async function eliminarServicioDeRecurso(recursoId: number, servicioIpsId: number) {
+  return apiCall<{ success: boolean; mensaje: string }>("DELETE", `/recursos-asistenciales/${recursoId}/servicios/${servicioIpsId}`);
+}
+
+export async function subirFichaTecnicaRecurso(recursoId: number, archivo: File, payload: { version?: string; fecha_documento?: string; observaciones?: string } = {}) {
+  const form = new FormData();
+  form.set("archivo", archivo);
+  if (payload.version) form.set("version", payload.version);
+  if (payload.fecha_documento) form.set("fecha_documento", payload.fecha_documento);
+  if (payload.observaciones) form.set("observaciones", payload.observaciones);
+  return apiFormCall<{ success: boolean; mensaje: string; ficha_id: number; ruta: string }>("POST", `/recursos-asistenciales/${recursoId}/fichas-tecnicas`, form);
 }
 
 // --- Infraestructura / Tecnovigilancia ---
