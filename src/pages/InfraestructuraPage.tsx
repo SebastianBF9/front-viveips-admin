@@ -1155,7 +1155,7 @@ export function InfraestructuraPage() {
               <button className="secondary-btn" type="button" onClick={() => setForm(null)}>
                 Cancelar
               </button>
-              <button className="primary-btn" type="button" onClick={guardarEquipo} disabled={accion === "guardar-equipo"}>
+              <button className="primary-btn infra-save-btn" type="button" onClick={guardarEquipo} disabled={accion === "guardar-equipo"}>
                 <Save size={16} /> Guardar equipo
               </button>
             </div>
