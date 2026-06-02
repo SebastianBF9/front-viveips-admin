@@ -3308,3 +3308,51 @@ td small { display: block; color: var(--muted); margin-top: 4px; }
   box-shadow: 0 8px 18px rgba(27, 170, 181, .18);
 }
 
+
+/* ================================================================
+   Acciones de modales - botones inferiores con mejor espaciado
+   ================================================================ */
+
+.infra-modal .modal-actions {
+  position: sticky;
+  bottom: 0;
+  margin: 18px -22px -22px;
+  padding: 18px 24px 22px;
+  background: linear-gradient(180deg, rgba(255,255,255,.88), #fff 45%);
+  border-top: 1px solid #e5eef6;
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 14px;
+  border-radius: 0 0 18px 18px;
+}
+
+.infra-modal .modal-actions .primary-btn {
+  min-height: 46px;
+  padding: 12px 22px;
+  border-radius: 14px;
+  background: linear-gradient(135deg, var(--teal), #0f8fa3);
+  color: #fff;
+  box-shadow: 0 12px 24px rgba(27, 170, 181, .22);
+  transition: transform .18s ease, box-shadow .18s ease, filter .18s ease;
+}
+
+.infra-modal .modal-actions .primary-btn:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 16px 30px rgba(27, 58, 107, .20);
+  filter: brightness(.99);
+}
+
+.infra-modal .modal-actions .secondary-btn {
+  min-height: 46px;
+  padding: 12px 22px;
+  border-radius: 14px;
+  background: #f1f5f9;
+  color: #334155;
+  box-shadow: none;
+}
+
+.infra-modal .modal-actions .secondary-btn:hover {
+  background: #e8eef5;
+}
+
