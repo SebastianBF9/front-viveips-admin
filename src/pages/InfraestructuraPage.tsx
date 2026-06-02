@@ -787,6 +787,46 @@ export function InfraestructuraPage() {
     return !["asignado", "asignacion_en_proceso", "dado_de_baja"].includes(equipo.estado);
   }
 
+  function renderEquipoActions(equipo: EquipoBiomedico) {
+    return (
+      <div className="infra-actions">
+        <button className="qr" type="button" onClick={() => abrirQR(equipo)} title="Abrir QR imprimible">
+          <QrCode size={15} /> QR
+        </button>
+        <button type="button" onClick={() => abrirHojaVida(equipo)} disabled={accion === `hv-${equipo.id}`}>
+          <Eye size={15} /> Hoja de vida
+        </button>
+        <div className="infra-menu-wrap">
+          <button type="button" onClick={() => setMenuEquipo(menuEquipo === equipo.id ? null : equipo.id)}>
+            Opciones <ChevronDown size={14} />
+          </button>
+          {menuEquipo === equipo.id && (
+            <div className="infra-menu">
+              <button type="button" onClick={() => setMantenimientoEquipo(equipo)}>
+                <Wrench size={14} /> Mantenimiento
+              </button>
+              {boolEquipo(equipo.requiere_calibracion) && (
+                <button type="button" onClick={() => setCalibracionEquipo(equipo)}>
+                  <CalendarClock size={14} /> Calibracion
+                </button>
+              )}
+              {equipo.estado !== "dado_de_baja" && (
+                <button type="button" onClick={() => abrirEditar(equipo)}>
+                  <Edit3 size={14} /> Editar
+                </button>
+              )}
+              {puedeDarBaja(equipo) && (
+                <button className="danger" type="button" onClick={() => setBajaEquipo(equipo)}>
+                  <Archive size={14} /> Eliminar
+                </button>
+              )}
+            </div>
+          )}
+        </div>
+      </div>
+    );
+  }
+
   return (
     <section className="page infrastructure-page">
       <header className="page-header">
@@ -848,86 +888,93 @@ export function InfraestructuraPage() {
 
       {!loading && (
         <section className="table-card infra-table-card">
-          <table className="infra-table">
-            <thead>
-              <tr>
-                <th>Equipo</th>
-                <th>Marca / Modelo</th>
-                <th>Serie</th>
-                <th>Area / Servicio</th>
-                <th>Ubicacion</th>
-                <th>Estado</th>
-                <th>Acciones</th>
-              </tr>
-            </thead>
-            <tbody>
-              {filtrados.map((equipo) => (
-                <tr key={equipo.id}>
-                  <td>
-                    <div className="infra-equipo-cell">
-                      <div className="infra-equipo-icon">
-                        <Wrench size={18} />
-                      </div>
-                      <div>
-                        <strong>{texto(equipo.nombre)}</strong>
-                        <span>Codigo: {texto(equipo.codigo_interno)}</span>
-                      </div>
-                    </div>
-                  </td>
-                  <td>
-                    {texto(equipo.marca)}
-                    <small>{texto(equipo.modelo)}</small>
-                  </td>
-                  <td>{texto(equipo.serie)}</td>
-                  <td>
-                    {texto(equipo.area)}
-                    <small>{texto(equipo.servicio)}</small>
-                  </td>
-                  <td>{texto(equipo.ubicacion_actual)}</td>
-                  <td>
-                    <span className={`pill ${estadoClass(equipo.estado)}`}>{estadoLabel(equipo.estado)}</span>
-                  </td>
-                  <td>
-                    <div className="infra-actions">
-                      <button className="qr" type="button" onClick={() => abrirQR(equipo)} title="Abrir QR imprimible">
-                        <QrCode size={15} /> QR
-                      </button>
-                      <button type="button" onClick={() => abrirHojaVida(equipo)} disabled={accion === `hv-${equipo.id}`}>
-                        <Eye size={15} /> Hoja de vida
-                      </button>
-                      <div className="infra-menu-wrap">
-                        <button type="button" onClick={() => setMenuEquipo(menuEquipo === equipo.id ? null : equipo.id)}>
-                          Opciones <ChevronDown size={14} />
-                        </button>
-                        {menuEquipo === equipo.id && (
-                          <div className="infra-menu">
-                            <button type="button" onClick={() => setMantenimientoEquipo(equipo)}>
-                              <Wrench size={14} /> Mantenimiento
-                            </button>
-                            {boolEquipo(equipo.requiere_calibracion) && (
-                              <button type="button" onClick={() => setCalibracionEquipo(equipo)}>
-                                <CalendarClock size={14} /> Calibracion
-                              </button>
-                            )}
-                            {equipo.estado !== "dado_de_baja" && (
-                              <button type="button" onClick={() => abrirEditar(equipo)}>
-                                <Edit3 size={14} /> Editar
-                              </button>
-                            )}
-                            {puedeDarBaja(equipo) && (
-                              <button className="danger" type="button" onClick={() => setBajaEquipo(equipo)}>
-                                <Archive size={14} /> Eliminar
-                              </button>
-                            )}
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                  </td>
+          <div className="equipos-table-view">
+            <table className="infra-table">
+              <thead>
+                <tr>
+                  <th>Equipo</th>
+                  <th>Marca / Modelo</th>
+                  <th>Serie</th>
+                  <th>Area / Servicio</th>
+                  <th>Ubicacion</th>
+                  <th>Estado</th>
+                  <th>Acciones</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              <tbody>
+                {filtrados.map((equipo) => (
+                  <tr key={equipo.id}>
+                    <td>
+                      <div className="infra-equipo-cell">
+                        <div className="infra-equipo-icon">
+                          <Wrench size={18} />
+                        </div>
+                        <div>
+                          <strong>{texto(equipo.nombre)}</strong>
+                          <span>Codigo: {texto(equipo.codigo_interno)}</span>
+                        </div>
+                      </div>
+                    </td>
+                    <td>
+                      {texto(equipo.marca)}
+                      <small>{texto(equipo.modelo)}</small>
+                    </td>
+                    <td>{texto(equipo.serie)}</td>
+                    <td>
+                      {texto(equipo.area)}
+                      <small>{texto(equipo.servicio)}</small>
+                    </td>
+                    <td>{texto(equipo.ubicacion_actual)}</td>
+                    <td>
+                      <span className={`pill ${estadoClass(equipo.estado)}`}>{estadoLabel(equipo.estado)}</span>
+                    </td>
+                    <td>{renderEquipoActions(equipo)}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+
+          <div className="equipos-card-view">
+            {filtrados.map((equipo) => (
+              <article className="equipo-card" key={equipo.id}>
+                <div className="equipo-card-header">
+                  <div className="infra-equipo-icon">
+                    <Wrench size={18} />
+                  </div>
+                  <div>
+                    <strong>{texto(equipo.nombre)}</strong>
+                    <span>Codigo: {texto(equipo.codigo_interno)}</span>
+                  </div>
+                </div>
+                <div className="equipo-card-details">
+                  <div>
+                    <span>Marca / Modelo</span>
+                    <strong>{texto(equipo.marca)}</strong>
+                    <small>{texto(equipo.modelo)}</small>
+                  </div>
+                  <div>
+                    <span>Serie</span>
+                    <strong>{texto(equipo.serie)}</strong>
+                  </div>
+                  <div>
+                    <span>Area / Servicio</span>
+                    <strong>{texto(equipo.area)}</strong>
+                    <small>{texto(equipo.servicio)}</small>
+                  </div>
+                  <div>
+                    <span>Ubicacion</span>
+                    <strong>{texto(equipo.ubicacion_actual)}</strong>
+                  </div>
+                </div>
+                <div className="equipo-card-footer">
+                  <span className={`pill ${estadoClass(equipo.estado)}`}>{estadoLabel(equipo.estado)}</span>
+                  <div className="equipo-card-actions">{renderEquipoActions(equipo)}</div>
+                </div>
+              </article>
+            ))}
+          </div>
+
           {filtrados.length === 0 && <div className="empty-state">No hay equipos para los filtros seleccionados.</div>}
         </section>
       )}
