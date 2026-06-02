@@ -3431,3 +3431,86 @@ td small { display: block; color: var(--muted); margin-top: 4px; }
   border-radius: 999px;
   font-size: 14px;
 }
+
+/* ================================================================
+   Responsive / overflow fix - Infraestructura
+   Evita que la tabla de equipos rompa el ancho de la página
+   ================================================================ */
+
+.infrastructure-page {
+  min-width: 0;
+  width: 100%;
+  max-width: 100%;
+  overflow-x: hidden;
+}
+
+.infrastructure-page .page-content,
+.infrastructure-page .content-card,
+.infrastructure-page .table-card,
+.infrastructure-page .infra-table-card {
+  min-width: 0;
+  max-width: 100%;
+}
+
+.infrastructure-page .table-responsive,
+.infrastructure-page .infra-table-wrapper {
+  width: 100%;
+  max-width: 100%;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+.infrastructure-page table {
+  width: 100%;
+  min-width: 980px;
+  border-collapse: collapse;
+}
+
+.infrastructure-page th,
+.infrastructure-page td {
+  white-space: normal;
+  word-break: break-word;
+}
+
+.infrastructure-page td:last-child,
+.infrastructure-page th:last-child {
+  white-space: nowrap;
+}
+
+.infrastructure-page .table-actions,
+.infrastructure-page .equipment-actions,
+.infrastructure-page .acciones-equipo {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: nowrap;
+  min-width: max-content;
+}
+
+.infrastructure-page .stats-grid,
+.infrastructure-page .infra-stats-grid {
+  min-width: 0;
+}
+
+@media (max-width: 1200px) {
+  .infrastructure-page table {
+    min-width: 1050px;
+  }
+
+  .infrastructure-page .table-responsive,
+  .infrastructure-page .infra-table-wrapper {
+    margin-inline: -4px;
+    padding-bottom: 8px;
+  }
+}
+
+@media (max-width: 900px) {
+  .infrastructure-page {
+    overflow-x: hidden;
+  }
+
+  .infrastructure-page table {
+    min-width: 980px;
+  }
+}
+
