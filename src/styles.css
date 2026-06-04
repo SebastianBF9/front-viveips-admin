@@ -3593,6 +3593,10 @@ td small { display: block; color: var(--muted); margin-top: 4px; }
   grid-column: 1 / -1;
 }
 
+.despacho-detalle-row {
+  grid-template-columns: minmax(260px, 1.5fr) minmax(100px, .5fr) minmax(110px, .55fr) auto;
+}
+
 .recepcion-detalle-row {
   display: grid;
   grid-template-columns: minmax(220px, 1.3fr) repeat(5, minmax(110px, .7fr));

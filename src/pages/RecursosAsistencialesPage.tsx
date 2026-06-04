@@ -17,15 +17,18 @@ import { type ChangeEvent, type ReactNode, useEffect, useMemo, useState } from "
 import {
   actualizarOrdenCompraRecurso,
   actualizarRecepcionRecurso,
+  actualizarDespachoRecurso,
   actualizarProveedorRecurso,
   actualizarRecursoAsistencial,
   asociarProveedorRecurso,
   asociarServicioRecurso,
   crearOrdenCompraRecurso,
+  crearDespachoRecurso,
   crearRecepcionRecurso,
   crearProveedorRecurso,
   crearRecursoAsistencial,
   eliminarOrdenCompraRecurso,
+  cancelarDespachoRecurso,
   eliminarProveedorDeRecurso,
   eliminarProveedorRecurso,
   eliminarRecursoAsistencial,
@@ -33,13 +36,17 @@ import {
   ingresarRecepcionAInventario,
   listarInventarioLotes,
   listarMovimientosInventario,
+  listarDespachosRecursos,
   listarOrdenesCompraRecursos,
+  listarProfesionales,
   listarProveedoresRecursos,
   listarRecepcionesRecursos,
   listarRecursosAsistenciales,
   listarServiciosIps,
   obtenerOrdenCompraRecurso,
+  obtenerDespachoRecurso,
   obtenerRecepcionRecurso,
+  marcarSalidaDespachoRecurso,
   obtenerRecursoAsistencial,
   subirFichaTecnicaRecurso,
 } from "../api";
@@ -49,6 +56,10 @@ import type {
   OrdenCompraRecursoPayload,
   InventarioLoteRecurso,
   MovimientoInventarioRecurso,
+  DespachoRecurso,
+  DespachoRecursoDetalle,
+  DespachoRecursoPayload,
+  ProfesionalAdmin,
   ProveedorRecurso,
   ProveedorRecursoPayload,
   RecepcionRecurso,
@@ -72,6 +83,7 @@ const ESTADOS_ORDEN_COMPRA = ["borrador", "solicitada", "aprobada", "enviada_pro
 const TIPOS_RECEPCION = ["tecnica", "administrativa", "tecnica_administrativa"];
 const ESTADOS_RECEPCION = ["pendiente", "aprobada", "rechazada", "parcial"];
 const ESTADOS_LOTE = ["disponible", "cuarentena", "bloqueado", "vencido", "agotado", "dado_de_baja"];
+const ESTADOS_DESPACHO = ["preparado", "en_camino", "entregado", "devuelto", "fallido", "cancelado"];
 const TABS = ["catalogo", "proveedores", "compras", "recepcion", "inventario", "distribucion", "auditoria"] as const;
 
 type TabKey = (typeof TABS)[number];
@@ -159,6 +171,29 @@ type RecepcionForm = {
   estado: string;
   observaciones: string;
   detalles: RecepcionDetalleForm[];
+};
+
+type DespachoDetalleForm = {
+  recurso_id: string;
+  inventario_lote_id: string;
+  cantidad: string;
+  recomendaciones_almacenamiento: string;
+  observaciones: string;
+};
+
+type DespachoForm = {
+  id?: number;
+  numero_despacho: string;
+  responsable_entrega_id: string;
+  paciente_nombre: string;
+  paciente_documento: string;
+  paciente_telefono: string;
+  direccion_entrega: string;
+  ciudad_entrega: string;
+  fecha_programada: string;
+  estado: string;
+  observaciones: string;
+  detalles: DespachoDetalleForm[];
 };
 
 function bool(valor: unknown) {
@@ -397,6 +432,55 @@ function recepcionAForm(recepcion: RecepcionRecurso): RecepcionForm {
   };
 }
 
+function detalleDespachoInicial(): DespachoDetalleForm {
+  return {
+    recurso_id: "",
+    inventario_lote_id: "",
+    cantidad: "1",
+    recomendaciones_almacenamiento: "",
+    observaciones: "",
+  };
+}
+
+function inicialDespacho(): DespachoForm {
+  return {
+    numero_despacho: "",
+    responsable_entrega_id: "",
+    paciente_nombre: "",
+    paciente_documento: "",
+    paciente_telefono: "",
+    direccion_entrega: "",
+    ciudad_entrega: "",
+    fecha_programada: "",
+    estado: "preparado",
+    observaciones: "",
+    detalles: [detalleDespachoInicial()],
+  };
+}
+
+function despachoAForm(despacho: DespachoRecurso): DespachoForm {
+  return {
+    id: despacho.id,
+    numero_despacho: despacho.numero_despacho || "",
+    responsable_entrega_id: despacho.responsable_entrega_id ? String(despacho.responsable_entrega_id) : "",
+    paciente_nombre: despacho.paciente_nombre || "",
+    paciente_documento: despacho.paciente_documento || "",
+    paciente_telefono: despacho.paciente_telefono || "",
+    direccion_entrega: despacho.direccion_entrega || "",
+    ciudad_entrega: despacho.ciudad_entrega || "",
+    fecha_programada: despacho.fecha_programada ? String(despacho.fecha_programada).slice(0, 16) : "",
+    estado: despacho.estado || "preparado",
+    observaciones: despacho.observaciones || "",
+    detalles: (despacho.detalles && despacho.detalles.length ? despacho.detalles : []).map((detalle: DespachoRecursoDetalle) => ({
+      recurso_id: detalle.recurso_id ? String(detalle.recurso_id) : "",
+      inventario_lote_id: detalle.inventario_lote_id ? String(detalle.inventario_lote_id) : "",
+      cantidad: detalle.cantidad != null ? String(detalle.cantidad) : "1",
+      recomendaciones_almacenamiento: detalle.recomendaciones_almacenamiento || "",
+      observaciones: detalle.observaciones || "",
+    })).concat(despacho.detalles && despacho.detalles.length ? [] : [detalleDespachoInicial()]),
+  };
+}
+
 function Section({ title, children }: { title: string; children: ReactNode }) {
   return (
     <section className="recursos-form-section">
@@ -414,6 +498,8 @@ export function RecursosAsistencialesPage() {
   const [recepciones, setRecepciones] = useState<RecepcionRecurso[]>([]);
   const [lotesInventario, setLotesInventario] = useState<InventarioLoteRecurso[]>([]);
   const [movimientosInventario, setMovimientosInventario] = useState<MovimientoInventarioRecurso[]>([]);
+  const [despachos, setDespachos] = useState<DespachoRecurso[]>([]);
+  const [profesionales, setProfesionales] = useState<ProfesionalAdmin[]>([]);
   const [servicios, setServicios] = useState<ServicioIps[]>([]);
   const [loading, setLoading] = useState(true);
   const [accion, setAccion] = useState("");
@@ -429,16 +515,19 @@ export function RecursosAsistencialesPage() {
   const [recepcionEstado, setRecepcionEstado] = useState("");
   const [inventarioQuery, setInventarioQuery] = useState("");
   const [inventarioEstado, setInventarioEstado] = useState("");
+  const [despachoQuery, setDespachoQuery] = useState("");
+  const [despachoEstado, setDespachoEstado] = useState("");
   const [recursoForm, setRecursoForm] = useState<RecursoForm | null>(null);
   const [proveedorForm, setProveedorForm] = useState<ProveedorForm | null>(null);
   const [ordenForm, setOrdenForm] = useState<OrdenCompraForm | null>(null);
   const [recepcionForm, setRecepcionForm] = useState<RecepcionForm | null>(null);
+  const [despachoForm, setDespachoForm] = useState<DespachoForm | null>(null);
 
   async function cargar() {
     setLoading(true);
     setError("");
     try {
-      const [recursosData, proveedoresData, serviciosData, ordenesData, recepcionesData, lotesData, movimientosData] = await Promise.all([
+      const [recursosData, proveedoresData, serviciosData, ordenesData, recepcionesData, lotesData, movimientosData, despachosData, profesionalesData] = await Promise.all([
         listarRecursosAsistenciales(),
         listarProveedoresRecursos(),
         listarServiciosIps(),
@@ -446,6 +535,8 @@ export function RecursosAsistencialesPage() {
         listarRecepcionesRecursos(),
         listarInventarioLotes(),
         listarMovimientosInventario(),
+        listarDespachosRecursos(),
+        listarProfesionales(),
       ]);
       setRecursos(recursosData.recursos || []);
       setProveedores(proveedoresData.proveedores || []);
@@ -453,6 +544,8 @@ export function RecursosAsistencialesPage() {
       setRecepciones(recepcionesData.recepciones || []);
       setLotesInventario(lotesData.lotes || []);
       setMovimientosInventario(movimientosData.movimientos || []);
+      setDespachos(despachosData.despachos || []);
+      setProfesionales((profesionalesData.profesionales || []).filter((profesional) => Number(profesional.activo) === 1));
       setServicios(
         (serviciosData.servicios || [])
           .filter((servicio) => servicio.estado === "habilitado" || servicio.estado === "proximo")
@@ -525,6 +618,17 @@ export function RecursosAsistencialesPage() {
     });
   }, [inventarioEstado, inventarioQuery, lotesInventario]);
 
+  const despachosFiltrados = useMemo(() => {
+    const q = despachoQuery.trim().toLowerCase();
+    return despachos.filter((despacho) => {
+      if (despachoEstado && despacho.estado !== despachoEstado) return false;
+      if (!q) return true;
+      return [despacho.numero_despacho, despacho.paciente_nombre, despacho.paciente_documento, despacho.responsable_nombre].some((value) =>
+        String(value || "").toLowerCase().includes(q),
+      );
+    });
+  }, [despachoEstado, despachoQuery, despachos]);
+
   const totalOrdenForm = useMemo(() => {
     if (!ordenForm) return 0;
     const subtotal = ordenForm.detalles.reduce((sum, detalle) => {
@@ -588,6 +692,38 @@ export function RecursosAsistencialesPage() {
       if (!actual) return actual;
       const detalles = actual.detalles.map((detalle, idx) => (idx === index ? { ...detalle, [campo]: valor } : detalle));
       return { ...actual, detalles };
+    });
+  }
+
+  function actualizarDespacho(campo: keyof DespachoForm, valor: string) {
+    setDespachoForm((actual) => (actual ? { ...actual, [campo]: valor } : actual));
+  }
+
+  function actualizarDetalleDespacho(index: number, campo: keyof DespachoDetalleForm, valor: string) {
+    setDespachoForm((actual) => {
+      if (!actual) return actual;
+      const detalles = actual.detalles.map((detalle, idx) => {
+        if (idx !== index) return detalle;
+        const siguiente = { ...detalle, [campo]: valor };
+        if (campo === "inventario_lote_id") {
+          const lote = lotesInventario.find((item) => item.id === Number(valor));
+          siguiente.recurso_id = lote?.recurso_id ? String(lote.recurso_id) : "";
+        }
+        return siguiente;
+      });
+      return { ...actual, detalles };
+    });
+  }
+
+  function agregarDetalleDespacho() {
+    setDespachoForm((actual) => (actual ? { ...actual, detalles: [...actual.detalles, detalleDespachoInicial()] } : actual));
+  }
+
+  function quitarDetalleDespacho(index: number) {
+    setDespachoForm((actual) => {
+      if (!actual) return actual;
+      const detalles = actual.detalles.filter((_, idx) => idx !== index);
+      return { ...actual, detalles: detalles.length ? detalles : [detalleDespachoInicial()] };
     });
   }
 
@@ -666,6 +802,30 @@ export function RecursosAsistencialesPage() {
           humedad_recibida: numero(detalle.humedad_recibida),
           cumple: detalle.cumple,
           motivo_rechazo: detalle.motivo_rechazo || null,
+          observaciones: detalle.observaciones || null,
+        })),
+    };
+  }
+
+  function payloadDespacho(form: DespachoForm): DespachoRecursoPayload {
+    return {
+      numero_despacho: null,
+      responsable_entrega_id: form.responsable_entrega_id ? Number(form.responsable_entrega_id) : null,
+      paciente_nombre: form.paciente_nombre || null,
+      paciente_documento: form.paciente_documento || null,
+      paciente_telefono: form.paciente_telefono || null,
+      direccion_entrega: form.direccion_entrega || null,
+      ciudad_entrega: form.ciudad_entrega || null,
+      fecha_programada: form.fecha_programada || null,
+      estado: form.estado,
+      observaciones: form.observaciones || null,
+      detalles: form.detalles
+        .filter((detalle) => detalle.inventario_lote_id)
+        .map((detalle) => ({
+          recurso_id: Number(detalle.recurso_id),
+          inventario_lote_id: Number(detalle.inventario_lote_id),
+          cantidad: numero(detalle.cantidad) || 0,
+          recomendaciones_almacenamiento: detalle.recomendaciones_almacenamiento || null,
           observaciones: detalle.observaciones || null,
         })),
     };
@@ -854,6 +1014,80 @@ export function RecursosAsistencialesPage() {
       setTab("inventario");
     } catch (err) {
       setError(err instanceof Error ? err.message : "No fue posible ingresar la recepción a inventario");
+    } finally {
+      setAccion("");
+    }
+  }
+
+  async function abrirEditarDespacho(despacho: DespachoRecurso) {
+    setAccion(`editar-despacho-${despacho.id}`);
+    try {
+      const data = await obtenerDespachoRecurso(despacho.id);
+      setDespachoForm(despachoAForm(data.despacho));
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "No fue posible cargar el despacho");
+    } finally {
+      setAccion("");
+    }
+  }
+
+  async function guardarDespacho() {
+    if (!despachoForm) return;
+    if (!despachoForm.responsable_entrega_id) {
+      setError("Selecciona el responsable de ruta.");
+      return;
+    }
+    if (!despachoForm.paciente_nombre.trim() || !despachoForm.direccion_entrega.trim()) {
+      setError("El paciente y la dirección de entrega son obligatorios.");
+      return;
+    }
+    if (!despachoForm.detalles.some((detalle) => detalle.inventario_lote_id && (numero(detalle.cantidad) || 0) > 0)) {
+      setError("Agrega al menos un lote con cantidad mayor a cero.");
+      return;
+    }
+    setAccion("guardar-despacho");
+    setError("");
+    setSuccess("");
+    try {
+      if (despachoForm.id) await actualizarDespachoRecurso(despachoForm.id, payloadDespacho(despachoForm));
+      else await crearDespachoRecurso(payloadDespacho(despachoForm));
+      setDespachoForm(null);
+      setSuccess("Despacho guardado correctamente.");
+      await cargar();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "No fue posible guardar el despacho");
+    } finally {
+      setAccion("");
+    }
+  }
+
+  async function marcarSalidaDespacho(despacho: DespachoRecurso) {
+    if (!window.confirm(`Marcar salida del despacho ${despacho.numero_despacho}? Se descontará inventario.`)) return;
+    setAccion(`salida-despacho-${despacho.id}`);
+    setError("");
+    setSuccess("");
+    try {
+      const data = await marcarSalidaDespachoRecurso(despacho.id);
+      setSuccess(data.mensaje);
+      await cargar();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "No fue posible marcar la salida del despacho");
+    } finally {
+      setAccion("");
+    }
+  }
+
+  async function cancelarDespacho(despacho: DespachoRecurso) {
+    if (!window.confirm(`Cancelar el despacho ${despacho.numero_despacho}?`)) return;
+    setAccion(`cancelar-despacho-${despacho.id}`);
+    setError("");
+    setSuccess("");
+    try {
+      await cancelarDespachoRecurso(despacho.id);
+      setSuccess("Despacho cancelado correctamente.");
+      await cargar();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "No fue posible cancelar el despacho");
     } finally {
       setAccion("");
     }
@@ -1235,7 +1469,70 @@ export function RecursosAsistencialesPage() {
         </section>
       )}
 
-      {!loading && !["catalogo", "proveedores", "compras", "recepcion", "inventario"].includes(tab) && (
+      {!loading && tab === "distribucion" && (
+        <section className="table-card compras-card">
+          <div className="section-heading inline-heading">
+            <div>
+              <h2>Distribución domiciliaria</h2>
+              <p>Entrega interna al responsable de ruta y salida de inventario hacia domicilio del paciente.</p>
+            </div>
+            <button className="primary-btn" type="button" onClick={() => setDespachoForm(inicialDespacho())}>
+              <Plus size={16} /> Nuevo despacho
+            </button>
+          </div>
+
+          <div className="toolbar compras-toolbar">
+            <label className="search-field">
+              <Search size={18} />
+              <input value={despachoQuery} onChange={(event) => setDespachoQuery(event.target.value)} placeholder="Buscar despacho, paciente o responsable" />
+            </label>
+            <select value={despachoEstado} onChange={(event) => setDespachoEstado(event.target.value)}>
+              <option value="">Todos los estados</option>
+              {ESTADOS_DESPACHO.map((item) => <option key={item} value={item}>{item}</option>)}
+            </select>
+          </div>
+
+          <div className="ordenes-grid">
+            {despachosFiltrados.map((despacho) => (
+              <article className="orden-card" key={despacho.id}>
+                <div className="orden-card-head">
+                  <div className="recurso-icon">
+                    <Truck size={19} />
+                  </div>
+                  <div>
+                    <strong>{despacho.numero_despacho}</strong>
+                    <span>{texto(despacho.paciente_nombre)} · {texto(despacho.responsable_nombre)}</span>
+                  </div>
+                </div>
+                <div className="meta-row">
+                  <span className={`pill ${despacho.estado}`}>{despacho.estado}</span>
+                  <span className="tag">{texto(despacho.items)} ítems</span>
+                </div>
+                <dl className="recurso-dl">
+                  <div><dt>Fecha programada</dt><dd>{texto(despacho.fecha_programada)}</dd></div>
+                  <div><dt>Salida</dt><dd>{texto(despacho.fecha_salida)}</dd></div>
+                  <div><dt>Documento paciente</dt><dd>{texto(despacho.paciente_documento)}</dd></div>
+                  <div><dt>Dirección</dt><dd>{texto(despacho.direccion_entrega)}</dd></div>
+                </dl>
+                <div className="recursos-actions">
+                  <button type="button" onClick={() => marcarSalidaDespacho(despacho)} disabled={accion === `salida-despacho-${despacho.id}` || despacho.estado !== "preparado"}>
+                    <Truck size={15} /> Marcar salida
+                  </button>
+                  <button type="button" onClick={() => abrirEditarDespacho(despacho)} disabled={accion === `editar-despacho-${despacho.id}` || despacho.estado !== "preparado"}>
+                    <Pencil size={15} /> Editar
+                  </button>
+                  <button className="danger" type="button" onClick={() => cancelarDespacho(despacho)} disabled={accion === `cancelar-despacho-${despacho.id}` || despacho.estado !== "preparado"}>
+                    <Trash2 size={15} /> Cancelar
+                  </button>
+                </div>
+              </article>
+            ))}
+          </div>
+          {!despachosFiltrados.length && <div className="empty-state">No hay despachos para los filtros seleccionados.</div>}
+        </section>
+      )}
+
+      {!loading && !["catalogo", "proveedores", "compras", "recepcion", "inventario", "distribucion"].includes(tab) && (
         <div className="standard-card recursos-placeholder">
           <ClipboardList size={22} />
           <div>
@@ -1570,6 +1867,109 @@ export function RecursosAsistencialesPage() {
             <div className="modal-actions">
               <button className="secondary-btn" type="button" onClick={() => setRecepcionForm(null)}>Cancelar</button>
               <button className="primary-btn infra-save-btn" type="button" onClick={guardarRecepcion} disabled={accion === "guardar-recepcion"}><Save size={16} /> Guardar recepción</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {despachoForm && (
+        <div className="modal-backdrop" onMouseDown={() => setDespachoForm(null)}>
+          <div className="modal wide-modal recursos-modal" onMouseDown={(event) => event.stopPropagation()}>
+            <div className="infra-modal-header">
+              <div>
+                <h2>{despachoForm.id ? "Editar despacho" : "Nuevo despacho"}</h2>
+                <p>Entrega interna al responsable de ruta. La entrega final con firma y ubicación será la siguiente subfase.</p>
+              </div>
+              <button type="button" onClick={() => setDespachoForm(null)} aria-label="Cerrar"><X size={20} /></button>
+            </div>
+            <div className="infra-form-body">
+              <Section title="Destino y responsable">
+                <label>Número de despacho
+                  <input value={despachoForm.numero_despacho || "Automático al guardar"} disabled />
+                </label>
+                <label>Responsable de ruta *
+                  <select value={despachoForm.responsable_entrega_id} onChange={(event) => actualizarDespacho("responsable_entrega_id", event.target.value)}>
+                    <option value="">Seleccionar profesional</option>
+                    {profesionales.map((profesional) => (
+                      <option key={profesional.id} value={profesional.id}>{profesional.nombre}{profesional.cedula ? ` · ${profesional.cedula}` : ""}</option>
+                    ))}
+                  </select>
+                </label>
+                <label>Fecha programada
+                  <input type="datetime-local" value={despachoForm.fecha_programada} onChange={(event) => actualizarDespacho("fecha_programada", event.target.value)} />
+                </label>
+                <label>Estado
+                  <select value={despachoForm.estado} onChange={(event) => actualizarDespacho("estado", event.target.value)} disabled={Boolean(despachoForm.id)}>
+                    {ESTADOS_DESPACHO.map((item) => <option key={item} value={item}>{item}</option>)}
+                  </select>
+                </label>
+                <label>Paciente *
+                  <input value={despachoForm.paciente_nombre} onChange={(event) => actualizarDespacho("paciente_nombre", event.target.value)} />
+                </label>
+                <label>Documento paciente
+                  <input value={despachoForm.paciente_documento} onChange={(event) => actualizarDespacho("paciente_documento", event.target.value)} />
+                </label>
+                <label>Teléfono paciente
+                  <input value={despachoForm.paciente_telefono} onChange={(event) => actualizarDespacho("paciente_telefono", event.target.value)} />
+                </label>
+                <label>Ciudad
+                  <input value={despachoForm.ciudad_entrega} onChange={(event) => actualizarDespacho("ciudad_entrega", event.target.value)} />
+                </label>
+                <label className="wide-field">Dirección de entrega *
+                  <input value={despachoForm.direccion_entrega} onChange={(event) => actualizarDespacho("direccion_entrega", event.target.value)} />
+                </label>
+                <label className="wide-field">Observaciones
+                  <textarea rows={2} value={despachoForm.observaciones} onChange={(event) => actualizarDespacho("observaciones", event.target.value)} />
+                </label>
+              </Section>
+
+              <section className="recursos-form-section">
+                <div className="orden-section-head">
+                  <h3>Lotes a despachar</h3>
+                  <button className="secondary-btn" type="button" onClick={agregarDetalleDespacho}>
+                    <Plus size={15} /> Agregar lote
+                  </button>
+                </div>
+                <div className="orden-detalles">
+                  {despachoForm.detalles.map((detalle, index) => {
+                    const loteSeleccionado = lotesInventario.find((lote) => lote.id === Number(detalle.inventario_lote_id));
+                    return (
+                      <div className="orden-detalle-row despacho-detalle-row" key={`${index}-${detalle.inventario_lote_id || "lote"}`}>
+                        <label>Lote disponible *
+                          <select value={detalle.inventario_lote_id} onChange={(event) => actualizarDetalleDespacho(index, "inventario_lote_id", event.target.value)}>
+                            <option value="">Seleccionar lote</option>
+                            {lotesInventario.filter((lote) => lote.estado === "disponible" && Number(lote.cantidad_actual || 0) > 0).map((lote) => (
+                              <option key={lote.id} value={lote.id}>
+                                {texto(lote.recurso_codigo)} · {lote.recurso_nombre} · Lote {lote.lote} · Disp. {lote.cantidad_actual}
+                              </option>
+                            ))}
+                          </select>
+                        </label>
+                        <label>Cantidad
+                          <input value={detalle.cantidad} onChange={(event) => actualizarDetalleDespacho(index, "cantidad", event.target.value)} inputMode="decimal" />
+                        </label>
+                        <div className="orden-detalle-total">
+                          <span>Disponible</span>
+                          <strong>{texto(loteSeleccionado?.cantidad_actual)}</strong>
+                        </div>
+                        <button className="icon-danger-btn" type="button" onClick={() => quitarDetalleDespacho(index)} aria-label="Quitar lote">
+                          <Trash2 size={16} />
+                        </button>
+                        <label className="wide-field">Recomendaciones de almacenamiento
+                          <input value={detalle.recomendaciones_almacenamiento} onChange={(event) => actualizarDetalleDespacho(index, "recomendaciones_almacenamiento", event.target.value)} />
+                        </label>
+                        <label className="wide-field">Observaciones del lote
+                          <input value={detalle.observaciones} onChange={(event) => actualizarDetalleDespacho(index, "observaciones", event.target.value)} />
+                        </label>
+                      </div>
+                    );
+                  })}
+                </div>
+              </section>
+            </div>
+            <div className="modal-actions">
+              <button className="secondary-btn" type="button" onClick={() => setDespachoForm(null)}>Cancelar</button>
+              <button className="primary-btn infra-save-btn" type="button" onClick={guardarDespacho} disabled={accion === "guardar-despacho"}><Save size={16} /> Guardar despacho</button>
             </div>
           </div>
         </div>

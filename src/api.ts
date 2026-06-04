@@ -6,6 +6,8 @@ import type {
   CapacitacionArchivo,
   CapacitacionAdminPayload,
   CapacitacionPregunta,
+  DespachoRecurso,
+  DespachoRecursoPayload,
   ExamenCapacitacion,
   ArchivoCapacitacionProfesional,
   ProfesionalServicioPayload,
@@ -691,6 +693,35 @@ export async function listarMovimientosInventario(params: { recurso_id?: number 
   });
   const suffix = query.toString() ? `?${query.toString()}` : "";
   return apiCall<{ success: boolean; movimientos: MovimientoInventarioRecurso[]; total: number }>("GET", `/inventario-recursos/movimientos${suffix}`);
+}
+
+export async function listarDespachosRecursos(params: { estado?: string; responsable_entrega_id?: number | string; busqueda?: string } = {}) {
+  const query = new URLSearchParams();
+  Object.entries(params).forEach(([key, value]) => {
+    if (value !== undefined && value !== null && String(value).trim()) query.set(key, String(value));
+  });
+  const suffix = query.toString() ? `?${query.toString()}` : "";
+  return apiCall<{ success: boolean; despachos: DespachoRecurso[]; total: number }>("GET", `/despachos-recursos${suffix}`);
+}
+
+export async function obtenerDespachoRecurso(id: number) {
+  return apiCall<{ success: boolean; despacho: DespachoRecurso }>("GET", `/despachos-recursos/${id}`);
+}
+
+export async function crearDespachoRecurso(payload: DespachoRecursoPayload) {
+  return apiCall<{ success: boolean; mensaje: string; despacho_id: number }>("POST", "/despachos-recursos", payload);
+}
+
+export async function actualizarDespachoRecurso(id: number, payload: DespachoRecursoPayload) {
+  return apiCall<{ success: boolean; mensaje: string }>("PUT", `/despachos-recursos/${id}`, payload);
+}
+
+export async function marcarSalidaDespachoRecurso(id: number) {
+  return apiCall<{ success: boolean; mensaje: string }>("POST", `/despachos-recursos/${id}/marcar-salida`);
+}
+
+export async function cancelarDespachoRecurso(id: number) {
+  return apiCall<{ success: boolean; mensaje: string }>("DELETE", `/despachos-recursos/${id}`);
 }
 
 // --- Infraestructura / Tecnovigilancia ---

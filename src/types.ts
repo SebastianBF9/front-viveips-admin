@@ -697,6 +697,7 @@ export type EstadoOrdenCompraRecurso = "borrador" | "solicitada" | "aprobada" | 
 export type TipoRecepcionRecurso = "tecnica" | "administrativa" | "tecnica_administrativa";
 export type EstadoRecepcionRecurso = "pendiente" | "aprobada" | "rechazada" | "parcial";
 export type EstadoInventarioLote = "disponible" | "cuarentena" | "bloqueado" | "vencido" | "agotado" | "dado_de_baja";
+export type EstadoDespachoRecurso = "preparado" | "en_camino" | "entregado" | "devuelto" | "fallido" | "cancelado";
 
 export interface RecursoServicioRelacion {
   id?: number;
@@ -994,6 +995,65 @@ export interface MovimientoInventarioRecurso {
   recurso_codigo?: string | null;
   recurso_nombre?: string | null;
   created_at?: string | null;
+}
+
+export interface DespachoRecursoDetalle {
+  id?: number;
+  despacho_id?: number;
+  recurso_id: number;
+  inventario_lote_id: number;
+  cantidad: number;
+  recomendaciones_almacenamiento?: string | null;
+  observaciones?: string | null;
+  recurso_codigo?: string | null;
+  recurso_nombre?: string | null;
+  tipo_recurso?: string | null;
+  lote?: string | null;
+  fecha_vencimiento?: string | null;
+  cantidad_actual?: number | null;
+  ubicacion?: string | null;
+}
+
+export interface DespachoRecurso {
+  id: number;
+  numero_despacho: string;
+  responsable_entrega_id?: number | null;
+  responsable_nombre?: string | null;
+  responsable_cedula?: string | null;
+  paciente_nombre?: string | null;
+  paciente_documento?: string | null;
+  paciente_telefono?: string | null;
+  direccion_entrega?: string | null;
+  ciudad_entrega?: string | null;
+  fecha_programada?: string | null;
+  fecha_salida?: string | null;
+  fecha_entrega?: string | null;
+  estado: EstadoDespachoRecurso | string;
+  observaciones?: string | null;
+  items?: number | null;
+  detalles?: DespachoRecursoDetalle[];
+  created_at?: string | null;
+  updated_at?: string | null;
+}
+
+export interface DespachoRecursoPayload {
+  numero_despacho?: string | null;
+  responsable_entrega_id?: number | null;
+  paciente_nombre?: string | null;
+  paciente_documento?: string | null;
+  paciente_telefono?: string | null;
+  direccion_entrega?: string | null;
+  ciudad_entrega?: string | null;
+  fecha_programada?: string | null;
+  estado: EstadoDespachoRecurso | string;
+  observaciones?: string | null;
+  detalles: Array<{
+    recurso_id: number;
+    inventario_lote_id: number;
+    cantidad: number;
+    recomendaciones_almacenamiento?: string | null;
+    observaciones?: string | null;
+  }>;
 }
 
 export interface AdherenciaCapacitacion {
