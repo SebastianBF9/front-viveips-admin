@@ -3665,6 +3665,12 @@ td small { display: block; color: var(--muted); margin-top: 4px; }
   padding: 14px 18px;
 }
 
+.inventory-subheading {
+  margin-top: 8px;
+  padding-top: 16px;
+  border-top: 1px solid #e5eef6;
+}
+
 .delete-modal-actions {
   display: flex;
   justify-content: flex-end;

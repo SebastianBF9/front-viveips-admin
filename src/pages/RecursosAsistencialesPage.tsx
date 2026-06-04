@@ -30,6 +30,9 @@ import {
   eliminarProveedorRecurso,
   eliminarRecursoAsistencial,
   eliminarServicioDeRecurso,
+  ingresarRecepcionAInventario,
+  listarInventarioLotes,
+  listarMovimientosInventario,
   listarOrdenesCompraRecursos,
   listarProveedoresRecursos,
   listarRecepcionesRecursos,
@@ -44,6 +47,8 @@ import type {
   OrdenCompraRecurso,
   OrdenCompraRecursoDetalle,
   OrdenCompraRecursoPayload,
+  InventarioLoteRecurso,
+  MovimientoInventarioRecurso,
   ProveedorRecurso,
   ProveedorRecursoPayload,
   RecepcionRecurso,
@@ -66,6 +71,7 @@ const ESTADOS_PROVEEDOR = ["activo", "inactivo", "en_revision", "bloqueado"];
 const ESTADOS_ORDEN_COMPRA = ["borrador", "solicitada", "aprobada", "enviada_proveedor", "parcialmente_recibida", "recibida", "cerrada", "cancelada"];
 const TIPOS_RECEPCION = ["tecnica", "administrativa", "tecnica_administrativa"];
 const ESTADOS_RECEPCION = ["pendiente", "aprobada", "rechazada", "parcial"];
+const ESTADOS_LOTE = ["disponible", "cuarentena", "bloqueado", "vencido", "agotado", "dado_de_baja"];
 const TABS = ["catalogo", "proveedores", "compras", "recepcion", "inventario", "distribucion", "auditoria"] as const;
 
 type TabKey = (typeof TABS)[number];
@@ -406,6 +412,8 @@ export function RecursosAsistencialesPage() {
   const [proveedores, setProveedores] = useState<ProveedorRecurso[]>([]);
   const [ordenes, setOrdenes] = useState<OrdenCompraRecurso[]>([]);
   const [recepciones, setRecepciones] = useState<RecepcionRecurso[]>([]);
+  const [lotesInventario, setLotesInventario] = useState<InventarioLoteRecurso[]>([]);
+  const [movimientosInventario, setMovimientosInventario] = useState<MovimientoInventarioRecurso[]>([]);
   const [servicios, setServicios] = useState<ServicioIps[]>([]);
   const [loading, setLoading] = useState(true);
   const [accion, setAccion] = useState("");
@@ -419,6 +427,8 @@ export function RecursosAsistencialesPage() {
   const [compraEstado, setCompraEstado] = useState("");
   const [recepcionQuery, setRecepcionQuery] = useState("");
   const [recepcionEstado, setRecepcionEstado] = useState("");
+  const [inventarioQuery, setInventarioQuery] = useState("");
+  const [inventarioEstado, setInventarioEstado] = useState("");
   const [recursoForm, setRecursoForm] = useState<RecursoForm | null>(null);
   const [proveedorForm, setProveedorForm] = useState<ProveedorForm | null>(null);
   const [ordenForm, setOrdenForm] = useState<OrdenCompraForm | null>(null);
@@ -428,17 +438,21 @@ export function RecursosAsistencialesPage() {
     setLoading(true);
     setError("");
     try {
-      const [recursosData, proveedoresData, serviciosData, ordenesData, recepcionesData] = await Promise.all([
+      const [recursosData, proveedoresData, serviciosData, ordenesData, recepcionesData, lotesData, movimientosData] = await Promise.all([
         listarRecursosAsistenciales(),
         listarProveedoresRecursos(),
         listarServiciosIps(),
         listarOrdenesCompraRecursos(),
         listarRecepcionesRecursos(),
+        listarInventarioLotes(),
+        listarMovimientosInventario(),
       ]);
       setRecursos(recursosData.recursos || []);
       setProveedores(proveedoresData.proveedores || []);
       setOrdenes(ordenesData.ordenes || []);
       setRecepciones(recepcionesData.recepciones || []);
+      setLotesInventario(lotesData.lotes || []);
+      setMovimientosInventario(movimientosData.movimientos || []);
       setServicios(
         (serviciosData.servicios || [])
           .filter((servicio) => servicio.estado === "habilitado" || servicio.estado === "proximo")
@@ -499,6 +513,17 @@ export function RecursosAsistencialesPage() {
       );
     });
   }, [recepcionEstado, recepcionQuery, recepciones]);
+
+  const lotesFiltrados = useMemo(() => {
+    const q = inventarioQuery.trim().toLowerCase();
+    return lotesInventario.filter((lote) => {
+      if (inventarioEstado && lote.estado !== inventarioEstado) return false;
+      if (!q) return true;
+      return [lote.lote, lote.recurso_codigo, lote.recurso_nombre, lote.numero_orden, lote.ubicacion].some((value) =>
+        String(value || "").toLowerCase().includes(q),
+      );
+    });
+  }, [inventarioEstado, inventarioQuery, lotesInventario]);
 
   const totalOrdenForm = useMemo(() => {
     if (!ordenForm) return 0;
@@ -817,6 +842,23 @@ export function RecursosAsistencialesPage() {
     }
   }
 
+  async function ingresarInventario(recepcion: RecepcionRecurso) {
+    if (!window.confirm(`Ingresar la recepción ${texto(recepcion.numero_orden)} al inventario?`)) return;
+    setAccion(`inventario-recepcion-${recepcion.id}`);
+    setError("");
+    setSuccess("");
+    try {
+      const data = await ingresarRecepcionAInventario(recepcion.id);
+      setSuccess(`${data.mensaje}. Lotes creados: ${data.lotes_creados}. Omitidos: ${data.lotes_omitidos}.`);
+      await cargar();
+      setTab("inventario");
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "No fue posible ingresar la recepción a inventario");
+    } finally {
+      setAccion("");
+    }
+  }
+
   async function inactivarRecurso(recurso: RecursoAsistencial) {
     if (!window.confirm(`Inactivar ${recurso.nombre}?`)) return;
     setAccion(`inactivar-recurso-${recurso.id}`);
@@ -1109,6 +1151,9 @@ export function RecursosAsistencialesPage() {
                   <div><dt>Observaciones</dt><dd>{texto(recepcion.observaciones)}</dd></div>
                 </dl>
                 <div className="recursos-actions">
+                  <button type="button" onClick={() => ingresarInventario(recepcion)} disabled={accion === `inventario-recepcion-${recepcion.id}` || !["aprobada", "parcial"].includes(String(recepcion.estado))}>
+                    <Boxes size={15} /> Inventario
+                  </button>
                   <button type="button" onClick={() => abrirEditarRecepcion(recepcion)} disabled={accion === `editar-recepcion-${recepcion.id}`}>
                     <Pencil size={15} /> Editar
                   </button>
@@ -1120,7 +1165,77 @@ export function RecursosAsistencialesPage() {
         </section>
       )}
 
-      {!loading && !["catalogo", "proveedores", "compras", "recepcion"].includes(tab) && (
+      {!loading && tab === "inventario" && (
+        <section className="table-card compras-card">
+          <div className="section-heading inline-heading">
+            <div>
+              <h2>Inventario por lote</h2>
+              <p>Existencias creadas desde recepciones aprobadas, con lote, vencimiento, ubicación y trazabilidad de movimientos.</p>
+            </div>
+            <button className="secondary-btn" type="button" onClick={cargar} disabled={loading}>
+              Actualizar
+            </button>
+          </div>
+
+          <div className="toolbar compras-toolbar">
+            <label className="search-field">
+              <Search size={18} />
+              <input value={inventarioQuery} onChange={(event) => setInventarioQuery(event.target.value)} placeholder="Buscar lote, recurso u orden" />
+            </label>
+            <select value={inventarioEstado} onChange={(event) => setInventarioEstado(event.target.value)}>
+              <option value="">Todos los estados</option>
+              {ESTADOS_LOTE.map((item) => <option key={item} value={item}>{item}</option>)}
+            </select>
+          </div>
+
+          <div className="ordenes-grid">
+            {lotesFiltrados.map((lote) => (
+              <article className="orden-card" key={lote.id}>
+                <div className="orden-card-head">
+                  <div className="recurso-icon">
+                    <Boxes size={19} />
+                  </div>
+                  <div>
+                    <strong>{texto(lote.recurso_nombre)}</strong>
+                    <span>{texto(lote.recurso_codigo)} · Lote {texto(lote.lote)}</span>
+                  </div>
+                </div>
+                <div className="meta-row">
+                  <span className={`pill ${lote.estado}`}>{lote.estado}</span>
+                  {bool(lote.requiere_cadena_frio) && <span className="tag cold">Cadena de frio</span>}
+                </div>
+                <dl className="recurso-dl">
+                  <div><dt>Cantidad actual</dt><dd>{texto(lote.cantidad_actual)}</dd></div>
+                  <div><dt>Vencimiento</dt><dd>{texto(lote.fecha_vencimiento)}</dd></div>
+                  <div><dt>Ubicación</dt><dd>{texto(lote.ubicacion)}</dd></div>
+                  <div><dt>Orden origen</dt><dd>{texto(lote.numero_orden)}</dd></div>
+                </dl>
+              </article>
+            ))}
+          </div>
+          {!lotesFiltrados.length && <div className="empty-state">No hay lotes de inventario para los filtros seleccionados.</div>}
+
+          <div className="section-heading inventory-subheading">
+            <div>
+              <h2>Movimientos recientes</h2>
+              <p>Entradas creadas desde recepción. Salidas, ajustes y bajas quedan para las fases siguientes.</p>
+            </div>
+          </div>
+          <div className="recursos-provider-grid">
+            {movimientosInventario.slice(0, 8).map((movimiento) => (
+              <article className="proveedor-card" key={movimiento.id}>
+                <strong>{texto(movimiento.recurso_nombre)}</strong>
+                <span>{texto(movimiento.recurso_codigo)} · Lote {texto(movimiento.lote)}</span>
+                <span>{movimiento.tipo_movimiento}: {texto(movimiento.cantidad)} unidades</span>
+                <span>Saldo: {texto(movimiento.saldo_anterior)} → {texto(movimiento.saldo_nuevo)}</span>
+                <span>{texto(movimiento.created_at)}</span>
+              </article>
+            ))}
+          </div>
+        </section>
+      )}
+
+      {!loading && !["catalogo", "proveedores", "compras", "recepcion", "inventario"].includes(tab) && (
         <div className="standard-card recursos-placeholder">
           <ClipboardList size={22} />
           <div>

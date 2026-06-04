@@ -22,6 +22,8 @@ import type {
   EquipoMantenimiento,
   ExperienciaLaboral,
   FormacionPortal,
+  InventarioLoteRecurso,
+  MovimientoInventarioRecurso,
   ProfesionalPerfil,
   ProfesionalPerfilPayload,
   ReferenciaPersonal,
@@ -667,6 +669,28 @@ export async function crearRecepcionRecurso(payload: RecepcionRecursoPayload) {
 
 export async function actualizarRecepcionRecurso(id: number, payload: RecepcionRecursoPayload) {
   return apiCall<{ success: boolean; mensaje: string }>("PUT", `/recepciones-recursos/${id}`, payload);
+}
+
+export async function ingresarRecepcionAInventario(id: number) {
+  return apiCall<{ success: boolean; mensaje: string; lotes_creados: number; lotes_omitidos: number }>("POST", `/recepciones-recursos/${id}/ingresar-inventario`);
+}
+
+export async function listarInventarioLotes(params: { estado?: string; recurso_id?: number | string; busqueda?: string } = {}) {
+  const query = new URLSearchParams();
+  Object.entries(params).forEach(([key, value]) => {
+    if (value !== undefined && value !== null && String(value).trim()) query.set(key, String(value));
+  });
+  const suffix = query.toString() ? `?${query.toString()}` : "";
+  return apiCall<{ success: boolean; lotes: InventarioLoteRecurso[]; total: number }>("GET", `/inventario-recursos/lotes${suffix}`);
+}
+
+export async function listarMovimientosInventario(params: { recurso_id?: number | string; inventario_lote_id?: number | string; tipo_movimiento?: string } = {}) {
+  const query = new URLSearchParams();
+  Object.entries(params).forEach(([key, value]) => {
+    if (value !== undefined && value !== null && String(value).trim()) query.set(key, String(value));
+  });
+  const suffix = query.toString() ? `?${query.toString()}` : "";
+  return apiCall<{ success: boolean; movimientos: MovimientoInventarioRecurso[]; total: number }>("GET", `/inventario-recursos/movimientos${suffix}`);
 }
 
 // --- Infraestructura / Tecnovigilancia ---

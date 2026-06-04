@@ -696,6 +696,7 @@ export type EstadoProveedorRecurso = "activo" | "inactivo" | "en_revision" | "bl
 export type EstadoOrdenCompraRecurso = "borrador" | "solicitada" | "aprobada" | "enviada_proveedor" | "parcialmente_recibida" | "recibida" | "cerrada" | "cancelada";
 export type TipoRecepcionRecurso = "tecnica" | "administrativa" | "tecnica_administrativa";
 export type EstadoRecepcionRecurso = "pendiente" | "aprobada" | "rechazada" | "parcial";
+export type EstadoInventarioLote = "disponible" | "cuarentena" | "bloqueado" | "vencido" | "agotado" | "dado_de_baja";
 
 export interface RecursoServicioRelacion {
   id?: number;
@@ -948,6 +949,51 @@ export interface RecepcionRecursoPayload {
     motivo_rechazo?: string | null;
     observaciones?: string | null;
   }>;
+}
+
+export interface InventarioLoteRecurso {
+  id: number;
+  recurso_id: number;
+  lote: string;
+  fecha_vencimiento: string | null;
+  cantidad_inicial: number | null;
+  cantidad_actual: number | null;
+  ubicacion: string | null;
+  estado: EstadoInventarioLote | string;
+  requiere_cadena_frio: number | boolean;
+  temperatura_min: number | null;
+  temperatura_max: number | null;
+  humedad_min: number | null;
+  humedad_max: number | null;
+  recepcion_id?: number | null;
+  recepcion_detalle_id?: number | null;
+  recurso_codigo?: string | null;
+  recurso_nombre?: string | null;
+  tipo_recurso?: string | null;
+  stock_minimo?: number | null;
+  stock_maximo?: number | null;
+  numero_orden?: string | null;
+  fecha_recepcion?: string | null;
+  created_at?: string | null;
+  updated_at?: string | null;
+}
+
+export interface MovimientoInventarioRecurso {
+  id: number;
+  recurso_id: number;
+  inventario_lote_id: number;
+  tipo_movimiento: string;
+  cantidad: number;
+  saldo_anterior: number;
+  saldo_nuevo: number;
+  origen: string | null;
+  referencia_id: number | null;
+  responsable_id?: number | null;
+  observaciones: string | null;
+  lote?: string | null;
+  recurso_codigo?: string | null;
+  recurso_nombre?: string | null;
+  created_at?: string | null;
 }
 
 export interface AdherenciaCapacitacion {
