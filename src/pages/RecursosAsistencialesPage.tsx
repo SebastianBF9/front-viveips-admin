@@ -220,6 +220,14 @@ function labelTipo(tipo?: string | null) {
   return TIPOS_RECURSO.find((item) => item.value === tipo)?.label || texto(tipo);
 }
 
+function estadoNormalizado(valor?: string | null) {
+  return String(valor || "").trim().toLowerCase();
+}
+
+function despachoPreparado(despacho: DespachoRecurso) {
+  return estadoNormalizado(despacho.estado) === "preparado";
+}
+
 function inicialRecurso(): RecursoForm {
   return {
     codigo: "",
@@ -621,7 +629,7 @@ export function RecursosAsistencialesPage() {
   const despachosFiltrados = useMemo(() => {
     const q = despachoQuery.trim().toLowerCase();
     return despachos.filter((despacho) => {
-      if (despachoEstado && despacho.estado !== despachoEstado) return false;
+      if (despachoEstado && estadoNormalizado(despacho.estado) !== despachoEstado) return false;
       if (!q) return true;
       return [despacho.numero_despacho, despacho.paciente_nombre, despacho.paciente_documento, despacho.responsable_nombre].some((value) =>
         String(value || "").toLowerCase().includes(q),
@@ -1020,6 +1028,10 @@ export function RecursosAsistencialesPage() {
   }
 
   async function abrirEditarDespacho(despacho: DespachoRecurso) {
+    if (!despachoPreparado(despacho)) {
+      setError("Solo se pueden editar despachos en estado preparado.");
+      return;
+    }
     setAccion(`editar-despacho-${despacho.id}`);
     try {
       const data = await obtenerDespachoRecurso(despacho.id);
@@ -1062,6 +1074,10 @@ export function RecursosAsistencialesPage() {
   }
 
   async function marcarSalidaDespacho(despacho: DespachoRecurso) {
+    if (!despachoPreparado(despacho)) {
+      setError("Solo se puede marcar salida de despachos en estado preparado.");
+      return;
+    }
     if (!window.confirm(`Marcar salida del despacho ${despacho.numero_despacho}? Se descontará inventario.`)) return;
     setAccion(`salida-despacho-${despacho.id}`);
     setError("");
@@ -1078,6 +1094,10 @@ export function RecursosAsistencialesPage() {
   }
 
   async function cancelarDespacho(despacho: DespachoRecurso) {
+    if (!despachoPreparado(despacho)) {
+      setError("Solo se pueden cancelar despachos en estado preparado.");
+      return;
+    }
     if (!window.confirm(`Cancelar el despacho ${despacho.numero_despacho}?`)) return;
     setAccion(`cancelar-despacho-${despacho.id}`);
     setError("");
@@ -1515,13 +1535,13 @@ export function RecursosAsistencialesPage() {
                   <div><dt>Dirección</dt><dd>{texto(despacho.direccion_entrega)}</dd></div>
                 </dl>
                 <div className="recursos-actions">
-                  <button type="button" onClick={() => marcarSalidaDespacho(despacho)} disabled={accion === `salida-despacho-${despacho.id}` || despacho.estado !== "preparado"}>
+                  <button type="button" onClick={() => marcarSalidaDespacho(despacho)} disabled={accion === `salida-despacho-${despacho.id}`}>
                     <Truck size={15} /> Marcar salida
                   </button>
-                  <button type="button" onClick={() => abrirEditarDespacho(despacho)} disabled={accion === `editar-despacho-${despacho.id}` || despacho.estado !== "preparado"}>
+                  <button type="button" onClick={() => abrirEditarDespacho(despacho)} disabled={accion === `editar-despacho-${despacho.id}`}>
                     <Pencil size={15} /> Editar
                   </button>
-                  <button className="danger" type="button" onClick={() => cancelarDespacho(despacho)} disabled={accion === `cancelar-despacho-${despacho.id}` || despacho.estado !== "preparado"}>
+                  <button className="danger" type="button" onClick={() => cancelarDespacho(despacho)} disabled={accion === `cancelar-despacho-${despacho.id}`}>
                     <Trash2 size={15} /> Cancelar
                   </button>
                 </div>
