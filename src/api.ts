@@ -34,6 +34,8 @@ import type {
   RecursoServicioRelacion,
   ProveedorRecurso,
   ProveedorRecursoPayload,
+  RecepcionRecurso,
+  RecepcionRecursoPayload,
   ServicioDetalle,
   ServicioIps,
   ServicioProfesionalAsignado,
@@ -644,6 +646,27 @@ export async function actualizarOrdenCompraRecurso(id: number, payload: OrdenCom
 
 export async function eliminarOrdenCompraRecurso(id: number) {
   return apiCall<{ success: boolean; mensaje: string }>("DELETE", `/ordenes-compra-recursos/${id}`);
+}
+
+export async function listarRecepcionesRecursos(params: { estado?: string; orden_compra_id?: number | string; proveedor_id?: number | string; busqueda?: string } = {}) {
+  const query = new URLSearchParams();
+  Object.entries(params).forEach(([key, value]) => {
+    if (value !== undefined && value !== null && String(value).trim()) query.set(key, String(value));
+  });
+  const suffix = query.toString() ? `?${query.toString()}` : "";
+  return apiCall<{ success: boolean; recepciones: RecepcionRecurso[]; total: number }>("GET", `/recepciones-recursos${suffix}`);
+}
+
+export async function obtenerRecepcionRecurso(id: number) {
+  return apiCall<{ success: boolean; recepcion: RecepcionRecurso }>("GET", `/recepciones-recursos/${id}`);
+}
+
+export async function crearRecepcionRecurso(payload: RecepcionRecursoPayload) {
+  return apiCall<{ success: boolean; mensaje: string; recepcion_id: number }>("POST", "/recepciones-recursos", payload);
+}
+
+export async function actualizarRecepcionRecurso(id: number, payload: RecepcionRecursoPayload) {
+  return apiCall<{ success: boolean; mensaje: string }>("PUT", `/recepciones-recursos/${id}`, payload);
 }
 
 // --- Infraestructura / Tecnovigilancia ---

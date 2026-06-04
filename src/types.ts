@@ -694,6 +694,8 @@ export type TipoRecursoAsistencial = "medicamento" | "dispositivo_medico" | "ins
 export type EstadoRecursoAsistencial = "activo" | "inactivo" | "en_revision" | "rechazado";
 export type EstadoProveedorRecurso = "activo" | "inactivo" | "en_revision" | "bloqueado";
 export type EstadoOrdenCompraRecurso = "borrador" | "solicitada" | "aprobada" | "enviada_proveedor" | "parcialmente_recibida" | "recibida" | "cerrada" | "cancelada";
+export type TipoRecepcionRecurso = "tecnica" | "administrativa" | "tecnica_administrativa";
+export type EstadoRecepcionRecurso = "pendiente" | "aprobada" | "rechazada" | "parcial";
 
 export interface RecursoServicioRelacion {
   id?: number;
@@ -882,6 +884,68 @@ export interface OrdenCompraRecursoPayload {
     cantidad: number;
     valor_unitario?: number | null;
     fecha_estimada_entrega?: string | null;
+    observaciones?: string | null;
+  }>;
+}
+
+export interface RecepcionRecursoDetalle {
+  id?: number;
+  recepcion_id?: number;
+  recurso_id: number;
+  lote?: string | null;
+  cantidad_recibida: number;
+  fecha_vencimiento?: string | null;
+  registro_sanitario_validado?: number | boolean;
+  empaque_integro?: number | boolean;
+  temperatura_recibida?: number | null;
+  humedad_recibida?: number | null;
+  cumple?: number | boolean;
+  motivo_rechazo?: string | null;
+  observaciones?: string | null;
+  recurso_codigo?: string | null;
+  recurso_nombre?: string | null;
+  tipo_recurso?: string | null;
+  requiere_cadena_frio?: number | boolean;
+  registro_sanitario?: string | null;
+}
+
+export interface RecepcionRecurso {
+  id: number;
+  orden_compra_id: number;
+  proveedor_id: number;
+  numero_orden?: string | null;
+  proveedor_nombre?: string | null;
+  proveedor_nit?: string | null;
+  fecha_recepcion: string | null;
+  tipo_recepcion: TipoRecepcionRecurso | string;
+  estado: EstadoRecepcionRecurso | string;
+  responsable_id?: number | null;
+  observaciones: string | null;
+  items?: number | null;
+  detalles?: RecepcionRecursoDetalle[];
+  created_at?: string | null;
+  updated_at?: string | null;
+}
+
+export interface RecepcionRecursoPayload {
+  orden_compra_id: number;
+  proveedor_id: number;
+  fecha_recepcion?: string | null;
+  tipo_recepcion: TipoRecepcionRecurso | string;
+  estado: EstadoRecepcionRecurso | string;
+  responsable_id?: number | null;
+  observaciones?: string | null;
+  detalles: Array<{
+    recurso_id: number;
+    lote?: string | null;
+    cantidad_recibida: number;
+    fecha_vencimiento?: string | null;
+    registro_sanitario_validado?: boolean;
+    empaque_integro?: boolean;
+    temperatura_recibida?: number | null;
+    humedad_recibida?: number | null;
+    cumple?: boolean;
+    motivo_rechazo?: string | null;
     observaciones?: string | null;
   }>;
 }

@@ -16,11 +16,13 @@ import {
 import { type ChangeEvent, type ReactNode, useEffect, useMemo, useState } from "react";
 import {
   actualizarOrdenCompraRecurso,
+  actualizarRecepcionRecurso,
   actualizarProveedorRecurso,
   actualizarRecursoAsistencial,
   asociarProveedorRecurso,
   asociarServicioRecurso,
   crearOrdenCompraRecurso,
+  crearRecepcionRecurso,
   crearProveedorRecurso,
   crearRecursoAsistencial,
   eliminarOrdenCompraRecurso,
@@ -30,9 +32,11 @@ import {
   eliminarServicioDeRecurso,
   listarOrdenesCompraRecursos,
   listarProveedoresRecursos,
+  listarRecepcionesRecursos,
   listarRecursosAsistenciales,
   listarServiciosIps,
   obtenerOrdenCompraRecurso,
+  obtenerRecepcionRecurso,
   obtenerRecursoAsistencial,
   subirFichaTecnicaRecurso,
 } from "../api";
@@ -42,6 +46,9 @@ import type {
   OrdenCompraRecursoPayload,
   ProveedorRecurso,
   ProveedorRecursoPayload,
+  RecepcionRecurso,
+  RecepcionRecursoDetalle,
+  RecepcionRecursoPayload,
   RecursoAsistencial,
   RecursoAsistencialPayload,
   ServicioIps,
@@ -57,6 +64,8 @@ const TIPOS_RECURSO = [
 const ESTADOS_RECURSO = ["activo", "inactivo", "en_revision", "rechazado"];
 const ESTADOS_PROVEEDOR = ["activo", "inactivo", "en_revision", "bloqueado"];
 const ESTADOS_ORDEN_COMPRA = ["borrador", "solicitada", "aprobada", "enviada_proveedor", "parcialmente_recibida", "recibida", "cerrada", "cancelada"];
+const TIPOS_RECEPCION = ["tecnica", "administrativa", "tecnica_administrativa"];
+const ESTADOS_RECEPCION = ["pendiente", "aprobada", "rechazada", "parcial"];
 const TABS = ["catalogo", "proveedores", "compras", "recepcion", "inventario", "distribucion", "auditoria"] as const;
 
 type TabKey = (typeof TABS)[number];
@@ -119,6 +128,31 @@ type OrdenCompraForm = {
   factura_archivo: string;
   observaciones: string;
   detalles: OrdenDetalleForm[];
+};
+
+type RecepcionDetalleForm = {
+  recurso_id: string;
+  lote: string;
+  cantidad_recibida: string;
+  fecha_vencimiento: string;
+  registro_sanitario_validado: boolean;
+  empaque_integro: boolean;
+  temperatura_recibida: string;
+  humedad_recibida: string;
+  cumple: boolean;
+  motivo_rechazo: string;
+  observaciones: string;
+};
+
+type RecepcionForm = {
+  id?: number;
+  orden_compra_id: string;
+  proveedor_id: string;
+  fecha_recepcion: string;
+  tipo_recepcion: string;
+  estado: string;
+  observaciones: string;
+  detalles: RecepcionDetalleForm[];
 };
 
 function bool(valor: unknown) {
@@ -298,6 +332,65 @@ function ordenCompraAForm(orden: OrdenCompraRecurso): OrdenCompraForm {
   };
 }
 
+function detalleRecepcionInicial(): RecepcionDetalleForm {
+  return {
+    recurso_id: "",
+    lote: "",
+    cantidad_recibida: "1",
+    fecha_vencimiento: "",
+    registro_sanitario_validado: false,
+    empaque_integro: true,
+    temperatura_recibida: "",
+    humedad_recibida: "",
+    cumple: true,
+    motivo_rechazo: "",
+    observaciones: "",
+  };
+}
+
+function recepcionDesdeOrden(orden: OrdenCompraRecurso): RecepcionForm {
+  const hoy = new Date().toISOString().slice(0, 10);
+  return {
+    orden_compra_id: String(orden.id),
+    proveedor_id: orden.proveedor_id ? String(orden.proveedor_id) : "",
+    fecha_recepcion: hoy,
+    tipo_recepcion: "tecnica_administrativa",
+    estado: "pendiente",
+    observaciones: "",
+    detalles: (orden.detalles && orden.detalles.length ? orden.detalles : []).map((detalle) => ({
+      ...detalleRecepcionInicial(),
+      recurso_id: detalle.recurso_id ? String(detalle.recurso_id) : "",
+      cantidad_recibida: detalle.cantidad != null ? String(detalle.cantidad) : "1",
+      fecha_vencimiento: "",
+    })).concat(orden.detalles && orden.detalles.length ? [] : [detalleRecepcionInicial()]),
+  };
+}
+
+function recepcionAForm(recepcion: RecepcionRecurso): RecepcionForm {
+  return {
+    id: recepcion.id,
+    orden_compra_id: recepcion.orden_compra_id ? String(recepcion.orden_compra_id) : "",
+    proveedor_id: recepcion.proveedor_id ? String(recepcion.proveedor_id) : "",
+    fecha_recepcion: recepcion.fecha_recepcion || "",
+    tipo_recepcion: recepcion.tipo_recepcion || "tecnica_administrativa",
+    estado: recepcion.estado || "pendiente",
+    observaciones: recepcion.observaciones || "",
+    detalles: (recepcion.detalles && recepcion.detalles.length ? recepcion.detalles : []).map((detalle: RecepcionRecursoDetalle) => ({
+      recurso_id: detalle.recurso_id ? String(detalle.recurso_id) : "",
+      lote: detalle.lote || "",
+      cantidad_recibida: detalle.cantidad_recibida != null ? String(detalle.cantidad_recibida) : "1",
+      fecha_vencimiento: detalle.fecha_vencimiento || "",
+      registro_sanitario_validado: bool(detalle.registro_sanitario_validado),
+      empaque_integro: bool(detalle.empaque_integro),
+      temperatura_recibida: detalle.temperatura_recibida != null ? String(detalle.temperatura_recibida) : "",
+      humedad_recibida: detalle.humedad_recibida != null ? String(detalle.humedad_recibida) : "",
+      cumple: bool(detalle.cumple),
+      motivo_rechazo: detalle.motivo_rechazo || "",
+      observaciones: detalle.observaciones || "",
+    })).concat(recepcion.detalles && recepcion.detalles.length ? [] : [detalleRecepcionInicial()]),
+  };
+}
+
 function Section({ title, children }: { title: string; children: ReactNode }) {
   return (
     <section className="recursos-form-section">
@@ -312,6 +405,7 @@ export function RecursosAsistencialesPage() {
   const [recursos, setRecursos] = useState<RecursoAsistencial[]>([]);
   const [proveedores, setProveedores] = useState<ProveedorRecurso[]>([]);
   const [ordenes, setOrdenes] = useState<OrdenCompraRecurso[]>([]);
+  const [recepciones, setRecepciones] = useState<RecepcionRecurso[]>([]);
   const [servicios, setServicios] = useState<ServicioIps[]>([]);
   const [loading, setLoading] = useState(true);
   const [accion, setAccion] = useState("");
@@ -323,23 +417,28 @@ export function RecursosAsistencialesPage() {
   const [servicioFiltro, setServicioFiltro] = useState("");
   const [compraQuery, setCompraQuery] = useState("");
   const [compraEstado, setCompraEstado] = useState("");
+  const [recepcionQuery, setRecepcionQuery] = useState("");
+  const [recepcionEstado, setRecepcionEstado] = useState("");
   const [recursoForm, setRecursoForm] = useState<RecursoForm | null>(null);
   const [proveedorForm, setProveedorForm] = useState<ProveedorForm | null>(null);
   const [ordenForm, setOrdenForm] = useState<OrdenCompraForm | null>(null);
+  const [recepcionForm, setRecepcionForm] = useState<RecepcionForm | null>(null);
 
   async function cargar() {
     setLoading(true);
     setError("");
     try {
-      const [recursosData, proveedoresData, serviciosData, ordenesData] = await Promise.all([
+      const [recursosData, proveedoresData, serviciosData, ordenesData, recepcionesData] = await Promise.all([
         listarRecursosAsistenciales(),
         listarProveedoresRecursos(),
         listarServiciosIps(),
         listarOrdenesCompraRecursos(),
+        listarRecepcionesRecursos(),
       ]);
       setRecursos(recursosData.recursos || []);
       setProveedores(proveedoresData.proveedores || []);
       setOrdenes(ordenesData.ordenes || []);
+      setRecepciones(recepcionesData.recepciones || []);
       setServicios(
         (serviciosData.servicios || [])
           .filter((servicio) => servicio.estado === "habilitado" || servicio.estado === "proximo")
@@ -389,6 +488,17 @@ export function RecursosAsistencialesPage() {
       );
     });
   }, [compraEstado, compraQuery, ordenes]);
+
+  const recepcionesFiltradas = useMemo(() => {
+    const q = recepcionQuery.trim().toLowerCase();
+    return recepciones.filter((recepcion) => {
+      if (recepcionEstado && recepcion.estado !== recepcionEstado) return false;
+      if (!q) return true;
+      return [recepcion.numero_orden, recepcion.proveedor_nombre, recepcion.proveedor_nit].some((value) =>
+        String(value || "").toLowerCase().includes(q),
+      );
+    });
+  }, [recepcionEstado, recepcionQuery, recepciones]);
 
   const totalOrdenForm = useMemo(() => {
     if (!ordenForm) return 0;
@@ -444,6 +554,18 @@ export function RecursosAsistencialesPage() {
     });
   }
 
+  function actualizarRecepcion(campo: keyof RecepcionForm, valor: string) {
+    setRecepcionForm((actual) => (actual ? { ...actual, [campo]: valor } : actual));
+  }
+
+  function actualizarDetalleRecepcion(index: number, campo: keyof RecepcionDetalleForm, valor: string | boolean) {
+    setRecepcionForm((actual) => {
+      if (!actual) return actual;
+      const detalles = actual.detalles.map((detalle, idx) => (idx === index ? { ...detalle, [campo]: valor } : detalle));
+      return { ...actual, detalles };
+    });
+  }
+
   function payloadRecurso(form: RecursoForm): RecursoAsistencialPayload {
     return {
       codigo: form.codigo.trim() || null,
@@ -493,6 +615,32 @@ export function RecursosAsistencialesPage() {
           cantidad: numero(detalle.cantidad) || 0,
           valor_unitario: numero(detalle.valor_unitario) || 0,
           fecha_estimada_entrega: detalle.fecha_estimada_entrega || null,
+          observaciones: detalle.observaciones || null,
+        })),
+    };
+  }
+
+  function payloadRecepcion(form: RecepcionForm): RecepcionRecursoPayload {
+    return {
+      orden_compra_id: Number(form.orden_compra_id),
+      proveedor_id: Number(form.proveedor_id),
+      fecha_recepcion: form.fecha_recepcion || null,
+      tipo_recepcion: form.tipo_recepcion,
+      estado: form.estado,
+      observaciones: form.observaciones || null,
+      detalles: form.detalles
+        .filter((detalle) => detalle.recurso_id)
+        .map((detalle) => ({
+          recurso_id: Number(detalle.recurso_id),
+          lote: detalle.lote || null,
+          cantidad_recibida: numero(detalle.cantidad_recibida) || 0,
+          fecha_vencimiento: detalle.fecha_vencimiento || null,
+          registro_sanitario_validado: detalle.registro_sanitario_validado,
+          empaque_integro: detalle.empaque_integro,
+          temperatura_recibida: numero(detalle.temperatura_recibida),
+          humedad_recibida: numero(detalle.humedad_recibida),
+          cumple: detalle.cumple,
+          motivo_rechazo: detalle.motivo_rechazo || null,
           observaciones: detalle.observaciones || null,
         })),
     };
@@ -613,6 +761,57 @@ export function RecursosAsistencialesPage() {
       await cargar();
     } catch (err) {
       setError(err instanceof Error ? err.message : "No fue posible guardar la orden de compra");
+    } finally {
+      setAccion("");
+    }
+  }
+
+  async function abrirRecepcionDesdeOrden(orden: OrdenCompraRecurso) {
+    setAccion(`recibir-orden-${orden.id}`);
+    try {
+      const data = await obtenerOrdenCompraRecurso(orden.id);
+      setRecepcionForm(recepcionDesdeOrden(data.orden));
+      setTab("recepcion");
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "No fue posible cargar la orden para recepción");
+    } finally {
+      setAccion("");
+    }
+  }
+
+  async function abrirEditarRecepcion(recepcion: RecepcionRecurso) {
+    setAccion(`editar-recepcion-${recepcion.id}`);
+    try {
+      const data = await obtenerRecepcionRecurso(recepcion.id);
+      setRecepcionForm(recepcionAForm(data.recepcion));
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "No fue posible cargar la recepción");
+    } finally {
+      setAccion("");
+    }
+  }
+
+  async function guardarRecepcion() {
+    if (!recepcionForm) return;
+    if (!recepcionForm.orden_compra_id || !recepcionForm.proveedor_id) {
+      setError("La orden de compra y el proveedor son obligatorios.");
+      return;
+    }
+    if (!recepcionForm.detalles.some((detalle) => detalle.recurso_id && (numero(detalle.cantidad_recibida) || 0) > 0)) {
+      setError("Agrega al menos un recurso recibido con cantidad mayor a cero.");
+      return;
+    }
+    setAccion("guardar-recepcion");
+    setError("");
+    setSuccess("");
+    try {
+      if (recepcionForm.id) await actualizarRecepcionRecurso(recepcionForm.id, payloadRecepcion(recepcionForm));
+      else await crearRecepcionRecurso(payloadRecepcion(recepcionForm));
+      setRecepcionForm(null);
+      setSuccess("Recepción guardada correctamente.");
+      await cargar();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "No fue posible guardar la recepción");
     } finally {
       setAccion("");
     }
@@ -847,6 +1046,9 @@ export function RecursosAsistencialesPage() {
                   <div><dt>Total</dt><dd>{dinero(orden.total)}</dd></div>
                 </dl>
                 <div className="recursos-actions">
+                  <button type="button" onClick={() => abrirRecepcionDesdeOrden(orden)} disabled={accion === `recibir-orden-${orden.id}` || orden.estado === "cancelada"}>
+                    <ClipboardList size={15} /> Recibir
+                  </button>
                   <button type="button" onClick={() => abrirEditarOrden(orden)} disabled={accion === `editar-orden-${orden.id}`}>
                     <Pencil size={15} /> Editar
                   </button>
@@ -861,7 +1063,64 @@ export function RecursosAsistencialesPage() {
         </section>
       )}
 
-      {!loading && !["catalogo", "proveedores", "compras"].includes(tab) && (
+      {!loading && tab === "recepcion" && (
+        <section className="table-card compras-card">
+          <div className="section-heading inline-heading">
+            <div>
+              <h2>Recepción técnica y administrativa</h2>
+              <p>Valida cantidad, lote, vencimiento, empaque, registro sanitario y condiciones de transporte.</p>
+            </div>
+            <button className="primary-btn" type="button" onClick={() => setTab("compras")}>
+              <Truck size={16} /> Ir a compras
+            </button>
+          </div>
+
+          <div className="toolbar compras-toolbar">
+            <label className="search-field">
+              <Search size={18} />
+              <input value={recepcionQuery} onChange={(event) => setRecepcionQuery(event.target.value)} placeholder="Buscar orden o proveedor" />
+            </label>
+            <select value={recepcionEstado} onChange={(event) => setRecepcionEstado(event.target.value)}>
+              <option value="">Todos los estados</option>
+              {ESTADOS_RECEPCION.map((item) => <option key={item} value={item}>{item}</option>)}
+            </select>
+          </div>
+
+          <div className="ordenes-grid">
+            {recepcionesFiltradas.map((recepcion) => (
+              <article className="orden-card" key={recepcion.id}>
+                <div className="orden-card-head">
+                  <div className="recurso-icon">
+                    <ClipboardList size={19} />
+                  </div>
+                  <div>
+                    <strong>{texto(recepcion.numero_orden)}</strong>
+                    <span>{texto(recepcion.proveedor_nombre)}{recepcion.proveedor_nit ? ` · ${recepcion.proveedor_nit}` : ""}</span>
+                  </div>
+                </div>
+                <div className="meta-row">
+                  <span className={`pill ${recepcion.estado}`}>{recepcion.estado}</span>
+                  <span className="tag">{texto(recepcion.tipo_recepcion)}</span>
+                </div>
+                <dl className="recurso-dl">
+                  <div><dt>Fecha recepción</dt><dd>{texto(recepcion.fecha_recepcion)}</dd></div>
+                  <div><dt>Ítems</dt><dd>{texto(recepcion.items)}</dd></div>
+                  <div><dt>Proveedor</dt><dd>{texto(recepcion.proveedor_nombre)}</dd></div>
+                  <div><dt>Observaciones</dt><dd>{texto(recepcion.observaciones)}</dd></div>
+                </dl>
+                <div className="recursos-actions">
+                  <button type="button" onClick={() => abrirEditarRecepcion(recepcion)} disabled={accion === `editar-recepcion-${recepcion.id}`}>
+                    <Pencil size={15} /> Editar
+                  </button>
+                </div>
+              </article>
+            ))}
+          </div>
+          {!recepcionesFiltradas.length && <div className="empty-state">No hay recepciones registradas todavía. Inicia desde una orden de compra.</div>}
+        </section>
+      )}
+
+      {!loading && !["catalogo", "proveedores", "compras", "recepcion"].includes(tab) && (
         <div className="standard-card recursos-placeholder">
           <ClipboardList size={22} />
           <div>
@@ -1014,7 +1273,7 @@ export function RecursosAsistencialesPage() {
             <div className="infra-form-body">
               <Section title="Datos de la orden">
                 <label>Número de orden
-                  <input value={ordenForm.numero_orden} onChange={(event) => actualizarOrden("numero_orden", event.target.value)} placeholder="Se genera si se deja vacío" />
+                  <input value={ordenForm.numero_orden || "Automático al guardar"} disabled />
                 </label>
                 <label>Proveedor *
                   <select value={ordenForm.proveedor_id} onChange={(event) => actualizarOrden("proveedor_id", event.target.value)}>
@@ -1102,6 +1361,100 @@ export function RecursosAsistencialesPage() {
             <div className="modal-actions">
               <button className="secondary-btn" type="button" onClick={() => setOrdenForm(null)}>Cancelar</button>
               <button className="primary-btn infra-save-btn" type="button" onClick={guardarOrden} disabled={accion === "guardar-orden"}><Save size={16} /> Guardar orden</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {recepcionForm && (
+        <div className="modal-backdrop" onMouseDown={() => setRecepcionForm(null)}>
+          <div className="modal wide-modal recursos-modal" onMouseDown={(event) => event.stopPropagation()}>
+            <div className="infra-modal-header">
+              <div>
+                <h2>{recepcionForm.id ? "Editar recepción" : "Nueva recepción"}</h2>
+                <p>Valida la recepción administrativa y técnica antes de crear inventario por lote.</p>
+              </div>
+              <button type="button" onClick={() => setRecepcionForm(null)} aria-label="Cerrar"><X size={20} /></button>
+            </div>
+            <div className="infra-form-body">
+              <Section title="Datos de recepción">
+                <label>Orden de compra
+                  <select value={recepcionForm.orden_compra_id} onChange={(event) => actualizarRecepcion("orden_compra_id", event.target.value)} disabled>
+                    <option value="">Seleccionar orden</option>
+                    {ordenes.map((orden) => <option key={orden.id} value={orden.id}>{orden.numero_orden}</option>)}
+                  </select>
+                </label>
+                <label>Proveedor
+                  <select value={recepcionForm.proveedor_id} onChange={(event) => actualizarRecepcion("proveedor_id", event.target.value)} disabled>
+                    <option value="">Seleccionar proveedor</option>
+                    {proveedores.map((proveedor) => <option key={proveedor.id} value={proveedor.id}>{proveedor.nombre}</option>)}
+                  </select>
+                </label>
+                <label>Fecha recepción
+                  <input type="date" value={recepcionForm.fecha_recepcion} onChange={(event) => actualizarRecepcion("fecha_recepcion", event.target.value)} />
+                </label>
+                <label>Tipo de recepción
+                  <select value={recepcionForm.tipo_recepcion} onChange={(event) => actualizarRecepcion("tipo_recepcion", event.target.value)}>
+                    {TIPOS_RECEPCION.map((item) => <option key={item} value={item}>{item}</option>)}
+                  </select>
+                </label>
+                <label>Estado
+                  <select value={recepcionForm.estado} onChange={(event) => actualizarRecepcion("estado", event.target.value)}>
+                    {ESTADOS_RECEPCION.map((item) => <option key={item} value={item}>{item}</option>)}
+                  </select>
+                </label>
+                <label className="wide-field">Observaciones generales
+                  <textarea rows={2} value={recepcionForm.observaciones} onChange={(event) => actualizarRecepcion("observaciones", event.target.value)} />
+                </label>
+              </Section>
+
+              <section className="recursos-form-section">
+                <div className="orden-section-head">
+                  <h3>Checklist por recurso</h3>
+                </div>
+                <div className="orden-detalles recepcion-detalles">
+                  {recepcionForm.detalles.map((detalle, index) => (
+                    <div className="recepcion-detalle-row" key={`${index}-${detalle.recurso_id || "recurso"}`}>
+                      <label>Recurso
+                        <select value={detalle.recurso_id} onChange={(event) => actualizarDetalleRecepcion(index, "recurso_id", event.target.value)} disabled>
+                          <option value="">Seleccionar recurso</option>
+                          {recursos.map((recurso) => <option key={recurso.id} value={recurso.id}>{texto(recurso.codigo)} · {recurso.nombre}</option>)}
+                        </select>
+                      </label>
+                      <label>Lote
+                        <input value={detalle.lote} onChange={(event) => actualizarDetalleRecepcion(index, "lote", event.target.value)} />
+                      </label>
+                      <label>Cantidad recibida
+                        <input value={detalle.cantidad_recibida} onChange={(event) => actualizarDetalleRecepcion(index, "cantidad_recibida", event.target.value)} inputMode="decimal" />
+                      </label>
+                      <label>Fecha vencimiento
+                        <input type="date" value={detalle.fecha_vencimiento} onChange={(event) => actualizarDetalleRecepcion(index, "fecha_vencimiento", event.target.value)} />
+                      </label>
+                      <label>Temperatura
+                        <input value={detalle.temperatura_recibida} onChange={(event) => actualizarDetalleRecepcion(index, "temperatura_recibida", event.target.value)} inputMode="decimal" />
+                      </label>
+                      <label>Humedad
+                        <input value={detalle.humedad_recibida} onChange={(event) => actualizarDetalleRecepcion(index, "humedad_recibida", event.target.value)} inputMode="decimal" />
+                      </label>
+                      <label className="infra-check-field"><input type="checkbox" checked={detalle.registro_sanitario_validado} onChange={(event) => actualizarDetalleRecepcion(index, "registro_sanitario_validado", event.target.checked)} /> Registro sanitario validado</label>
+                      <label className="infra-check-field"><input type="checkbox" checked={detalle.empaque_integro} onChange={(event) => actualizarDetalleRecepcion(index, "empaque_integro", event.target.checked)} /> Empaque íntegro</label>
+                      <label className="infra-check-field"><input type="checkbox" checked={detalle.cumple} onChange={(event) => actualizarDetalleRecepcion(index, "cumple", event.target.checked)} /> Cumple recepción</label>
+                      {!detalle.cumple && (
+                        <label className="wide-field">Motivo de rechazo *
+                          <input value={detalle.motivo_rechazo} onChange={(event) => actualizarDetalleRecepcion(index, "motivo_rechazo", event.target.value)} />
+                        </label>
+                      )}
+                      <label className="wide-field">Observaciones
+                        <input value={detalle.observaciones} onChange={(event) => actualizarDetalleRecepcion(index, "observaciones", event.target.value)} />
+                      </label>
+                    </div>
+                  ))}
+                </div>
+              </section>
+            </div>
+            <div className="modal-actions">
+              <button className="secondary-btn" type="button" onClick={() => setRecepcionForm(null)}>Cancelar</button>
+              <button className="primary-btn infra-save-btn" type="button" onClick={guardarRecepcion} disabled={accion === "guardar-recepcion"}><Save size={16} /> Guardar recepción</button>
             </div>
           </div>
         </div>
