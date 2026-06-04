@@ -693,6 +693,7 @@ export interface EquipoAlertaResumen {
 export type TipoRecursoAsistencial = "medicamento" | "dispositivo_medico" | "insumo";
 export type EstadoRecursoAsistencial = "activo" | "inactivo" | "en_revision" | "rechazado";
 export type EstadoProveedorRecurso = "activo" | "inactivo" | "en_revision" | "bloqueado";
+export type EstadoOrdenCompraRecurso = "borrador" | "solicitada" | "aprobada" | "enviada_proveedor" | "parcialmente_recibida" | "recibida" | "cerrada" | "cancelada";
 
 export interface RecursoServicioRelacion {
   id?: number;
@@ -829,6 +830,60 @@ export interface ProveedorRecursoPayload {
   departamento?: string | null;
   estado: EstadoProveedorRecurso | string;
   observaciones?: string | null;
+}
+
+export interface OrdenCompraRecursoDetalle {
+  id?: number;
+  orden_compra_id?: number;
+  recurso_id: number;
+  cantidad: number;
+  valor_unitario?: number | null;
+  valor_total?: number | null;
+  fecha_estimada_entrega?: string | null;
+  observaciones?: string | null;
+  recurso_codigo?: string | null;
+  recurso_nombre?: string | null;
+  tipo_recurso?: string | null;
+}
+
+export interface OrdenCompraRecurso {
+  id: number;
+  numero_orden: string;
+  proveedor_id: number;
+  proveedor_nombre?: string | null;
+  proveedor_nit?: string | null;
+  fecha_orden: string | null;
+  fecha_estimada_entrega: string | null;
+  estado: EstadoOrdenCompraRecurso | string;
+  subtotal: number | null;
+  impuestos: number | null;
+  total: number | null;
+  factura_numero: string | null;
+  factura_archivo: string | null;
+  observaciones: string | null;
+  items?: number | null;
+  detalles?: OrdenCompraRecursoDetalle[];
+  created_at?: string | null;
+  updated_at?: string | null;
+}
+
+export interface OrdenCompraRecursoPayload {
+  numero_orden?: string | null;
+  proveedor_id: number;
+  fecha_orden?: string | null;
+  fecha_estimada_entrega?: string | null;
+  estado: EstadoOrdenCompraRecurso | string;
+  impuestos?: number | null;
+  factura_numero?: string | null;
+  factura_archivo?: string | null;
+  observaciones?: string | null;
+  detalles: Array<{
+    recurso_id: number;
+    cantidad: number;
+    valor_unitario?: number | null;
+    fecha_estimada_entrega?: string | null;
+    observaciones?: string | null;
+  }>;
 }
 
 export interface AdherenciaCapacitacion {

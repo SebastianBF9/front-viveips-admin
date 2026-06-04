@@ -15,23 +15,31 @@ import {
 } from "lucide-react";
 import { type ChangeEvent, type ReactNode, useEffect, useMemo, useState } from "react";
 import {
+  actualizarOrdenCompraRecurso,
   actualizarProveedorRecurso,
   actualizarRecursoAsistencial,
   asociarProveedorRecurso,
   asociarServicioRecurso,
+  crearOrdenCompraRecurso,
   crearProveedorRecurso,
   crearRecursoAsistencial,
+  eliminarOrdenCompraRecurso,
   eliminarProveedorDeRecurso,
   eliminarProveedorRecurso,
   eliminarRecursoAsistencial,
   eliminarServicioDeRecurso,
+  listarOrdenesCompraRecursos,
   listarProveedoresRecursos,
   listarRecursosAsistenciales,
   listarServiciosIps,
+  obtenerOrdenCompraRecurso,
   obtenerRecursoAsistencial,
   subirFichaTecnicaRecurso,
 } from "../api";
 import type {
+  OrdenCompraRecurso,
+  OrdenCompraRecursoDetalle,
+  OrdenCompraRecursoPayload,
   ProveedorRecurso,
   ProveedorRecursoPayload,
   RecursoAsistencial,
@@ -48,6 +56,7 @@ const TIPOS_RECURSO = [
 
 const ESTADOS_RECURSO = ["activo", "inactivo", "en_revision", "rechazado"];
 const ESTADOS_PROVEEDOR = ["activo", "inactivo", "en_revision", "bloqueado"];
+const ESTADOS_ORDEN_COMPRA = ["borrador", "solicitada", "aprobada", "enviada_proveedor", "parcialmente_recibida", "recibida", "cerrada", "cancelada"];
 const TABS = ["catalogo", "proveedores", "compras", "recepcion", "inventario", "distribucion", "auditoria"] as const;
 
 type TabKey = (typeof TABS)[number];
@@ -90,6 +99,28 @@ type RecursoForm = {
 
 type ProveedorForm = ProveedorRecursoPayload & { id?: number };
 
+type OrdenDetalleForm = {
+  recurso_id: string;
+  cantidad: string;
+  valor_unitario: string;
+  fecha_estimada_entrega: string;
+  observaciones: string;
+};
+
+type OrdenCompraForm = {
+  id?: number;
+  numero_orden: string;
+  proveedor_id: string;
+  fecha_orden: string;
+  fecha_estimada_entrega: string;
+  estado: string;
+  impuestos: string;
+  factura_numero: string;
+  factura_archivo: string;
+  observaciones: string;
+  detalles: OrdenDetalleForm[];
+};
+
 function bool(valor: unknown) {
   return valor === true || valor === 1 || valor === "1";
 }
@@ -97,6 +128,11 @@ function bool(valor: unknown) {
 function texto(valor?: string | number | null) {
   if (valor === 0) return "0";
   return valor ? String(valor) : "-";
+}
+
+function dinero(valor?: string | number | null) {
+  const numeroValor = Number(valor || 0);
+  return numeroValor.toLocaleString("es-CO", { style: "currency", currency: "COP", maximumFractionDigits: 0 });
 }
 
 function numero(valor: string) {
@@ -214,6 +250,54 @@ function proveedorAForm(proveedor: ProveedorRecurso): ProveedorForm {
   };
 }
 
+function detalleOrdenInicial(): OrdenDetalleForm {
+  return {
+    recurso_id: "",
+    cantidad: "1",
+    valor_unitario: "0",
+    fecha_estimada_entrega: "",
+    observaciones: "",
+  };
+}
+
+function inicialOrdenCompra(): OrdenCompraForm {
+  const hoy = new Date().toISOString().slice(0, 10);
+  return {
+    numero_orden: "",
+    proveedor_id: "",
+    fecha_orden: hoy,
+    fecha_estimada_entrega: "",
+    estado: "borrador",
+    impuestos: "0",
+    factura_numero: "",
+    factura_archivo: "",
+    observaciones: "",
+    detalles: [detalleOrdenInicial()],
+  };
+}
+
+function ordenCompraAForm(orden: OrdenCompraRecurso): OrdenCompraForm {
+  return {
+    id: orden.id,
+    numero_orden: orden.numero_orden || "",
+    proveedor_id: orden.proveedor_id ? String(orden.proveedor_id) : "",
+    fecha_orden: orden.fecha_orden || "",
+    fecha_estimada_entrega: orden.fecha_estimada_entrega || "",
+    estado: orden.estado || "borrador",
+    impuestos: orden.impuestos != null ? String(orden.impuestos) : "0",
+    factura_numero: orden.factura_numero || "",
+    factura_archivo: orden.factura_archivo || "",
+    observaciones: orden.observaciones || "",
+    detalles: (orden.detalles && orden.detalles.length ? orden.detalles : []).map((detalle: OrdenCompraRecursoDetalle) => ({
+      recurso_id: detalle.recurso_id ? String(detalle.recurso_id) : "",
+      cantidad: detalle.cantidad != null ? String(detalle.cantidad) : "1",
+      valor_unitario: detalle.valor_unitario != null ? String(detalle.valor_unitario) : "0",
+      fecha_estimada_entrega: detalle.fecha_estimada_entrega || "",
+      observaciones: detalle.observaciones || "",
+    })).concat(orden.detalles && orden.detalles.length ? [] : [detalleOrdenInicial()]),
+  };
+}
+
 function Section({ title, children }: { title: string; children: ReactNode }) {
   return (
     <section className="recursos-form-section">
@@ -227,6 +311,7 @@ export function RecursosAsistencialesPage() {
   const [tab, setTab] = useState<TabKey>("catalogo");
   const [recursos, setRecursos] = useState<RecursoAsistencial[]>([]);
   const [proveedores, setProveedores] = useState<ProveedorRecurso[]>([]);
+  const [ordenes, setOrdenes] = useState<OrdenCompraRecurso[]>([]);
   const [servicios, setServicios] = useState<ServicioIps[]>([]);
   const [loading, setLoading] = useState(true);
   const [accion, setAccion] = useState("");
@@ -236,20 +321,25 @@ export function RecursosAsistencialesPage() {
   const [tipo, setTipo] = useState("");
   const [estado, setEstado] = useState("");
   const [servicioFiltro, setServicioFiltro] = useState("");
+  const [compraQuery, setCompraQuery] = useState("");
+  const [compraEstado, setCompraEstado] = useState("");
   const [recursoForm, setRecursoForm] = useState<RecursoForm | null>(null);
   const [proveedorForm, setProveedorForm] = useState<ProveedorForm | null>(null);
+  const [ordenForm, setOrdenForm] = useState<OrdenCompraForm | null>(null);
 
   async function cargar() {
     setLoading(true);
     setError("");
     try {
-      const [recursosData, proveedoresData, serviciosData] = await Promise.all([
+      const [recursosData, proveedoresData, serviciosData, ordenesData] = await Promise.all([
         listarRecursosAsistenciales(),
         listarProveedoresRecursos(),
         listarServiciosIps(),
+        listarOrdenesCompraRecursos(),
       ]);
       setRecursos(recursosData.recursos || []);
       setProveedores(proveedoresData.proveedores || []);
+      setOrdenes(ordenesData.ordenes || []);
       setServicios(
         (serviciosData.servicios || [])
           .filter((servicio) => servicio.estado === "habilitado" || servicio.estado === "proximo")
@@ -289,6 +379,25 @@ export function RecursosAsistencialesPage() {
     [recursos],
   );
 
+  const ordenesFiltradas = useMemo(() => {
+    const q = compraQuery.trim().toLowerCase();
+    return ordenes.filter((orden) => {
+      if (compraEstado && orden.estado !== compraEstado) return false;
+      if (!q) return true;
+      return [orden.numero_orden, orden.proveedor_nombre, orden.proveedor_nit, orden.factura_numero].some((value) =>
+        String(value || "").toLowerCase().includes(q),
+      );
+    });
+  }, [compraEstado, compraQuery, ordenes]);
+
+  const totalOrdenForm = useMemo(() => {
+    if (!ordenForm) return 0;
+    const subtotal = ordenForm.detalles.reduce((sum, detalle) => {
+      return sum + (numero(detalle.cantidad) || 0) * (numero(detalle.valor_unitario) || 0);
+    }, 0);
+    return subtotal + (numero(ordenForm.impuestos) || 0);
+  }, [ordenForm]);
+
   function actualizarRecurso(campo: keyof RecursoForm, valor: string | boolean | number[] | File | null) {
     setRecursoForm((actual) => {
       if (!actual) return actual;
@@ -308,6 +417,30 @@ export function RecursosAsistencialesPage() {
       if (set.has(id)) set.delete(id);
       else set.add(id);
       return { ...actual, [campo]: [...set] };
+    });
+  }
+
+  function actualizarOrden(campo: keyof OrdenCompraForm, valor: string) {
+    setOrdenForm((actual) => (actual ? { ...actual, [campo]: valor } : actual));
+  }
+
+  function actualizarDetalleOrden(index: number, campo: keyof OrdenDetalleForm, valor: string) {
+    setOrdenForm((actual) => {
+      if (!actual) return actual;
+      const detalles = actual.detalles.map((detalle, idx) => (idx === index ? { ...detalle, [campo]: valor } : detalle));
+      return { ...actual, detalles };
+    });
+  }
+
+  function agregarDetalleOrden() {
+    setOrdenForm((actual) => (actual ? { ...actual, detalles: [...actual.detalles, detalleOrdenInicial()] } : actual));
+  }
+
+  function quitarDetalleOrden(index: number) {
+    setOrdenForm((actual) => {
+      if (!actual) return actual;
+      const detalles = actual.detalles.filter((_, idx) => idx !== index);
+      return { ...actual, detalles: detalles.length ? detalles : [detalleOrdenInicial()] };
     });
   }
 
@@ -339,6 +472,29 @@ export function RecursosAsistencialesPage() {
       tiempo_reposicion_dias: form.tiempo_reposicion_dias ? Number(form.tiempo_reposicion_dias) : null,
       estado: form.estado,
       observaciones: form.observaciones || null,
+    };
+  }
+
+  function payloadOrden(form: OrdenCompraForm): OrdenCompraRecursoPayload {
+    return {
+      numero_orden: form.numero_orden.trim() || null,
+      proveedor_id: Number(form.proveedor_id),
+      fecha_orden: form.fecha_orden || null,
+      fecha_estimada_entrega: form.fecha_estimada_entrega || null,
+      estado: form.estado,
+      impuestos: numero(form.impuestos) || 0,
+      factura_numero: form.factura_numero || null,
+      factura_archivo: form.factura_archivo || null,
+      observaciones: form.observaciones || null,
+      detalles: form.detalles
+        .filter((detalle) => detalle.recurso_id)
+        .map((detalle) => ({
+          recurso_id: Number(detalle.recurso_id),
+          cantidad: numero(detalle.cantidad) || 0,
+          valor_unitario: numero(detalle.valor_unitario) || 0,
+          fecha_estimada_entrega: detalle.fecha_estimada_entrega || null,
+          observaciones: detalle.observaciones || null,
+        })),
     };
   }
 
@@ -424,6 +580,44 @@ export function RecursosAsistencialesPage() {
     }
   }
 
+  async function abrirEditarOrden(orden: OrdenCompraRecurso) {
+    setAccion(`editar-orden-${orden.id}`);
+    try {
+      const data = await obtenerOrdenCompraRecurso(orden.id);
+      setOrdenForm(ordenCompraAForm(data.orden));
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "No fue posible cargar la orden de compra");
+    } finally {
+      setAccion("");
+    }
+  }
+
+  async function guardarOrden() {
+    if (!ordenForm) return;
+    if (!ordenForm.proveedor_id) {
+      setError("El proveedor es obligatorio.");
+      return;
+    }
+    if (!ordenForm.detalles.some((detalle) => detalle.recurso_id && (numero(detalle.cantidad) || 0) > 0)) {
+      setError("Agrega al menos un recurso con cantidad mayor a cero.");
+      return;
+    }
+    setAccion("guardar-orden");
+    setError("");
+    setSuccess("");
+    try {
+      if (ordenForm.id) await actualizarOrdenCompraRecurso(ordenForm.id, payloadOrden(ordenForm));
+      else await crearOrdenCompraRecurso(payloadOrden(ordenForm));
+      setOrdenForm(null);
+      setSuccess("Orden de compra guardada correctamente.");
+      await cargar();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "No fue posible guardar la orden de compra");
+    } finally {
+      setAccion("");
+    }
+  }
+
   async function inactivarRecurso(recurso: RecursoAsistencial) {
     if (!window.confirm(`Inactivar ${recurso.nombre}?`)) return;
     setAccion(`inactivar-recurso-${recurso.id}`);
@@ -447,6 +641,20 @@ export function RecursosAsistencialesPage() {
       await cargar();
     } catch (err) {
       setError(err instanceof Error ? err.message : "No fue posible inactivar el proveedor");
+    } finally {
+      setAccion("");
+    }
+  }
+
+  async function cancelarOrden(orden: OrdenCompraRecurso) {
+    if (!window.confirm(`Cancelar la orden ${orden.numero_orden}?`)) return;
+    setAccion(`cancelar-orden-${orden.id}`);
+    try {
+      await eliminarOrdenCompraRecurso(orden.id);
+      setSuccess("Orden de compra cancelada correctamente.");
+      await cargar();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "No fue posible cancelar la orden");
     } finally {
       setAccion("");
     }
@@ -591,7 +799,69 @@ export function RecursosAsistencialesPage() {
         </section>
       )}
 
-      {!loading && !["catalogo", "proveedores"].includes(tab) && (
+      {!loading && tab === "compras" && (
+        <section className="table-card compras-card">
+          <div className="section-heading inline-heading">
+            <div>
+              <h2>Órdenes de compra</h2>
+              <p>Adquisición de medicamentos, dispositivos médicos e insumos desde proveedores registrados.</p>
+            </div>
+            <button className="primary-btn" type="button" onClick={() => setOrdenForm(inicialOrdenCompra())}>
+              <Plus size={16} /> Nueva orden
+            </button>
+          </div>
+
+          <div className="toolbar compras-toolbar">
+            <label className="search-field">
+              <Search size={18} />
+              <input value={compraQuery} onChange={(event) => setCompraQuery(event.target.value)} placeholder="Buscar orden, proveedor o factura" />
+            </label>
+            <select value={compraEstado} onChange={(event) => setCompraEstado(event.target.value)}>
+              <option value="">Todos los estados</option>
+              {ESTADOS_ORDEN_COMPRA.map((item) => (
+                <option key={item} value={item}>{item}</option>
+              ))}
+            </select>
+          </div>
+
+          <div className="ordenes-grid">
+            {ordenesFiltradas.map((orden) => (
+              <article className="orden-card" key={orden.id}>
+                <div className="orden-card-head">
+                  <div className="recurso-icon">
+                    <Truck size={19} />
+                  </div>
+                  <div>
+                    <strong>{orden.numero_orden}</strong>
+                    <span>{texto(orden.proveedor_nombre)}{orden.proveedor_nit ? ` · ${orden.proveedor_nit}` : ""}</span>
+                  </div>
+                </div>
+                <div className="meta-row">
+                  <span className={`pill ${orden.estado}`}>{orden.estado}</span>
+                  <span className="tag">{texto(orden.items)} ítems</span>
+                </div>
+                <dl className="recurso-dl">
+                  <div><dt>Fecha orden</dt><dd>{texto(orden.fecha_orden)}</dd></div>
+                  <div><dt>Entrega estimada</dt><dd>{texto(orden.fecha_estimada_entrega)}</dd></div>
+                  <div><dt>Factura</dt><dd>{texto(orden.factura_numero)}</dd></div>
+                  <div><dt>Total</dt><dd>{dinero(orden.total)}</dd></div>
+                </dl>
+                <div className="recursos-actions">
+                  <button type="button" onClick={() => abrirEditarOrden(orden)} disabled={accion === `editar-orden-${orden.id}`}>
+                    <Pencil size={15} /> Editar
+                  </button>
+                  <button className="danger" type="button" onClick={() => cancelarOrden(orden)} disabled={accion === `cancelar-orden-${orden.id}` || orden.estado === "cancelada"}>
+                    <Trash2 size={15} /> Cancelar
+                  </button>
+                </div>
+              </article>
+            ))}
+          </div>
+          {!ordenesFiltradas.length && <div className="empty-state">No hay órdenes de compra para los filtros seleccionados.</div>}
+        </section>
+      )}
+
+      {!loading && !["catalogo", "proveedores", "compras"].includes(tab) && (
         <div className="standard-card recursos-placeholder">
           <ClipboardList size={22} />
           <div>
@@ -726,6 +996,112 @@ export function RecursosAsistencialesPage() {
             <div className="modal-actions">
               <button className="secondary-btn" type="button" onClick={() => setRecursoForm(null)}>Cancelar</button>
               <button className="primary-btn infra-save-btn" type="button" onClick={guardarRecurso} disabled={accion === "guardar-recurso"}><Save size={16} /> Guardar recurso</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {ordenForm && (
+        <div className="modal-backdrop" onMouseDown={() => setOrdenForm(null)}>
+          <div className="modal wide-modal recursos-modal" onMouseDown={(event) => event.stopPropagation()}>
+            <div className="infra-modal-header">
+              <div>
+                <h2>{ordenForm.id ? "Editar orden de compra" : "Nueva orden de compra"}</h2>
+                <p>Registra la adquisición y sus recursos. La recepción técnica se realizará en una fase posterior.</p>
+              </div>
+              <button type="button" onClick={() => setOrdenForm(null)} aria-label="Cerrar"><X size={20} /></button>
+            </div>
+            <div className="infra-form-body">
+              <Section title="Datos de la orden">
+                <label>Número de orden
+                  <input value={ordenForm.numero_orden} onChange={(event) => actualizarOrden("numero_orden", event.target.value)} placeholder="Se genera si se deja vacío" />
+                </label>
+                <label>Proveedor *
+                  <select value={ordenForm.proveedor_id} onChange={(event) => actualizarOrden("proveedor_id", event.target.value)}>
+                    <option value="">Seleccionar proveedor</option>
+                    {proveedores.filter((proveedor) => proveedor.estado !== "bloqueado").map((proveedor) => (
+                      <option key={proveedor.id} value={proveedor.id}>{proveedor.nombre}{proveedor.nit ? ` · ${proveedor.nit}` : ""}</option>
+                    ))}
+                  </select>
+                </label>
+                <label>Fecha de orden
+                  <input type="date" value={ordenForm.fecha_orden} onChange={(event) => actualizarOrden("fecha_orden", event.target.value)} />
+                </label>
+                <label>Entrega estimada
+                  <input type="date" value={ordenForm.fecha_estimada_entrega} onChange={(event) => actualizarOrden("fecha_estimada_entrega", event.target.value)} />
+                </label>
+                <label>Estado
+                  <select value={ordenForm.estado} onChange={(event) => actualizarOrden("estado", event.target.value)}>
+                    {ESTADOS_ORDEN_COMPRA.map((item) => <option key={item} value={item}>{item}</option>)}
+                  </select>
+                </label>
+                <label>Impuestos
+                  <input value={ordenForm.impuestos} onChange={(event) => actualizarOrden("impuestos", event.target.value)} inputMode="decimal" />
+                </label>
+                <label>Factura final
+                  <input value={ordenForm.factura_numero} onChange={(event) => actualizarOrden("factura_numero", event.target.value)} placeholder="Número de factura" />
+                </label>
+                <label>Archivo factura
+                  <input value={ordenForm.factura_archivo} onChange={(event) => actualizarOrden("factura_archivo", event.target.value)} placeholder="Referencia o ruta del archivo" />
+                </label>
+                <label className="wide-field">Observaciones
+                  <textarea rows={2} value={ordenForm.observaciones} onChange={(event) => actualizarOrden("observaciones", event.target.value)} />
+                </label>
+              </Section>
+
+              <section className="recursos-form-section">
+                <div className="orden-section-head">
+                  <h3>Recursos de la orden</h3>
+                  <button className="secondary-btn" type="button" onClick={agregarDetalleOrden}>
+                    <Plus size={15} /> Agregar recurso
+                  </button>
+                </div>
+                <div className="orden-detalles">
+                  {ordenForm.detalles.map((detalle, index) => {
+                    const subtotal = (numero(detalle.cantidad) || 0) * (numero(detalle.valor_unitario) || 0);
+                    return (
+                      <div className="orden-detalle-row" key={`${index}-${detalle.recurso_id || "nuevo"}`}>
+                        <label>Recurso *
+                          <select value={detalle.recurso_id} onChange={(event) => actualizarDetalleOrden(index, "recurso_id", event.target.value)}>
+                            <option value="">Seleccionar recurso</option>
+                            {recursos.filter((recurso) => recurso.estado === "activo" || recurso.estado === "en_revision").map((recurso) => (
+                              <option key={recurso.id} value={recurso.id}>{texto(recurso.codigo)} · {recurso.nombre}</option>
+                            ))}
+                          </select>
+                        </label>
+                        <label>Cantidad
+                          <input value={detalle.cantidad} onChange={(event) => actualizarDetalleOrden(index, "cantidad", event.target.value)} inputMode="decimal" />
+                        </label>
+                        <label>Valor unitario
+                          <input value={detalle.valor_unitario} onChange={(event) => actualizarDetalleOrden(index, "valor_unitario", event.target.value)} inputMode="decimal" />
+                        </label>
+                        <label>Entrega estimada
+                          <input type="date" value={detalle.fecha_estimada_entrega} onChange={(event) => actualizarDetalleOrden(index, "fecha_estimada_entrega", event.target.value)} />
+                        </label>
+                        <div className="orden-detalle-total">
+                          <span>Total línea</span>
+                          <strong>{dinero(subtotal)}</strong>
+                        </div>
+                        <button className="icon-danger-btn" type="button" onClick={() => quitarDetalleOrden(index)} aria-label="Quitar recurso">
+                          <Trash2 size={16} />
+                        </button>
+                        <label className="wide-field">Observaciones del recurso
+                          <input value={detalle.observaciones} onChange={(event) => actualizarDetalleOrden(index, "observaciones", event.target.value)} />
+                        </label>
+                      </div>
+                    );
+                  })}
+                </div>
+              </section>
+
+              <div className="orden-total-box">
+                <span>Total estimado de la orden</span>
+                <strong>{dinero(totalOrdenForm)}</strong>
+              </div>
+            </div>
+            <div className="modal-actions">
+              <button className="secondary-btn" type="button" onClick={() => setOrdenForm(null)}>Cancelar</button>
+              <button className="primary-btn infra-save-btn" type="button" onClick={guardarOrden} disabled={accion === "guardar-orden"}><Save size={16} /> Guardar orden</button>
             </div>
           </div>
         </div>

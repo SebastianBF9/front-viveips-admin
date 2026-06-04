@@ -26,6 +26,8 @@ import type {
   ProfesionalPerfilPayload,
   ReferenciaPersonal,
   RelacionPayload,
+  OrdenCompraRecurso,
+  OrdenCompraRecursoPayload,
   RecursoAsistencial,
   RecursoAsistencialPayload,
   RecursoProveedorRelacion,
@@ -617,6 +619,31 @@ export async function subirFichaTecnicaRecurso(recursoId: number, archivo: File,
   if (payload.fecha_documento) form.set("fecha_documento", payload.fecha_documento);
   if (payload.observaciones) form.set("observaciones", payload.observaciones);
   return apiFormCall<{ success: boolean; mensaje: string; ficha_id: number; ruta: string }>("POST", `/recursos-asistenciales/${recursoId}/fichas-tecnicas`, form);
+}
+
+export async function listarOrdenesCompraRecursos(params: { estado?: string; proveedor_id?: number | string; busqueda?: string } = {}) {
+  const query = new URLSearchParams();
+  Object.entries(params).forEach(([key, value]) => {
+    if (value !== undefined && value !== null && String(value).trim()) query.set(key, String(value));
+  });
+  const suffix = query.toString() ? `?${query.toString()}` : "";
+  return apiCall<{ success: boolean; ordenes: OrdenCompraRecurso[]; total: number }>("GET", `/ordenes-compra-recursos${suffix}`);
+}
+
+export async function obtenerOrdenCompraRecurso(id: number) {
+  return apiCall<{ success: boolean; orden: OrdenCompraRecurso }>("GET", `/ordenes-compra-recursos/${id}`);
+}
+
+export async function crearOrdenCompraRecurso(payload: OrdenCompraRecursoPayload) {
+  return apiCall<{ success: boolean; mensaje: string; orden_id: number }>("POST", "/ordenes-compra-recursos", payload);
+}
+
+export async function actualizarOrdenCompraRecurso(id: number, payload: OrdenCompraRecursoPayload) {
+  return apiCall<{ success: boolean; mensaje: string }>("PUT", `/ordenes-compra-recursos/${id}`, payload);
+}
+
+export async function eliminarOrdenCompraRecurso(id: number) {
+  return apiCall<{ success: boolean; mensaje: string }>("DELETE", `/ordenes-compra-recursos/${id}`);
 }
 
 // --- Infraestructura / Tecnovigilancia ---
