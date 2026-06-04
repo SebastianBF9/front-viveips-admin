@@ -6,6 +6,7 @@ import type {
   CapacitacionArchivo,
   CapacitacionAdminPayload,
   CapacitacionPregunta,
+  ConfirmarEntregaDespachoPayload,
   DespachoRecurso,
   DespachoRecursoPayload,
   ExamenCapacitacion,
@@ -722,6 +723,18 @@ export async function marcarSalidaDespachoRecurso(id: number) {
 
 export async function cancelarDespachoRecurso(id: number) {
   return apiCall<{ success: boolean; mensaje: string }>("DELETE", `/despachos-recursos/${id}`);
+}
+
+export async function listarMisEntregasRecursos() {
+  return apiCall<{ success: boolean; despachos: DespachoRecurso[]; total: number }>("GET", "/despachos-recursos/mis-entregas");
+}
+
+export async function obtenerMiEntregaRecurso(id: number) {
+  return apiCall<{ success: boolean; despacho: DespachoRecurso }>("GET", `/despachos-recursos/mis-entregas/${id}`);
+}
+
+export async function confirmarMiEntregaRecurso(id: number, payload: ConfirmarEntregaDespachoPayload) {
+  return apiCall<{ success: boolean; mensaje: string; firma_archivo: string }>("POST", `/despachos-recursos/mis-entregas/${id}/confirmar`, payload);
 }
 
 // --- Infraestructura / Tecnovigilancia ---

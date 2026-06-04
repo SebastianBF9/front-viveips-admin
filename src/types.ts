@@ -1056,6 +1056,16 @@ export interface DespachoRecursoPayload {
   }>;
 }
 
+export interface ConfirmarEntregaDespachoPayload {
+  recibido_por_nombre: string;
+  recibido_por_documento: string;
+  recibido_por_parentesco?: string | null;
+  latitud_entrega?: number | null;
+  longitud_entrega?: number | null;
+  firma_base64: string;
+  observaciones?: string | null;
+}
+
 export interface AdherenciaCapacitacion {
   profesional_id: number;
   profesional: string;
