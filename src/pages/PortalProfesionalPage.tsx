@@ -12,12 +12,10 @@ import {
   IdCard,
   LayoutDashboard,
   LogOut,
-  MapPin,
   PenLine,
   Plus,
   Save,
   Syringe,
-  Truck,
   Trash2,
   Upload,
   UserRound,
@@ -31,7 +29,6 @@ import {
   actualizarMiPerfilProfesional,
   aceptarTratamientoDatos,
   clearSession,
-  confirmarMiEntregaRecurso,
   downloadBlob,
   downloadUrl,
   eliminarFormacionPortal,
@@ -45,10 +42,8 @@ import {
   listarMisReferencias,
   listarMisVacunas,
   listarMisDocumentosProfesional,
-  listarMisEntregasRecursos,
   listarMunicipios,
   obtenerEstadoContratoProfesional,
-  obtenerMiEntregaRecurso,
   obtenerMiAcceso,
   obtenerMiPerfilProfesional,
   obtenerMisServiciosProfesional,
@@ -57,7 +52,6 @@ import {
   subirFotoProfesional,
 } from "../api";
 import type {
-  DespachoRecurso,
   DocumentoPortalProfesional,
   ExperienciaLaboral,
   FormacionPortal,
@@ -102,15 +96,6 @@ type ContratoProfesional = {
   nombre_archivo?: string | null;
   fecha_generacion?: string | null;
 } | null;
-
-type EntregaForm = {
-  recibido_por_nombre: string;
-  recibido_por_documento: string;
-  recibido_por_parentesco: string;
-  latitud_entrega: string;
-  longitud_entrega: string;
-  observaciones: string;
-};
 
 const ACEPTACION_CONTRATO = "Declaro que he leido el contrato, entiendo su contenido y acepto firmarlo electronicamente. Reconozco que esta firma electronica corresponde a mi voluntad de aceptacion del documento.";
 
@@ -297,7 +282,6 @@ export function PortalProfesionalPage() {
   const [perfil, setPerfil] = useState<ProfesionalPerfil | null>(null);
   const [acceso, setAcceso] = useState<PermisosAcceso | null>(null);
   const [serviciosAsignados, setServiciosAsignados] = useState<ServicioProfesionalAsignado[]>([]);
-  const [entregasRecursos, setEntregasRecursos] = useState<DespachoRecurso[]>([]);
   const [form, setForm] = useState<ProfesionalPerfilPayload>(CAMPOS_INICIALES);
   const [documentos, setDocumentos] = useState<DocumentoPortalProfesional[]>([]);
   const [loading, setLoading] = useState(true);
@@ -320,16 +304,6 @@ export function PortalProfesionalPage() {
   const [signatureOpen, setSignatureOpen] = useState(false);
   const [signatureAccepted, setSignatureAccepted] = useState(false);
   const [signatureHasStroke, setSignatureHasStroke] = useState(false);
-  const [entregaActiva, setEntregaActiva] = useState<DespachoRecurso | null>(null);
-  const [entregaForm, setEntregaForm] = useState<EntregaForm>({
-    recibido_por_nombre: "",
-    recibido_por_documento: "",
-    recibido_por_parentesco: "",
-    latitud_entrega: "",
-    longitud_entrega: "",
-    observaciones: "",
-  });
-  const [entregaGeoLoading, setEntregaGeoLoading] = useState(false);
   const [cameraOpen, setCameraOpen] = useState(false);
   const [cameraStep, setCameraStep] = useState<"front" | "back" | "confirm">("front");
   const [cameraFront, setCameraFront] = useState("");
@@ -362,7 +336,7 @@ export function PortalProfesionalPage() {
     setLoading(true);
     setError("");
     try {
-      const [perfilData, docsData, deptData, refsData, expData, vacData, formData, entregasData] = await Promise.all([
+      const [perfilData, docsData, deptData, refsData, expData, vacData, formData] = await Promise.all([
         obtenerMiPerfilProfesional(),
         listarMisDocumentosProfesional(),
         listarDepartamentos(),
@@ -370,7 +344,6 @@ export function PortalProfesionalPage() {
         listarMisExperiencias(),
         listarMisVacunas(),
         listarMisFormaciones(),
-        listarMisEntregasRecursos(),
       ]);
       obtenerMiAcceso()
         .then(setAcceso)
@@ -413,7 +386,6 @@ export function PortalProfesionalPage() {
       })) : []);
       setVacunas(Object.fromEntries((vacData.vacunas || []).map((vac) => [vac.vacuna_codigo, fechaCorta(vac.fecha_aplicacion)])));
       setFormaciones(formData.formaciones || []);
-      setEntregasRecursos(entregasData.despachos || []);
       if (departamentoActual) {
         const munData = await listarMunicipios(departamentoActual);
         setMunicipios(munData.municipios || []);
@@ -462,7 +434,7 @@ export function PortalProfesionalPage() {
   }, [cameraOpen, cameraStep]);
 
   useEffect(() => {
-    if (!signatureOpen && !entregaActiva) return;
+    if (!signatureOpen) return;
     const canvas = signatureCanvasRef.current;
     if (!canvas) return;
     const rect = canvas.getBoundingClientRect();
@@ -479,7 +451,7 @@ export function PortalProfesionalPage() {
     ctx.fillStyle = "#ffffff";
     ctx.fillRect(0, 0, rect.width, rect.height);
     setSignatureHasStroke(false);
-  }, [signatureOpen, entregaActiva]);
+  }, [signatureOpen]);
 
   function actualizar(campo: keyof ProfesionalPerfilPayload, valor: string) {
     setForm((actual) => ({ ...actual, [campo]: valor }));
@@ -637,93 +609,6 @@ export function PortalProfesionalPage() {
       setContrato(estado.contrato);
     } catch (err) {
       setError(err instanceof Error ? err.message : "No fue posible firmar el contrato");
-    } finally {
-      setUploading("");
-    }
-  }
-
-  function actualizarEntrega(campo: keyof EntregaForm, valor: string) {
-    setEntregaForm((actual) => ({ ...actual, [campo]: valor }));
-  }
-
-  async function capturarUbicacionEntrega() {
-    if (!navigator.geolocation) {
-      setError("Este navegador no permite capturar ubicación.");
-      return;
-    }
-    setEntregaGeoLoading(true);
-    setError("");
-    navigator.geolocation.getCurrentPosition(
-      (pos) => {
-        setEntregaForm((actual) => ({
-          ...actual,
-          latitud_entrega: String(pos.coords.latitude),
-          longitud_entrega: String(pos.coords.longitude),
-        }));
-        setEntregaGeoLoading(false);
-      },
-      () => {
-        setError("No fue posible capturar la ubicación. Revisa permisos de GPS.");
-        setEntregaGeoLoading(false);
-      },
-      { enableHighAccuracy: true, timeout: 12000 },
-    );
-  }
-
-  async function abrirEntregaRecursos(entrega: DespachoRecurso) {
-    setUploading(`entrega-${entrega.id}`);
-    setError("");
-    setSuccess("");
-    try {
-      const data = await obtenerMiEntregaRecurso(entrega.id);
-      setEntregaActiva(data.despacho);
-      setEntregaForm({
-        recibido_por_nombre: data.despacho.paciente_nombre || "",
-        recibido_por_documento: data.despacho.paciente_documento || "",
-        recibido_por_parentesco: "",
-        latitud_entrega: "",
-        longitud_entrega: "",
-        observaciones: "",
-      });
-      setSignatureHasStroke(false);
-      setTimeout(() => capturarUbicacionEntrega(), 150);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "No fue posible abrir la entrega");
-    } finally {
-      setUploading("");
-    }
-  }
-
-  async function confirmarEntregaRecursos() {
-    if (!entregaActiva) return;
-    if (!entregaForm.recibido_por_nombre.trim() || !entregaForm.recibido_por_documento.trim()) {
-      setError("Completa nombre y documento de quien recibe.");
-      return;
-    }
-    if (!signatureHasStroke || !signatureCanvasRef.current) {
-      setError("Dibuja la firma de recibido antes de guardar.");
-      return;
-    }
-    setUploading("confirmar-entrega");
-    setError("");
-    setSuccess("");
-    try {
-      const data = await confirmarMiEntregaRecurso(entregaActiva.id, {
-        recibido_por_nombre: entregaForm.recibido_por_nombre.trim(),
-        recibido_por_documento: entregaForm.recibido_por_documento.trim(),
-        recibido_por_parentesco: entregaForm.recibido_por_parentesco || null,
-        latitud_entrega: entregaForm.latitud_entrega ? Number(entregaForm.latitud_entrega) : null,
-        longitud_entrega: entregaForm.longitud_entrega ? Number(entregaForm.longitud_entrega) : null,
-        firma_base64: signatureCanvasRef.current.toDataURL("image/png"),
-        observaciones: entregaForm.observaciones || null,
-      });
-      setSuccess(data.mensaje);
-      setEntregaActiva(null);
-      setSignatureHasStroke(false);
-      const entregas = await listarMisEntregasRecursos();
-      setEntregasRecursos(entregas.despachos || []);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "No fue posible confirmar la entrega");
     } finally {
       setUploading("");
     }
@@ -1070,32 +955,6 @@ export function PortalProfesionalPage() {
           </div>
         </section>
 
-        <section className="portal-section-card portal-deliveries-section">
-          <SectionTitle icon={<Truck size={22} />} title="Entregas de recursos" subtitle="Despachos en camino asignados a tu ruta." />
-          {entregasRecursos.length ? (
-            <div className="portal-deliveries-grid">
-              {entregasRecursos.map((entrega) => (
-                <article className="portal-delivery-card" key={entrega.id}>
-                  <div>
-                    <strong>{entrega.numero_despacho}</strong>
-                    <span>{entrega.paciente_nombre || "Paciente sin nombre"}</span>
-                    <small>{entrega.direccion_entrega || "Sin dirección"}{entrega.ciudad_entrega ? ` · ${entrega.ciudad_entrega}` : ""}</small>
-                  </div>
-                  <div className="portal-delivery-meta">
-                    <span>{entrega.items || 0} ítems</span>
-                    <span>{entrega.fecha_salida ? `Salida: ${String(entrega.fecha_salida).slice(0, 16)}` : "En camino"}</span>
-                  </div>
-                  <button className="primary-btn" type="button" onClick={() => abrirEntregaRecursos(entrega)} disabled={uploading === `entrega-${entrega.id}`}>
-                    <PenLine size={16} /> Entregar
-                  </button>
-                </article>
-              ))}
-            </div>
-          ) : (
-            <div className="empty-state compact-empty">No tienes entregas de recursos pendientes.</div>
-          )}
-        </section>
-
         {serviciosVisibles.length > 0 && (
           <section className="portal-section-card portal-services-section">
             <SectionTitle icon={<BriefcaseBusiness size={22} />} title="Servicios asignados" subtitle="Servicios vinculados a tu perfil profesional." />
@@ -1328,23 +1187,6 @@ export function PortalProfesionalPage() {
           onPointerUp={terminarFirma}
         />
       )}
-      {entregaActiva && (
-        <DeliverySignatureModal
-          entrega={entregaActiva}
-          form={entregaForm}
-          saving={uploading === "confirmar-entrega"}
-          geoLoading={entregaGeoLoading}
-          canvasRef={signatureCanvasRef}
-          onChange={actualizarEntrega}
-          onCaptureLocation={capturarUbicacionEntrega}
-          onClose={() => setEntregaActiva(null)}
-          onSave={confirmarEntregaRecursos}
-          onClear={limpiarFirma}
-          onPointerDown={iniciarFirma}
-          onPointerMove={dibujarFirma}
-          onPointerUp={terminarFirma}
-        />
-      )}
     </main>
   );
 }
@@ -1487,85 +1329,6 @@ function ContractSignatureModal({ accepted, saving, canvasRef, onAcceptedChange,
           <div>
             <button className="secondary-btn" type="button" onClick={onClose}>Cancelar</button>
             <button className="primary-btn" type="button" disabled={saving} onClick={onSave}>{saving ? "Guardando..." : "Firmar contrato"}</button>
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-function DeliverySignatureModal({ entrega, form, saving, geoLoading, canvasRef, onChange, onCaptureLocation, onClose, onSave, onClear, onPointerDown, onPointerMove, onPointerUp }: {
-  entrega: DespachoRecurso;
-  form: EntregaForm;
-  saving: boolean;
-  geoLoading: boolean;
-  canvasRef: { current: HTMLCanvasElement | null };
-  onChange: (campo: keyof EntregaForm, valor: string) => void;
-  onCaptureLocation: () => void;
-  onClose: () => void;
-  onSave: () => void;
-  onClear: () => void;
-  onPointerDown: (event: PointerEvent<HTMLCanvasElement>) => void;
-  onPointerMove: (event: PointerEvent<HTMLCanvasElement>) => void;
-  onPointerUp: (event: PointerEvent<HTMLCanvasElement>) => void;
-}) {
-  return (
-    <div className="portal-signature-modal" role="dialog" aria-modal="true" aria-labelledby="delivery-signature-title">
-      <div className="portal-signature-card delivery-signature-card">
-        <div className="portal-signature-header">
-          <div>
-            <h2 id="delivery-signature-title"><Truck size={22} /> Confirmar entrega</h2>
-            <p>{entrega.numero_despacho} · {entrega.paciente_nombre || "Paciente"}</p>
-          </div>
-          <button type="button" onClick={onClose}>x</button>
-        </div>
-
-        <div className="delivery-summary-box">
-          <div><strong>Dirección</strong><span>{entrega.direccion_entrega || "-"}</span></div>
-          <div><strong>Teléfono</strong><span>{entrega.paciente_telefono || "-"}</span></div>
-          <div><strong>Documento</strong><span>{entrega.paciente_documento || "-"}</span></div>
-        </div>
-
-        <div className="delivery-items-list">
-          {(entrega.detalles || []).map((detalle) => (
-            <article key={detalle.id || `${detalle.inventario_lote_id}-${detalle.recurso_id}`}>
-              <strong>{detalle.recurso_nombre || "Recurso"}</strong>
-              <span>Lote {detalle.lote || "-"} · Cantidad {detalle.cantidad}</span>
-              {detalle.recomendaciones_almacenamiento && <small>{detalle.recomendaciones_almacenamiento}</small>}
-            </article>
-          ))}
-        </div>
-
-        <div className="portal-form-grid compact-grid">
-          <Field label="Recibe *" value={form.recibido_por_nombre} onChange={(value) => onChange("recibido_por_nombre", value)} />
-          <Field label="Documento quien recibe *" value={form.recibido_por_documento} onChange={(value) => onChange("recibido_por_documento", value)} />
-          <Field label="Parentesco / relación" value={form.recibido_por_parentesco} onChange={(value) => onChange("recibido_por_parentesco", value)} />
-          <button className="secondary-btn delivery-location-btn" type="button" onClick={onCaptureLocation} disabled={geoLoading}>
-            <MapPin size={16} /> {geoLoading ? "Capturando..." : "Capturar ubicación"}
-          </button>
-          <Field label="Latitud" value={form.latitud_entrega} disabled />
-          <Field label="Longitud" value={form.longitud_entrega} disabled />
-          <Field className="wide-field" label="Observaciones" value={form.observaciones} onChange={(value) => onChange("observaciones", value)} />
-        </div>
-
-        <div className="portal-signature-pad">
-          <strong>Firma de recibido</strong>
-          <span>El paciente o quien recibe debe firmar en el recuadro.</span>
-          <canvas
-            ref={canvasRef}
-            onPointerDown={onPointerDown}
-            onPointerMove={onPointerMove}
-            onPointerUp={onPointerUp}
-            onPointerCancel={onPointerUp}
-            onPointerLeave={onPointerUp}
-          />
-        </div>
-
-        <div className="portal-signature-actions">
-          <button className="secondary-btn" type="button" onClick={onClear}><Eraser size={16} /> Limpiar</button>
-          <div>
-            <button className="secondary-btn" type="button" onClick={onClose}>Cancelar</button>
-            <button className="primary-btn" type="button" disabled={saving} onClick={onSave}>{saving ? "Guardando..." : "Confirmar entrega"}</button>
           </div>
         </div>
       </div>

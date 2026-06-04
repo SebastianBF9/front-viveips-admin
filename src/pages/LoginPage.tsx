@@ -1,9 +1,10 @@
 import { FormEvent, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { login } from "../api";
 
 export function LoginPage() {
   const navigate = useNavigate();
+  const [params] = useSearchParams();
   const [usuario, setUsuario] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
@@ -15,7 +16,8 @@ export function LoginPage() {
     setLoading(true);
     try {
       await login(usuario, password);
-      navigate("/portal-profesional", { replace: true });
+      const next = params.get("next");
+      navigate(next && next.startsWith("/") ? next : "/portal-profesional", { replace: true });
     } catch (err) {
       setError(err instanceof Error ? err.message : "No fue posible iniciar sesión");
     } finally {

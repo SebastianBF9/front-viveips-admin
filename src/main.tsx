@@ -4,6 +4,7 @@ import { Navigate, RouterProvider, createBrowserRouter } from "react-router-dom"
 import { AppLayout } from "./ui/AppLayout";
 import { AccesosPage } from "./pages/AccesosPage";
 import { CapacitacionesProfesionalPage } from "./pages/CapacitacionesProfesionalPage";
+import { EntregasRecursosPage } from "./pages/EntregasRecursosPage";
 import { InfraestructuraPage } from "./pages/InfraestructuraPage";
 import { LoginPage } from "./pages/LoginPage";
 import { PortalProfesionalPage } from "./pages/PortalProfesionalPage";
@@ -15,6 +16,7 @@ import "./styles.css";
 
 const router = createBrowserRouter([
   { path: "/login", element: <LoginPage /> },
+  { path: "/entregas-recursos", element: <EntregasRecursosPage /> },
   { path: "/portal-profesional", element: <PortalProfesionalPage /> },
   { path: "/portal-profesional/capacitaciones", element: <CapacitacionesProfesionalPage /> },
   {
