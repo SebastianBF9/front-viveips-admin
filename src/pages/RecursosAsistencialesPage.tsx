@@ -530,6 +530,9 @@ export function RecursosAsistencialesPage() {
   const [ordenForm, setOrdenForm] = useState<OrdenCompraForm | null>(null);
   const [recepcionForm, setRecepcionForm] = useState<RecepcionForm | null>(null);
   const [despachoForm, setDespachoForm] = useState<DespachoForm | null>(null);
+  const [loteDetalle, setLoteDetalle] = useState<InventarioLoteRecurso | null>(null);
+  const [movimientosDetalle, setMovimientosDetalle] = useState<MovimientoInventarioRecurso[]>([]);
+  const [cargandoMovimientos, setCargandoMovimientos] = useState(false);
 
   async function cargar() {
     setLoading(true);
@@ -644,6 +647,21 @@ export function RecursosAsistencialesPage() {
     }, 0);
     return subtotal + (numero(ordenForm.impuestos) || 0);
   }, [ordenForm]);
+
+  async function abrirMovimientosLote(lote: InventarioLoteRecurso) {
+    setLoteDetalle(lote);
+    setMovimientosDetalle([]);
+    setCargandoMovimientos(true);
+    try {
+      const data = await listarMovimientosInventario({ inventario_lote_id: lote.id });
+      setMovimientosDetalle(data.movimientos || []);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "No fue posible cargar los movimientos del lote");
+      setLoteDetalle(null);
+    } finally {
+      setCargandoMovimientos(false);
+    }
+  }
 
   function actualizarRecurso(campo: keyof RecursoForm, valor: string | boolean | number[] | File | null) {
     setRecursoForm((actual) => {
@@ -1471,6 +1489,7 @@ export function RecursosAsistencialesPage() {
             <span>Recurso y lote</span>
             <span>Estado</span>
             <span>Existencias y trazabilidad</span>
+            <span>Acciones</span>
           </div>
           <div className="ordenes-grid recursos-desktop-list recursos-inventory-list">
             {lotesFiltrados.map((lote) => (
@@ -1494,6 +1513,11 @@ export function RecursosAsistencialesPage() {
                   <div><dt>Ubicación</dt><dd>{texto(lote.ubicacion)}</dd></div>
                   <div><dt>Orden origen</dt><dd>{texto(lote.numero_orden)}</dd></div>
                 </dl>
+                <div className="recursos-actions">
+                  <button type="button" onClick={() => abrirMovimientosLote(lote)}>
+                    <ClipboardList size={15} /> Ver movimientos
+                  </button>
+                </div>
               </article>
             ))}
           </div>
@@ -1601,6 +1625,65 @@ export function RecursosAsistencialesPage() {
           <div>
             <h2>{tab === "recepcion" ? "Recepción" : tab[0].toUpperCase() + tab.slice(1)}</h2>
             <p>Esta pestaña queda preparada para fases posteriores del plan. La Fase 1 se concentra en catálogo, proveedores y relaciones.</p>
+          </div>
+        </div>
+      )}
+
+      {loteDetalle && (
+        <div className="modal-backdrop" onMouseDown={() => setLoteDetalle(null)}>
+          <div className="modal wide-modal recursos-modal movimientos-modal" onMouseDown={(event) => event.stopPropagation()}>
+            <div className="infra-modal-header">
+              <div>
+                <h2>Movimientos de inventario</h2>
+                <p>{texto(loteDetalle.recurso_codigo)} · {texto(loteDetalle.recurso_nombre)} · Lote {texto(loteDetalle.lote)}</p>
+              </div>
+              <button type="button" onClick={() => setLoteDetalle(null)} aria-label="Cerrar"><X size={20} /></button>
+            </div>
+            <div className="movimientos-summary">
+              <div><span>Existencia inicial</span><strong>{texto(loteDetalle.cantidad_inicial)}</strong></div>
+              <div><span>Existencia actual</span><strong>{texto(loteDetalle.cantidad_actual)}</strong></div>
+              <div><span>Estado</span><strong className={`pill ${loteDetalle.estado}`}>{loteDetalle.estado}</strong></div>
+              <div><span>Ubicación</span><strong>{texto(loteDetalle.ubicacion)}</strong></div>
+            </div>
+            <div className="movimientos-modal-body">
+              {cargandoMovimientos && <Loading text="Cargando movimientos..." />}
+              {!cargandoMovimientos && movimientosDetalle.length > 0 && (
+                <div className="movimientos-table-wrap">
+                  <table className="movimientos-table">
+                    <thead>
+                      <tr>
+                        <th>Fecha</th>
+                        <th>Tipo</th>
+                        <th>Cantidad</th>
+                        <th>Saldo anterior</th>
+                        <th>Saldo nuevo</th>
+                        <th>Origen</th>
+                        <th>Observaciones</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {movimientosDetalle.map((movimiento) => (
+                        <tr key={movimiento.id}>
+                          <td>{texto(movimiento.created_at)}</td>
+                          <td><span className={`movement-type ${movimiento.tipo_movimiento}`}>{texto(movimiento.tipo_movimiento)}</span></td>
+                          <td>{texto(movimiento.cantidad)}</td>
+                          <td>{texto(movimiento.saldo_anterior)}</td>
+                          <td><strong>{texto(movimiento.saldo_nuevo)}</strong></td>
+                          <td>{texto(movimiento.origen)}</td>
+                          <td>{texto(movimiento.observaciones)}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+              {!cargandoMovimientos && !movimientosDetalle.length && (
+                <div className="empty-state">Este lote todavía no tiene movimientos registrados.</div>
+              )}
+            </div>
+            <div className="modal-actions">
+              <button className="secondary-btn" type="button" onClick={() => setLoteDetalle(null)}>Cerrar</button>
+            </div>
           </div>
         </div>
       )}
