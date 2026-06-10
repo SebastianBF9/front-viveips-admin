@@ -1224,7 +1224,13 @@ export function RecursosAsistencialesPage() {
               ))}
             </select>
           </div>
-          <div className="recursos-grid">
+          <div className="recursos-list-head recursos-list-head-main" aria-hidden="true">
+            <span>Recurso</span>
+            <span>Estado y alertas</span>
+            <span>Información relacionada</span>
+            <span>Acciones</span>
+          </div>
+          <div className="recursos-grid recursos-desktop-list">
             {recursosFiltrados.map((recurso) => (
               <article className="recurso-card" key={recurso.id}>
                 <div className="recurso-card-head">
@@ -1273,7 +1279,14 @@ export function RecursosAsistencialesPage() {
               <Plus size={16} /> Nuevo proveedor
             </button>
           </div>
-          <div className="recursos-provider-grid">
+          <div className="recursos-list-head recursos-list-head-provider" aria-hidden="true">
+            <span>Proveedor</span>
+            <span>NIT</span>
+            <span>Contacto</span>
+            <span>Estado</span>
+            <span>Acciones</span>
+          </div>
+          <div className="recursos-provider-grid recursos-provider-list">
             {proveedores.map((proveedor) => (
               <article className="proveedor-card" key={proveedor.id}>
                 <strong>{proveedor.nombre}</strong>
@@ -1319,7 +1332,13 @@ export function RecursosAsistencialesPage() {
             </select>
           </div>
 
-          <div className="ordenes-grid">
+          <div className="recursos-list-head recursos-list-head-main" aria-hidden="true">
+            <span>Orden y proveedor</span>
+            <span>Estado</span>
+            <span>Información de compra</span>
+            <span>Acciones</span>
+          </div>
+          <div className="ordenes-grid recursos-desktop-list">
             {ordenesFiltradas.map((orden) => (
               <article className="orden-card" key={orden.id}>
                 <div className="orden-card-head">
@@ -1382,7 +1401,13 @@ export function RecursosAsistencialesPage() {
             </select>
           </div>
 
-          <div className="ordenes-grid">
+          <div className="recursos-list-head recursos-list-head-main" aria-hidden="true">
+            <span>Orden y proveedor</span>
+            <span>Estado</span>
+            <span>Información de recepción</span>
+            <span>Acciones</span>
+          </div>
+          <div className="ordenes-grid recursos-desktop-list">
             {recepcionesFiltradas.map((recepcion) => (
               <article className="orden-card" key={recepcion.id}>
                 <div className="orden-card-head">
@@ -1442,7 +1467,12 @@ export function RecursosAsistencialesPage() {
             </select>
           </div>
 
-          <div className="ordenes-grid">
+          <div className="recursos-list-head recursos-list-head-inventory" aria-hidden="true">
+            <span>Recurso y lote</span>
+            <span>Estado</span>
+            <span>Existencias y trazabilidad</span>
+          </div>
+          <div className="ordenes-grid recursos-desktop-list recursos-inventory-list">
             {lotesFiltrados.map((lote) => (
               <article className="orden-card" key={lote.id}>
                 <div className="orden-card-head">
@@ -1475,7 +1505,14 @@ export function RecursosAsistencialesPage() {
               <p>Entradas creadas desde recepción. Salidas, ajustes y bajas quedan para las fases siguientes.</p>
             </div>
           </div>
-          <div className="recursos-provider-grid">
+          <div className="recursos-list-head recursos-list-head-movement" aria-hidden="true">
+            <span>Recurso</span>
+            <span>Lote</span>
+            <span>Movimiento</span>
+            <span>Saldo</span>
+            <span>Fecha</span>
+          </div>
+          <div className="recursos-provider-grid recursos-movement-list">
             {movimientosInventario.slice(0, 8).map((movimiento) => (
               <article className="proveedor-card" key={movimiento.id}>
                 <strong>{texto(movimiento.recurso_nombre)}</strong>
@@ -1512,7 +1549,13 @@ export function RecursosAsistencialesPage() {
             </select>
           </div>
 
-          <div className="ordenes-grid">
+          <div className="recursos-list-head recursos-list-head-main" aria-hidden="true">
+            <span>Despacho y destinatario</span>
+            <span>Estado</span>
+            <span>Información de entrega</span>
+            <span>Acciones</span>
+          </div>
+          <div className="ordenes-grid recursos-desktop-list">
             {despachosFiltrados.map((despacho) => (
               <article className="orden-card" key={despacho.id}>
                 <div className="orden-card-head">
