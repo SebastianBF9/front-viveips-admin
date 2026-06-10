@@ -87,6 +87,14 @@ const ESTADOS_DESPACHO = ["preparado", "en_camino", "entregado", "devuelto", "fa
 const TABS = ["catalogo", "proveedores", "compras", "recepcion", "inventario", "distribucion", "auditoria"] as const;
 
 type TabKey = (typeof TABS)[number];
+type AlertaKey = "proximos_vencer" | "vencidos" | "stock_minimo" | "reorden" | "recepciones" | "entregas";
+
+type AlertaDetalle = {
+  id: string;
+  titulo: string;
+  detalle: string;
+  meta?: string;
+};
 
 type RecursoForm = {
   id?: number;
@@ -222,6 +230,20 @@ function labelTipo(tipo?: string | null) {
 
 function estadoNormalizado(valor?: string | null) {
   return String(valor || "").trim().toLowerCase();
+}
+
+function fechaLocal(valor?: string | null) {
+  if (!valor) return null;
+  const fecha = new Date(`${String(valor).slice(0, 10)}T00:00:00`);
+  return Number.isNaN(fecha.getTime()) ? null : fecha;
+}
+
+function diasDesdeHoy(valor?: string | null) {
+  const fecha = fechaLocal(valor);
+  if (!fecha) return null;
+  const hoy = new Date();
+  hoy.setHours(0, 0, 0, 0);
+  return Math.ceil((fecha.getTime() - hoy.getTime()) / 86400000);
 }
 
 function despachoPreparado(despacho: DespachoRecurso) {
@@ -533,6 +555,7 @@ export function RecursosAsistencialesPage() {
   const [loteDetalle, setLoteDetalle] = useState<InventarioLoteRecurso | null>(null);
   const [movimientosDetalle, setMovimientosDetalle] = useState<MovimientoInventarioRecurso[]>([]);
   const [cargandoMovimientos, setCargandoMovimientos] = useState(false);
+  const [alertaActiva, setAlertaActiva] = useState<AlertaKey | null>(null);
 
   async function cargar() {
     setLoading(true);
@@ -647,6 +670,91 @@ export function RecursosAsistencialesPage() {
     }, 0);
     return subtotal + (numero(ordenForm.impuestos) || 0);
   }, [ordenForm]);
+
+  const alertasRecursos = useMemo(() => {
+    const proximosVencer: AlertaDetalle[] = [];
+    const vencidos: AlertaDetalle[] = [];
+    const stockMinimo: AlertaDetalle[] = [];
+    const reorden: AlertaDetalle[] = [];
+
+    lotesInventario.forEach((lote) => {
+      const dias = diasDesdeHoy(lote.fecha_vencimiento);
+      const cantidad = Number(lote.cantidad_actual || 0);
+      if (cantidad <= 0 || dias == null) return;
+      const detalle = {
+        id: `lote-${lote.id}`,
+        titulo: `${texto(lote.recurso_codigo)} · ${texto(lote.recurso_nombre)}`,
+        detalle: `Lote ${texto(lote.lote)} · ${cantidad} unidades`,
+        meta: `Vence: ${texto(lote.fecha_vencimiento)}`,
+      };
+      if (dias <= 0) vencidos.push(detalle);
+      else if (dias <= 90) proximosVencer.push({ ...detalle, meta: `${detalle.meta} · ${dias} día(s)` });
+    });
+
+    const inventarioPorRecurso = new Map<number, { lote: InventarioLoteRecurso; disponible: number }>();
+    lotesInventario.forEach((lote) => {
+      const actual = inventarioPorRecurso.get(lote.recurso_id) || { lote, disponible: 0 };
+      if (estadoNormalizado(lote.estado) === "disponible") {
+        actual.disponible += Number(lote.cantidad_actual || 0);
+      }
+      inventarioPorRecurso.set(lote.recurso_id, actual);
+    });
+    inventarioPorRecurso.forEach(({ lote, disponible }) => {
+      const minimo = Number(lote.stock_minimo || 0);
+      const punto = Number(lote.punto_reorden || 0);
+      const base = {
+        titulo: `${texto(lote.recurso_codigo)} · ${texto(lote.recurso_nombre)}`,
+        detalle: `Existencia disponible: ${disponible}`,
+      };
+      if (minimo > 0 && disponible <= minimo) {
+        stockMinimo.push({ id: `minimo-${lote.recurso_id}`, ...base, meta: `Stock mínimo: ${minimo}` });
+      }
+      if (punto > 0 && disponible <= punto) {
+        reorden.push({ id: `reorden-${lote.recurso_id}`, ...base, meta: `Punto de reorden: ${punto}` });
+      }
+    });
+
+    const recepcionesPendientes = recepciones
+      .filter((recepcion) => ["aprobada", "parcial"].includes(estadoNormalizado(recepcion.estado)))
+      .filter((recepcion) => !lotesInventario.some((lote) => Number(lote.recepcion_id) === recepcion.id))
+      .map((recepcion) => ({
+        id: `recepcion-${recepcion.id}`,
+        titulo: `Orden ${texto(recepcion.numero_orden)}`,
+        detalle: texto(recepcion.proveedor_nombre),
+        meta: `Recepción ${texto(recepcion.estado)} · ${texto(recepcion.fecha_recepcion)}`,
+      }));
+
+    const entregasAtrasadas = despachos
+      .filter((despacho) => ["preparado", "en_camino"].includes(estadoNormalizado(despacho.estado)))
+      .filter((despacho) => {
+        const dias = diasDesdeHoy(despacho.fecha_programada);
+        return dias != null && dias < 0;
+      })
+      .map((despacho) => ({
+        id: `despacho-${despacho.id}`,
+        titulo: `${despacho.numero_despacho} · ${texto(despacho.paciente_nombre)}`,
+        detalle: texto(despacho.direccion_entrega),
+        meta: `Programada: ${texto(despacho.fecha_programada)} · ${texto(despacho.estado)}`,
+      }));
+
+    return {
+      proximos_vencer: proximosVencer,
+      vencidos,
+      stock_minimo: stockMinimo,
+      reorden,
+      recepciones: recepcionesPendientes,
+      entregas: entregasAtrasadas,
+    };
+  }, [despachos, lotesInventario, recepciones]);
+
+  const configuracionAlertas: Array<{ key: AlertaKey; label: string; ayuda: string; tono: string }> = [
+    { key: "proximos_vencer", label: "Próximos a vencer", ayuda: "En los próximos 90 días", tono: "warning" },
+    { key: "vencidos", label: "Lotes vencidos", ayuda: "Con existencia registrada", tono: "danger" },
+    { key: "stock_minimo", label: "Stock mínimo", ayuda: "Existencia disponible crítica", tono: "danger" },
+    { key: "reorden", label: "Punto de reorden", ayuda: "Requieren iniciar compra", tono: "warning" },
+    { key: "recepciones", label: "Pendientes de inventario", ayuda: "Recepciones aprobadas o parciales", tono: "info" },
+    { key: "entregas", label: "Entregas atrasadas", ayuda: "Preparadas o en camino", tono: "danger" },
+  ];
 
   async function abrirMovimientosLote(lote: InventarioLoteRecurso) {
     setLoteDetalle(lote);
@@ -1198,6 +1306,33 @@ export function RecursosAsistencialesPage() {
         <MiniKpi icon={<AlertTriangle size={18} />} label="LASA" value={kpis.lasa} tone="warning" />
       </div>
 
+      <section className="recursos-alert-panel">
+        <div className="recursos-alert-heading">
+          <div>
+            <span className="eyebrow">Control operativo</span>
+            <h2>Alertas prioritarias</h2>
+          </div>
+          <span>Selecciona una alerta para ver el detalle.</span>
+        </div>
+        <div className="recursos-alert-grid">
+          {configuracionAlertas.map((alerta) => {
+            const total = alertasRecursos[alerta.key].length;
+            return (
+              <button
+                className={`recursos-alert-item ${alerta.tono} ${total ? "has-alerts" : ""}`}
+                type="button"
+                key={alerta.key}
+                onClick={() => setAlertaActiva(alerta.key)}
+              >
+                <AlertTriangle size={18} />
+                <span><strong>{alerta.label}</strong><small>{alerta.ayuda}</small></span>
+                <b>{total}</b>
+              </button>
+            );
+          })}
+        </div>
+      </section>
+
       <div className="tabs recursos-tabs">
         {TABS.map((item) => (
           <button key={item} className={tab === item ? "active" : ""} type="button" onClick={() => setTab(item)}>
@@ -1683,6 +1818,38 @@ export function RecursosAsistencialesPage() {
             </div>
             <div className="modal-actions">
               <button className="secondary-btn" type="button" onClick={() => setLoteDetalle(null)}>Cerrar</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {alertaActiva && (
+        <div className="modal-backdrop" onMouseDown={() => setAlertaActiva(null)}>
+          <div className="modal wide-modal recursos-modal recursos-alert-modal" onMouseDown={(event) => event.stopPropagation()}>
+            <div className="infra-modal-header">
+              <div>
+                <h2>{configuracionAlertas.find((item) => item.key === alertaActiva)?.label}</h2>
+                <p>{configuracionAlertas.find((item) => item.key === alertaActiva)?.ayuda}</p>
+              </div>
+              <button type="button" onClick={() => setAlertaActiva(null)} aria-label="Cerrar"><X size={20} /></button>
+            </div>
+            <div className="recursos-alert-modal-body">
+              {alertasRecursos[alertaActiva].length ? (
+                alertasRecursos[alertaActiva].map((item) => (
+                  <article key={item.id}>
+                    <div>
+                      <strong>{item.titulo}</strong>
+                      <span>{item.detalle}</span>
+                    </div>
+                    {item.meta && <small>{item.meta}</small>}
+                  </article>
+                ))
+              ) : (
+                <div className="empty-state">No hay elementos pendientes para esta alerta.</div>
+              )}
+            </div>
+            <div className="modal-actions">
+              <button className="secondary-btn" type="button" onClick={() => setAlertaActiva(null)}>Cerrar</button>
             </div>
           </div>
         </div>

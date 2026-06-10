@@ -973,6 +973,7 @@ export interface InventarioLoteRecurso {
   tipo_recurso?: string | null;
   stock_minimo?: number | null;
   stock_maximo?: number | null;
+  punto_reorden?: number | null;
   numero_orden?: string | null;
   fecha_recepcion?: string | null;
   created_at?: string | null;
