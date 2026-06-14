@@ -2,7 +2,9 @@ import {
   AlertTriangle,
   Boxes,
   ClipboardList,
+  Eye,
   FlaskConical,
+  History,
   PackagePlus,
   Pencil,
   Plus,
@@ -34,6 +36,7 @@ import {
   eliminarRecursoAsistencial,
   eliminarServicioDeRecurso,
   ingresarRecepcionAInventario,
+  listarAuditoriaRecursos,
   listarInventarioLotes,
   listarMovimientosInventario,
   listarDespachosRecursos,
@@ -56,6 +59,7 @@ import type {
   OrdenCompraRecursoPayload,
   InventarioLoteRecurso,
   MovimientoInventarioRecurso,
+  AuditoriaRecurso,
   DespachoRecurso,
   DespachoRecursoDetalle,
   DespachoRecursoPayload,
@@ -230,6 +234,29 @@ function labelTipo(tipo?: string | null) {
 
 function estadoNormalizado(valor?: string | null) {
   return String(valor || "").trim().toLowerCase();
+}
+
+function fechaHora(valor?: string | null) {
+  if (!valor) return "-";
+  const fecha = new Date(valor);
+  if (Number.isNaN(fecha.getTime())) return texto(valor);
+  return fecha.toLocaleString("es-CO", { dateStyle: "medium", timeStyle: "short" });
+}
+
+function labelAuditoria(valor?: string | null) {
+  return String(valor || "-").replaceAll("_", " ");
+}
+
+function datosAuditoria(valor: unknown) {
+  if (!valor) return null;
+  if (typeof valor === "string") {
+    try {
+      return JSON.parse(valor);
+    } catch {
+      return valor;
+    }
+  }
+  return valor;
 }
 
 function fechaLocal(valor?: string | null) {
@@ -528,6 +555,7 @@ export function RecursosAsistencialesPage() {
   const [recepciones, setRecepciones] = useState<RecepcionRecurso[]>([]);
   const [lotesInventario, setLotesInventario] = useState<InventarioLoteRecurso[]>([]);
   const [movimientosInventario, setMovimientosInventario] = useState<MovimientoInventarioRecurso[]>([]);
+  const [auditoria, setAuditoria] = useState<AuditoriaRecurso[]>([]);
   const [despachos, setDespachos] = useState<DespachoRecurso[]>([]);
   const [profesionales, setProfesionales] = useState<ProfesionalAdmin[]>([]);
   const [servicios, setServicios] = useState<ServicioIps[]>([]);
@@ -547,6 +575,11 @@ export function RecursosAsistencialesPage() {
   const [inventarioEstado, setInventarioEstado] = useState("");
   const [despachoQuery, setDespachoQuery] = useState("");
   const [despachoEstado, setDespachoEstado] = useState("");
+  const [auditoriaQuery, setAuditoriaQuery] = useState("");
+  const [auditoriaModulo, setAuditoriaModulo] = useState("");
+  const [auditoriaAccion, setAuditoriaAccion] = useState("");
+  const [auditoriaDesde, setAuditoriaDesde] = useState("");
+  const [auditoriaHasta, setAuditoriaHasta] = useState("");
   const [recursoForm, setRecursoForm] = useState<RecursoForm | null>(null);
   const [proveedorForm, setProveedorForm] = useState<ProveedorForm | null>(null);
   const [ordenForm, setOrdenForm] = useState<OrdenCompraForm | null>(null);
@@ -556,12 +589,13 @@ export function RecursosAsistencialesPage() {
   const [movimientosDetalle, setMovimientosDetalle] = useState<MovimientoInventarioRecurso[]>([]);
   const [cargandoMovimientos, setCargandoMovimientos] = useState(false);
   const [alertaActiva, setAlertaActiva] = useState<AlertaKey | null>(null);
+  const [auditoriaDetalle, setAuditoriaDetalle] = useState<AuditoriaRecurso | null>(null);
 
   async function cargar() {
     setLoading(true);
     setError("");
     try {
-      const [recursosData, proveedoresData, serviciosData, ordenesData, recepcionesData, lotesData, movimientosData, despachosData, profesionalesData] = await Promise.all([
+      const [recursosData, proveedoresData, serviciosData, ordenesData, recepcionesData, lotesData, movimientosData, despachosData, profesionalesData, auditoriaData] = await Promise.all([
         listarRecursosAsistenciales(),
         listarProveedoresRecursos(),
         listarServiciosIps(),
@@ -571,6 +605,7 @@ export function RecursosAsistencialesPage() {
         listarMovimientosInventario(),
         listarDespachosRecursos(),
         listarProfesionales(),
+        listarAuditoriaRecursos({ limite: 500 }),
       ]);
       setRecursos(recursosData.recursos || []);
       setProveedores(proveedoresData.proveedores || []);
@@ -580,6 +615,7 @@ export function RecursosAsistencialesPage() {
       setMovimientosInventario(movimientosData.movimientos || []);
       setDespachos(despachosData.despachos || []);
       setProfesionales((profesionalesData.profesionales || []).filter((profesional) => Number(profesional.activo) === 1));
+      setAuditoria(auditoriaData.eventos || []);
       setServicios(
         (serviciosData.servicios || [])
           .filter((servicio) => servicio.estado === "habilitado" || servicio.estado === "proximo")
@@ -662,6 +698,32 @@ export function RecursosAsistencialesPage() {
       );
     });
   }, [despachoEstado, despachoQuery, despachos]);
+
+  const auditoriaFiltrada = useMemo(() => {
+    const q = auditoriaQuery.trim().toLowerCase();
+    return auditoria.filter((evento) => {
+      if (auditoriaModulo && evento.modulo !== auditoriaModulo) return false;
+      if (auditoriaAccion && evento.accion !== auditoriaAccion) return false;
+      const fecha = String(evento.created_at || "").slice(0, 10);
+      if (auditoriaDesde && fecha < auditoriaDesde) return false;
+      if (auditoriaHasta && fecha > auditoriaHasta) return false;
+      if (!q) return true;
+      return [
+        evento.referencia, evento.recurso_codigo, evento.recurso_nombre, evento.lote,
+        evento.usuario_nombre, evento.accion, evento.entidad, evento.observaciones,
+      ].some((valor) => String(valor || "").toLowerCase().includes(q));
+    });
+  }, [auditoria, auditoriaAccion, auditoriaDesde, auditoriaHasta, auditoriaModulo, auditoriaQuery]);
+
+  const modulosAuditoria = useMemo(
+    () => [...new Set(auditoria.map((evento) => evento.modulo).filter(Boolean))].sort(),
+    [auditoria],
+  );
+
+  const accionesAuditoria = useMemo(
+    () => [...new Set(auditoria.map((evento) => evento.accion).filter(Boolean))].sort(),
+    [auditoria],
+  );
 
   const totalOrdenForm = useMemo(() => {
     if (!ordenForm) return 0;
@@ -1754,12 +1816,153 @@ export function RecursosAsistencialesPage() {
         </section>
       )}
 
-      {!loading && !["catalogo", "proveedores", "compras", "recepcion", "inventario", "distribucion"].includes(tab) && (
+      {!loading && tab === "auditoria" && (
+        <section className="table-card compras-card auditoria-card">
+          <div className="section-heading inline-heading">
+            <div>
+              <h2>Auditoría de recursos</h2>
+              <p>Historial consolidado de cambios administrativos, entradas, salidas y entregas.</p>
+            </div>
+            <button className="secondary-btn" type="button" onClick={cargar} disabled={loading}>
+              Actualizar
+            </button>
+          </div>
+
+          <div className="auditoria-summary">
+            <div><span>Eventos visibles</span><strong>{auditoriaFiltrada.length}</strong></div>
+            <div><span>Operaciones registradas</span><strong>{auditoria.filter((evento) => evento.fuente === "auditoria").length}</strong></div>
+            <div><span>Movimientos históricos</span><strong>{auditoria.filter((evento) => evento.fuente === "movimiento_inventario").length}</strong></div>
+          </div>
+
+          <div className="toolbar auditoria-toolbar">
+            <label className="search-field">
+              <Search size={18} />
+              <input
+                value={auditoriaQuery}
+                onChange={(event) => setAuditoriaQuery(event.target.value)}
+                placeholder="Buscar referencia, recurso, lote o usuario"
+              />
+            </label>
+            <select value={auditoriaModulo} onChange={(event) => setAuditoriaModulo(event.target.value)}>
+              <option value="">Todos los módulos</option>
+              {modulosAuditoria.map((item) => <option key={item} value={item}>{labelAuditoria(item)}</option>)}
+            </select>
+            <select value={auditoriaAccion} onChange={(event) => setAuditoriaAccion(event.target.value)}>
+              <option value="">Todas las acciones</option>
+              {accionesAuditoria.map((item) => <option key={item} value={item}>{labelAuditoria(item)}</option>)}
+            </select>
+            <label className="auditoria-date-field">
+              <span>Desde</span>
+              <input type="date" value={auditoriaDesde} onChange={(event) => setAuditoriaDesde(event.target.value)} />
+            </label>
+            <label className="auditoria-date-field">
+              <span>Hasta</span>
+              <input type="date" value={auditoriaHasta} onChange={(event) => setAuditoriaHasta(event.target.value)} />
+            </label>
+          </div>
+
+          <div className="recursos-list-head auditoria-list-head" aria-hidden="true">
+            <span>Fecha y usuario</span>
+            <span>Operación</span>
+            <span>Referencia</span>
+            <span>Cambio</span>
+            <span>Detalle</span>
+          </div>
+          <div className="auditoria-list">
+            {auditoriaFiltrada.map((evento) => (
+              <article className="auditoria-item" key={evento.id}>
+                <div className="auditoria-actor">
+                  <span className="auditoria-icon"><History size={18} /></span>
+                  <div>
+                    <strong>{fechaHora(evento.created_at)}</strong>
+                    <span>{texto(evento.usuario_nombre)}</span>
+                  </div>
+                </div>
+                <div className="auditoria-operation">
+                  <span className={`audit-action ${evento.accion}`}>{labelAuditoria(evento.accion)}</span>
+                  <small>{labelAuditoria(evento.modulo)} · {labelAuditoria(evento.entidad)}</small>
+                </div>
+                <div className="auditoria-reference">
+                  <strong>{texto(evento.referencia)}</strong>
+                  <span>
+                    {evento.recurso_nombre
+                      ? `${texto(evento.recurso_codigo)} · ${texto(evento.recurso_nombre)}`
+                      : evento.lote
+                        ? `Lote ${evento.lote}`
+                        : "Sin recurso asociado"}
+                  </span>
+                </div>
+                <div className="auditoria-change">
+                  {evento.estado_anterior || evento.estado_nuevo ? (
+                    <span>{texto(evento.estado_anterior)} → <strong>{texto(evento.estado_nuevo)}</strong></span>
+                  ) : (
+                    <span>{texto(evento.observaciones) !== "-" ? texto(evento.observaciones) : "Datos operativos registrados"}</span>
+                  )}
+                  {evento.lote && <small>Lote {evento.lote}</small>}
+                </div>
+                <button className="audit-detail-btn" type="button" onClick={() => setAuditoriaDetalle(evento)}>
+                  <Eye size={15} /> Ver detalle
+                </button>
+              </article>
+            ))}
+          </div>
+          {!auditoriaFiltrada.length && <div className="empty-state">No hay eventos para los filtros seleccionados.</div>}
+        </section>
+      )}
+
+      {!loading && !["catalogo", "proveedores", "compras", "recepcion", "inventario", "distribucion", "auditoria"].includes(tab) && (
         <div className="standard-card recursos-placeholder">
           <ClipboardList size={22} />
           <div>
             <h2>{tab === "recepcion" ? "Recepción" : tab[0].toUpperCase() + tab.slice(1)}</h2>
             <p>Esta pestaña queda preparada para fases posteriores del plan. La Fase 1 se concentra en catálogo, proveedores y relaciones.</p>
+          </div>
+        </div>
+      )}
+
+      {auditoriaDetalle && (
+        <div className="modal-backdrop" onMouseDown={() => setAuditoriaDetalle(null)}>
+          <div className="modal wide-modal recursos-modal auditoria-modal" onMouseDown={(event) => event.stopPropagation()}>
+            <div className="infra-modal-header">
+              <div>
+                <h2>Detalle de auditoría</h2>
+                <p>{fechaHora(auditoriaDetalle.created_at)} · {labelAuditoria(auditoriaDetalle.accion)}</p>
+              </div>
+              <button type="button" onClick={() => setAuditoriaDetalle(null)} aria-label="Cerrar"><X size={20} /></button>
+            </div>
+            <div className="auditoria-modal-body">
+              <dl className="auditoria-detail-grid">
+                <div><dt>Módulo</dt><dd>{labelAuditoria(auditoriaDetalle.modulo)}</dd></div>
+                <div><dt>Entidad</dt><dd>{labelAuditoria(auditoriaDetalle.entidad)}</dd></div>
+                <div><dt>Referencia</dt><dd>{texto(auditoriaDetalle.referencia)}</dd></div>
+                <div><dt>Usuario</dt><dd>{texto(auditoriaDetalle.usuario_nombre)}</dd></div>
+                <div><dt>Recurso</dt><dd>{auditoriaDetalle.recurso_nombre ? `${texto(auditoriaDetalle.recurso_codigo)} · ${auditoriaDetalle.recurso_nombre}` : "-"}</dd></div>
+                <div><dt>Lote</dt><dd>{texto(auditoriaDetalle.lote)}</dd></div>
+                <div><dt>Estado anterior</dt><dd>{texto(auditoriaDetalle.estado_anterior)}</dd></div>
+                <div><dt>Estado nuevo</dt><dd>{texto(auditoriaDetalle.estado_nuevo)}</dd></div>
+                <div><dt>Dirección IP</dt><dd>{texto(auditoriaDetalle.ip)}</dd></div>
+                <div><dt>Origen</dt><dd>{labelAuditoria(auditoriaDetalle.fuente)}</dd></div>
+              </dl>
+              {auditoriaDetalle.observaciones && (
+                <div className="auditoria-note">
+                  <strong>Observaciones</strong>
+                  <p>{auditoriaDetalle.observaciones}</p>
+                </div>
+              )}
+              <div className="auditoria-json-grid">
+                <section>
+                  <h3>Información anterior</h3>
+                  <pre>{datosAuditoria(auditoriaDetalle.datos_anteriores) ? JSON.stringify(datosAuditoria(auditoriaDetalle.datos_anteriores), null, 2) : "Sin información anterior"}</pre>
+                </section>
+                <section>
+                  <h3>Información nueva</h3>
+                  <pre>{datosAuditoria(auditoriaDetalle.datos_nuevos) ? JSON.stringify(datosAuditoria(auditoriaDetalle.datos_nuevos), null, 2) : "Sin información nueva"}</pre>
+                </section>
+              </div>
+            </div>
+            <div className="modal-actions">
+              <button className="secondary-btn" type="button" onClick={() => setAuditoriaDetalle(null)}>Cerrar</button>
+            </div>
           </div>
         </div>
       )}

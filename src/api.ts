@@ -27,6 +27,7 @@ import type {
   FormacionPortal,
   InventarioLoteRecurso,
   MovimientoInventarioRecurso,
+  AuditoriaRecurso,
   ProfesionalPerfil,
   ProfesionalPerfilPayload,
   ReferenciaPersonal,
@@ -694,6 +695,24 @@ export async function listarMovimientosInventario(params: { recurso_id?: number 
   });
   const suffix = query.toString() ? `?${query.toString()}` : "";
   return apiCall<{ success: boolean; movimientos: MovimientoInventarioRecurso[]; total: number }>("GET", `/inventario-recursos/movimientos${suffix}`);
+}
+
+export async function listarAuditoriaRecursos(params: {
+  modulo?: string;
+  accion?: string;
+  recurso_id?: number | string;
+  usuario_id?: number | string;
+  fecha_desde?: string;
+  fecha_hasta?: string;
+  busqueda?: string;
+  limite?: number;
+} = {}) {
+  const query = new URLSearchParams();
+  Object.entries(params).forEach(([key, value]) => {
+    if (value !== undefined && value !== null && String(value).trim()) query.set(key, String(value));
+  });
+  const suffix = query.toString() ? `?${query.toString()}` : "";
+  return apiCall<{ success: boolean; eventos: AuditoriaRecurso[]; total: number }>("GET", `/auditoria-recursos${suffix}`);
 }
 
 export async function listarDespachosRecursos(params: { estado?: string; responsable_entrega_id?: number | string; busqueda?: string } = {}) {

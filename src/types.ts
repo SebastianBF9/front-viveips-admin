@@ -998,6 +998,30 @@ export interface MovimientoInventarioRecurso {
   created_at?: string | null;
 }
 
+export interface AuditoriaRecurso {
+  id: string | number;
+  fuente: "auditoria" | "movimiento_inventario" | string;
+  modulo: string;
+  accion: string;
+  entidad: string;
+  entidad_id?: number | null;
+  referencia?: string | null;
+  recurso_id?: number | null;
+  recurso_codigo?: string | null;
+  recurso_nombre?: string | null;
+  inventario_lote_id?: number | null;
+  lote?: string | null;
+  usuario_id?: number | null;
+  usuario_nombre?: string | null;
+  estado_anterior?: string | null;
+  estado_nuevo?: string | null;
+  datos_anteriores?: unknown;
+  datos_nuevos?: unknown;
+  observaciones?: string | null;
+  ip?: string | null;
+  created_at?: string | null;
+}
+
 export interface DespachoRecursoDetalle {
   id?: number;
   despacho_id?: number;
