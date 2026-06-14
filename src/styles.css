@@ -3743,6 +3743,84 @@ td small { display: block; color: var(--muted); margin-top: 4px; }
   border-color: #fecaca;
 }
 
+.lote-options {
+  position: relative;
+}
+
+.lote-options summary {
+  min-height: 34px;
+  list-style: none;
+  border: 1px solid #dbe6f0;
+  border-radius: 8px;
+  background: #fff;
+  color: var(--navy);
+  padding: 7px 11px;
+  font-weight: 900;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  cursor: pointer;
+}
+
+.lote-options summary::-webkit-details-marker {
+  display: none;
+}
+
+.lote-options-menu {
+  position: absolute;
+  right: 0;
+  top: calc(100% + 7px);
+  z-index: 40;
+  width: 240px;
+  display: grid;
+  gap: 4px;
+  padding: 8px;
+  border: 1px solid #dbe6f0;
+  border-radius: 10px;
+  background: #fff;
+  box-shadow: 0 18px 36px rgba(15, 23, 42, .17);
+}
+
+.lote-options-menu button {
+  width: 100%;
+  justify-content: flex-start;
+  border: 0;
+}
+
+.lote-options-menu button:hover {
+  background: #f1f5f9;
+}
+
+.operacion-lote-modal {
+  width: min(640px, 100%);
+}
+
+.operacion-lote-summary {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 16px;
+  margin: 18px 22px 0;
+  border: 1px solid #dbe6f0;
+  border-radius: 8px;
+  background: #f8fbfe;
+  padding: 12px 14px;
+  color: #52677d;
+  font-size: 13px;
+}
+
+.operacion-lote-summary strong {
+  color: #08243a;
+}
+
+.operacion-lote-fields {
+  margin: 18px 22px 0;
+}
+
+.operacion-lote-note {
+  margin: 16px 22px 0;
+}
+
 .recursos-placeholder {
   display: flex;
   align-items: center;

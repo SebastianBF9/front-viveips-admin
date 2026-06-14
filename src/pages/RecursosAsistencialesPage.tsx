@@ -5,6 +5,7 @@ import {
   Eye,
   FlaskConical,
   History,
+  MoreVertical,
   PackagePlus,
   Pencil,
   Plus,
@@ -22,13 +23,17 @@ import {
   actualizarDespachoRecurso,
   actualizarProveedorRecurso,
   actualizarRecursoAsistencial,
+  ajustarInventarioLote,
   asociarProveedorRecurso,
   asociarServicioRecurso,
+  cambiarEstadoInventarioLote,
   crearOrdenCompraRecurso,
   crearDespachoRecurso,
   crearRecepcionRecurso,
   crearProveedorRecurso,
   crearRecursoAsistencial,
+  darBajaInventarioLote,
+  devolverInventarioLote,
   eliminarOrdenCompraRecurso,
   cancelarDespachoRecurso,
   eliminarProveedorDeRecurso,
@@ -52,6 +57,7 @@ import {
   marcarSalidaDespachoRecurso,
   obtenerRecursoAsistencial,
   subirFichaTecnicaRecurso,
+  trasladarInventarioLote,
 } from "../api";
 import type {
   OrdenCompraRecurso,
@@ -206,6 +212,21 @@ type DespachoForm = {
   estado: string;
   observaciones: string;
   detalles: DespachoDetalleForm[];
+};
+
+type OperacionLote = "ajuste" | "baja" | "estado" | "traslado" | "devolucion";
+
+type OperacionLoteForm = {
+  lote: InventarioLoteRecurso;
+  operacion: OperacionLote;
+  tipoAjuste: "positivo" | "negativo";
+  cantidad: string;
+  causaBaja: "vencimiento" | "deterioro" | "perdida" | "dano";
+  estadoDestino: "disponible" | "bloqueado" | "cuarentena";
+  ubicacionDestino: string;
+  origenDevolucion: "profesional" | "paciente";
+  aptoReintegro: boolean;
+  motivo: string;
 };
 
 function bool(valor: unknown) {
@@ -590,6 +611,7 @@ export function RecursosAsistencialesPage() {
   const [cargandoMovimientos, setCargandoMovimientos] = useState(false);
   const [alertaActiva, setAlertaActiva] = useState<AlertaKey | null>(null);
   const [auditoriaDetalle, setAuditoriaDetalle] = useState<AuditoriaRecurso | null>(null);
+  const [operacionLoteForm, setOperacionLoteForm] = useState<OperacionLoteForm | null>(null);
 
   async function cargar() {
     setLoading(true);
@@ -830,6 +852,83 @@ export function RecursosAsistencialesPage() {
       setLoteDetalle(null);
     } finally {
       setCargandoMovimientos(false);
+    }
+  }
+
+  function abrirOperacionLote(lote: InventarioLoteRecurso, operacion: OperacionLote) {
+    const estadoDestino = lote.estado === "bloqueado" || lote.estado === "cuarentena" ? "disponible" : "bloqueado";
+    setOperacionLoteForm({
+      lote,
+      operacion,
+      tipoAjuste: "positivo",
+      cantidad: "",
+      causaBaja: "vencimiento",
+      estadoDestino,
+      ubicacionDestino: "",
+      origenDevolucion: "profesional",
+      aptoReintegro: false,
+      motivo: "",
+    });
+  }
+
+  async function guardarOperacionLote() {
+    if (!operacionLoteForm) return;
+    const { lote, operacion, motivo } = operacionLoteForm;
+    const cantidad = numero(operacionLoteForm.cantidad);
+    if (!motivo.trim()) {
+      setError("El motivo de la operación es obligatorio.");
+      return;
+    }
+    if (["ajuste", "baja", "devolucion"].includes(operacion) && (!cantidad || cantidad <= 0)) {
+      setError("La cantidad debe ser mayor a cero.");
+      return;
+    }
+    if (operacion === "traslado" && !operacionLoteForm.ubicacionDestino.trim()) {
+      setError("La ubicación destino es obligatoria.");
+      return;
+    }
+
+    setAccion("guardar-operacion-lote");
+    setError("");
+    setSuccess("");
+    try {
+      if (operacion === "ajuste") {
+        await ajustarInventarioLote(lote.id, {
+          tipo: operacionLoteForm.tipoAjuste,
+          cantidad: cantidad || 0,
+          motivo: motivo.trim(),
+        });
+      } else if (operacion === "baja") {
+        await darBajaInventarioLote(lote.id, {
+          cantidad: cantidad || 0,
+          causa: operacionLoteForm.causaBaja,
+          motivo: motivo.trim(),
+        });
+      } else if (operacion === "estado") {
+        await cambiarEstadoInventarioLote(lote.id, {
+          estado: operacionLoteForm.estadoDestino,
+          motivo: motivo.trim(),
+        });
+      } else if (operacion === "traslado") {
+        await trasladarInventarioLote(lote.id, {
+          ubicacion_destino: operacionLoteForm.ubicacionDestino.trim(),
+          motivo: motivo.trim(),
+        });
+      } else {
+        await devolverInventarioLote(lote.id, {
+          cantidad: cantidad || 0,
+          origen: operacionLoteForm.origenDevolucion,
+          apto_reintegro: operacionLoteForm.aptoReintegro,
+          motivo: motivo.trim(),
+        });
+      }
+      setOperacionLoteForm(null);
+      setSuccess("Operación de inventario registrada correctamente.");
+      await cargar();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "No fue posible registrar la operación de inventario");
+    } finally {
+      setAccion("");
     }
   }
 
@@ -1714,6 +1813,21 @@ export function RecursosAsistencialesPage() {
                   <button type="button" onClick={() => abrirMovimientosLote(lote)}>
                     <ClipboardList size={15} /> Ver movimientos
                   </button>
+                  <details className="lote-options">
+                    <summary><MoreVertical size={15} /> Opciones</summary>
+                    <div className="lote-options-menu">
+                      <button type="button" onClick={() => abrirOperacionLote(lote, "ajuste")}>Ajustar existencias</button>
+                      {lote.estado !== "bloqueado" && (
+                        <button type="button" onClick={() => abrirOperacionLote(lote, "estado")}>Bloquear o poner en cuarentena</button>
+                      )}
+                      {(lote.estado === "bloqueado" || lote.estado === "cuarentena") && (
+                        <button type="button" onClick={() => abrirOperacionLote(lote, "estado")}>Desbloquear lote</button>
+                      )}
+                      <button type="button" onClick={() => abrirOperacionLote(lote, "traslado")}>Trasladar</button>
+                      <button type="button" onClick={() => abrirOperacionLote(lote, "devolucion")}>Registrar devolución</button>
+                      <button className="danger" type="button" onClick={() => abrirOperacionLote(lote, "baja")}>Dar de baja</button>
+                    </div>
+                  </details>
                 </div>
               </article>
             ))}
@@ -1723,7 +1837,7 @@ export function RecursosAsistencialesPage() {
           <div className="section-heading inventory-subheading">
             <div>
               <h2>Movimientos recientes</h2>
-              <p>Entradas creadas desde recepción. Salidas, ajustes y bajas quedan para las fases siguientes.</p>
+              <p>Entradas, salidas, ajustes, bajas, devoluciones, bloqueos y traslados con trazabilidad por lote.</p>
             </div>
           </div>
           <div className="recursos-list-head recursos-list-head-movement" aria-hidden="true">
@@ -1962,6 +2076,140 @@ export function RecursosAsistencialesPage() {
             </div>
             <div className="modal-actions">
               <button className="secondary-btn" type="button" onClick={() => setAuditoriaDetalle(null)}>Cerrar</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {operacionLoteForm && (
+        <div className="modal-backdrop" onMouseDown={() => setOperacionLoteForm(null)}>
+          <div className="modal infra-small-modal operacion-lote-modal" onMouseDown={(event) => event.stopPropagation()}>
+            <div className="infra-modal-header">
+              <div>
+                <h2>Operación de inventario</h2>
+                <p>{texto(operacionLoteForm.lote.recurso_nombre)} · Lote {texto(operacionLoteForm.lote.lote)}</p>
+              </div>
+              <button type="button" onClick={() => setOperacionLoteForm(null)} aria-label="Cerrar"><X size={20} /></button>
+            </div>
+            <div className="operacion-lote-summary">
+              <span>Existencia actual: <strong>{texto(operacionLoteForm.lote.cantidad_actual)}</strong></span>
+              <span>Estado: <strong>{texto(operacionLoteForm.lote.estado)}</strong></span>
+              <span>Ubicación: <strong>{texto(operacionLoteForm.lote.ubicacion)}</strong></span>
+            </div>
+            <div className="infra-form-grid operacion-lote-fields">
+              <label>Operación
+                <select
+                  value={operacionLoteForm.operacion}
+                  onChange={(event) => setOperacionLoteForm((actual) => actual ? { ...actual, operacion: event.target.value as OperacionLote } : actual)}
+                >
+                  <option value="ajuste">Ajuste de existencias</option>
+                  <option value="baja">Baja de inventario</option>
+                  <option value="estado">Bloqueo, cuarentena o desbloqueo</option>
+                  <option value="traslado">Traslado de ubicación</option>
+                  <option value="devolucion">Devolución</option>
+                </select>
+              </label>
+
+              {operacionLoteForm.operacion === "ajuste" && (
+                <label>Tipo de ajuste
+                  <select
+                    value={operacionLoteForm.tipoAjuste}
+                    onChange={(event) => setOperacionLoteForm((actual) => actual ? { ...actual, tipoAjuste: event.target.value as "positivo" | "negativo" } : actual)}
+                  >
+                    <option value="positivo">Positivo</option>
+                    <option value="negativo">Negativo</option>
+                  </select>
+                </label>
+              )}
+
+              {operacionLoteForm.operacion === "baja" && (
+                <label>Causa
+                  <select
+                    value={operacionLoteForm.causaBaja}
+                    onChange={(event) => setOperacionLoteForm((actual) => actual ? { ...actual, causaBaja: event.target.value as OperacionLoteForm["causaBaja"] } : actual)}
+                  >
+                    <option value="vencimiento">Vencimiento</option>
+                    <option value="deterioro">Deterioro</option>
+                    <option value="perdida">Pérdida</option>
+                    <option value="dano">Daño</option>
+                  </select>
+                </label>
+              )}
+
+              {operacionLoteForm.operacion === "estado" && (
+                <label>Nuevo estado
+                  <select
+                    value={operacionLoteForm.estadoDestino}
+                    onChange={(event) => setOperacionLoteForm((actual) => actual ? { ...actual, estadoDestino: event.target.value as OperacionLoteForm["estadoDestino"] } : actual)}
+                  >
+                    <option value="disponible">Disponible / desbloqueado</option>
+                    <option value="bloqueado">Bloqueado</option>
+                    <option value="cuarentena">Cuarentena</option>
+                  </select>
+                </label>
+              )}
+
+              {operacionLoteForm.operacion === "traslado" && (
+                <label>Ubicación destino
+                  <input
+                    value={operacionLoteForm.ubicacionDestino}
+                    onChange={(event) => setOperacionLoteForm((actual) => actual ? { ...actual, ubicacionDestino: event.target.value } : actual)}
+                    maxLength={160}
+                  />
+                </label>
+              )}
+
+              {operacionLoteForm.operacion === "devolucion" && (
+                <>
+                  <label>Devuelto por
+                    <select
+                      value={operacionLoteForm.origenDevolucion}
+                      onChange={(event) => setOperacionLoteForm((actual) => actual ? { ...actual, origenDevolucion: event.target.value as "profesional" | "paciente" } : actual)}
+                    >
+                      <option value="profesional">Profesional</option>
+                      <option value="paciente">Paciente</option>
+                    </select>
+                  </label>
+                  <label className="infra-check-field">
+                    <input
+                      type="checkbox"
+                      checked={operacionLoteForm.aptoReintegro}
+                      onChange={(event) => setOperacionLoteForm((actual) => actual ? { ...actual, aptoReintegro: event.target.checked } : actual)}
+                    />
+                    Apto para reintegrar existencias
+                  </label>
+                </>
+              )}
+
+              {["ajuste", "baja", "devolucion"].includes(operacionLoteForm.operacion) && (
+                <label>Cantidad
+                  <input
+                    value={operacionLoteForm.cantidad}
+                    onChange={(event) => setOperacionLoteForm((actual) => actual ? { ...actual, cantidad: event.target.value } : actual)}
+                    inputMode="decimal"
+                  />
+                </label>
+              )}
+
+              <label className="wide-field">Motivo obligatorio
+                <textarea
+                  rows={3}
+                  value={operacionLoteForm.motivo}
+                  onChange={(event) => setOperacionLoteForm((actual) => actual ? { ...actual, motivo: event.target.value } : actual)}
+                  maxLength={500}
+                />
+              </label>
+            </div>
+            {operacionLoteForm.operacion === "devolucion" && !operacionLoteForm.aptoReintegro && (
+              <div className="infra-danger-note operacion-lote-note">
+                La devolución quedará registrada, pero no aumentará la existencia del lote.
+              </div>
+            )}
+            <div className="modal-actions">
+              <button className="secondary-btn" type="button" onClick={() => setOperacionLoteForm(null)}>Cancelar</button>
+              <button className="primary-btn infra-save-btn" type="button" onClick={guardarOperacionLote} disabled={accion === "guardar-operacion-lote"}>
+                <Save size={16} /> Registrar operación
+              </button>
             </div>
           </div>
         </div>
@@ -2454,7 +2702,12 @@ export function RecursosAsistencialesPage() {
                         <label>Lote disponible *
                           <select value={detalle.inventario_lote_id} onChange={(event) => actualizarDetalleDespacho(index, "inventario_lote_id", event.target.value)}>
                             <option value="">Seleccionar lote</option>
-                            {lotesInventario.filter((lote) => lote.estado === "disponible" && Number(lote.cantidad_actual || 0) > 0).map((lote) => (
+                            {lotesInventario.filter((lote) => {
+                              const diasVencimiento = diasDesdeHoy(lote.fecha_vencimiento);
+                              return lote.estado === "disponible"
+                                && Number(lote.cantidad_actual || 0) > 0
+                                && (diasVencimiento == null || diasVencimiento >= 0);
+                            }).map((lote) => (
                               <option key={lote.id} value={lote.id}>
                                 {texto(lote.recurso_codigo)} · {lote.recurso_nombre} · Lote {lote.lote} · Disp. {lote.cantidad_actual}
                               </option>

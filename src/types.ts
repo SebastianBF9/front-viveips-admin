@@ -998,6 +998,35 @@ export interface MovimientoInventarioRecurso {
   created_at?: string | null;
 }
 
+export interface AjusteInventarioPayload {
+  tipo: "positivo" | "negativo";
+  cantidad: number;
+  motivo: string;
+}
+
+export interface BajaInventarioPayload {
+  cantidad: number;
+  causa: "vencimiento" | "deterioro" | "perdida" | "dano";
+  motivo: string;
+}
+
+export interface EstadoLotePayload {
+  estado: "disponible" | "bloqueado" | "cuarentena";
+  motivo: string;
+}
+
+export interface TrasladoLotePayload {
+  ubicacion_destino: string;
+  motivo: string;
+}
+
+export interface DevolucionInventarioPayload {
+  cantidad: number;
+  origen: "profesional" | "paciente";
+  apto_reintegro: boolean;
+  motivo: string;
+}
+
 export interface AuditoriaRecurso {
   id: string | number;
   fuente: "auditoria" | "movimiento_inventario" | string;

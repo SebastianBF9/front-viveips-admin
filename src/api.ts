@@ -28,6 +28,11 @@ import type {
   InventarioLoteRecurso,
   MovimientoInventarioRecurso,
   AuditoriaRecurso,
+  AjusteInventarioPayload,
+  BajaInventarioPayload,
+  EstadoLotePayload,
+  TrasladoLotePayload,
+  DevolucionInventarioPayload,
   ProfesionalPerfil,
   ProfesionalPerfilPayload,
   ReferenciaPersonal,
@@ -695,6 +700,26 @@ export async function listarMovimientosInventario(params: { recurso_id?: number 
   });
   const suffix = query.toString() ? `?${query.toString()}` : "";
   return apiCall<{ success: boolean; movimientos: MovimientoInventarioRecurso[]; total: number }>("GET", `/inventario-recursos/movimientos${suffix}`);
+}
+
+export async function ajustarInventarioLote(id: number, payload: AjusteInventarioPayload) {
+  return apiCall<{ success: boolean; mensaje: string }>("POST", `/inventario-recursos/lotes/${id}/ajustar`, payload);
+}
+
+export async function darBajaInventarioLote(id: number, payload: BajaInventarioPayload) {
+  return apiCall<{ success: boolean; mensaje: string }>("POST", `/inventario-recursos/lotes/${id}/dar-baja`, payload);
+}
+
+export async function cambiarEstadoInventarioLote(id: number, payload: EstadoLotePayload) {
+  return apiCall<{ success: boolean; mensaje: string }>("POST", `/inventario-recursos/lotes/${id}/cambiar-estado`, payload);
+}
+
+export async function trasladarInventarioLote(id: number, payload: TrasladoLotePayload) {
+  return apiCall<{ success: boolean; mensaje: string }>("POST", `/inventario-recursos/lotes/${id}/trasladar`, payload);
+}
+
+export async function devolverInventarioLote(id: number, payload: DevolucionInventarioPayload) {
+  return apiCall<{ success: boolean; mensaje: string }>("POST", `/inventario-recursos/lotes/${id}/devolver`, payload);
 }
 
 export async function listarAuditoriaRecursos(params: {
