@@ -855,7 +855,8 @@ export function RecursosAsistencialesPage() {
     }
   }
 
-  function abrirOperacionLote(lote: InventarioLoteRecurso, operacion: OperacionLote) {
+  function abrirOperacionLote(lote: InventarioLoteRecurso, operacion: OperacionLote, elemento?: HTMLElement) {
+    elemento?.closest("details")?.removeAttribute("open");
     const estadoDestino = lote.estado === "bloqueado" || lote.estado === "cuarentena" ? "disponible" : "bloqueado";
     setOperacionLoteForm({
       lote,
@@ -1816,16 +1817,16 @@ export function RecursosAsistencialesPage() {
                   <details className="lote-options">
                     <summary><MoreVertical size={15} /> Opciones</summary>
                     <div className="lote-options-menu">
-                      <button type="button" onClick={() => abrirOperacionLote(lote, "ajuste")}>Ajustar existencias</button>
+                      <button type="button" onClick={(event) => abrirOperacionLote(lote, "ajuste", event.currentTarget)}>Ajustar existencias</button>
                       {lote.estado !== "bloqueado" && (
-                        <button type="button" onClick={() => abrirOperacionLote(lote, "estado")}>Bloquear o poner en cuarentena</button>
+                        <button type="button" onClick={(event) => abrirOperacionLote(lote, "estado", event.currentTarget)}>Bloquear o poner en cuarentena</button>
                       )}
                       {(lote.estado === "bloqueado" || lote.estado === "cuarentena") && (
-                        <button type="button" onClick={() => abrirOperacionLote(lote, "estado")}>Desbloquear lote</button>
+                        <button type="button" onClick={(event) => abrirOperacionLote(lote, "estado", event.currentTarget)}>Desbloquear lote</button>
                       )}
-                      <button type="button" onClick={() => abrirOperacionLote(lote, "traslado")}>Trasladar</button>
-                      <button type="button" onClick={() => abrirOperacionLote(lote, "devolucion")}>Registrar devolución</button>
-                      <button className="danger" type="button" onClick={() => abrirOperacionLote(lote, "baja")}>Dar de baja</button>
+                      <button type="button" onClick={(event) => abrirOperacionLote(lote, "traslado", event.currentTarget)}>Trasladar</button>
+                      <button type="button" onClick={(event) => abrirOperacionLote(lote, "devolucion", event.currentTarget)}>Registrar devolución</button>
+                      <button className="danger" type="button" onClick={(event) => abrirOperacionLote(lote, "baja", event.currentTarget)}>Dar de baja</button>
                     </div>
                   </details>
                 </div>

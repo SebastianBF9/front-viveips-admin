@@ -3773,6 +3773,7 @@ td small { display: block; color: var(--muted); margin-top: 4px; }
   top: calc(100% + 7px);
   z-index: 40;
   width: 240px;
+  max-width: calc(100vw - 36px);
   display: grid;
   gap: 4px;
   padding: 8px;
@@ -3793,7 +3794,19 @@ td small { display: block; color: var(--muted); margin-top: 4px; }
 }
 
 .operacion-lote-modal {
-  width: min(640px, 100%);
+  width: min(680px, calc(100vw - 40px));
+  max-height: calc(100vh - 40px);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  border-radius: 16px;
+  box-shadow: 0 24px 70px rgba(15, 23, 42, .24);
+}
+
+.operacion-lote-modal .infra-modal-header {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  background: #fff;
 }
 
 .operacion-lote-summary {
@@ -3815,10 +3828,68 @@ td small { display: block; color: var(--muted); margin-top: 4px; }
 
 .operacion-lote-fields {
   margin: 18px 22px 0;
+  padding-bottom: 2px;
 }
 
 .operacion-lote-note {
   margin: 16px 22px 0;
+}
+
+.operacion-lote-modal .modal-actions {
+  position: sticky;
+  bottom: 0;
+  z-index: 2;
+  margin: 20px 0 0;
+  padding: 16px 22px 20px;
+  border-top: 1px solid #e5eef6;
+  border-radius: 0 0 16px 16px;
+  background: linear-gradient(180deg, rgba(255, 255, 255, .92), #fff 35%);
+}
+
+@media (max-width: 720px) {
+  .modal-backdrop {
+    padding: 12px;
+  }
+
+  .operacion-lote-modal {
+    width: 100%;
+    max-height: calc(100vh - 24px);
+    border-radius: 14px;
+  }
+
+  .operacion-lote-modal .infra-modal-header {
+    padding: 18px;
+  }
+
+  .operacion-lote-summary,
+  .operacion-lote-fields {
+    margin-left: 16px;
+    margin-right: 16px;
+  }
+
+  .operacion-lote-fields {
+    grid-template-columns: 1fr;
+  }
+
+  .operacion-lote-note {
+    margin-left: 16px;
+    margin-right: 16px;
+  }
+
+  .operacion-lote-modal .modal-actions {
+    display: grid;
+    grid-template-columns: 1fr;
+    padding: 14px 16px 16px;
+  }
+
+  .operacion-lote-modal .modal-actions button {
+    width: 100%;
+  }
+
+  .lote-options-menu {
+    right: 0;
+    width: min(240px, calc(100vw - 32px));
+  }
 }
 
 .recursos-placeholder {
