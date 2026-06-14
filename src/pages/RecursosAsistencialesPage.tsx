@@ -513,12 +513,12 @@ function recepcionAForm(recepcion: RecepcionRecurso): RecepcionForm {
   };
 }
 
-function detalleDespachoInicial(): DespachoDetalleForm {
+function detalleDespachoInicial(seleccionManual = false): DespachoDetalleForm {
   return {
     recurso_id: "",
     inventario_lote_id: "",
     cantidad: "1",
-    seleccion_manual: false,
+    seleccion_manual: seleccionManual,
     justificacion_seleccion_manual: "",
     recomendaciones_almacenamiento: "",
     observaciones: "",
@@ -537,7 +537,7 @@ function inicialDespacho(): DespachoForm {
     fecha_programada: "",
     estado: "preparado",
     observaciones: "",
-    detalles: [detalleDespachoInicial()],
+    detalles: [],
   };
 }
 
@@ -562,7 +562,7 @@ function despachoAForm(despacho: DespachoRecurso): DespachoForm {
       justificacion_seleccion_manual: detalle.justificacion_seleccion_manual || "",
       recomendaciones_almacenamiento: detalle.recomendaciones_almacenamiento || "",
       observaciones: detalle.observaciones || "",
-    })).concat(despacho.detalles && despacho.detalles.length ? [] : [detalleDespachoInicial()]),
+    })),
   };
 }
 
@@ -1054,8 +1054,7 @@ export function RecursosAsistencialesPage() {
         if (campo === "inventario_lote_id" && typeof valor === "string") {
           const lote = lotesInventario.find((item) => item.id === Number(valor));
           siguiente.recurso_id = lote?.recurso_id ? String(lote.recurso_id) : "";
-          const recomendado = lotesDisponiblesFefo.find((item) => item.recurso_id === lote?.recurso_id);
-          siguiente.seleccion_manual = Boolean(lote && recomendado && lote.id !== recomendado.id);
+          siguiente.seleccion_manual = true;
           siguiente.justificacion_seleccion_manual = "";
         }
         return siguiente;
@@ -1100,7 +1099,9 @@ export function RecursosAsistencialesPage() {
         const otros = actual.detalles.filter((detalle) => detalle.inventario_lote_id && Number(detalle.recurso_id) !== recursoId);
         return { ...actual, detalles: [...otros, ...sugeridos] };
       });
-      setSuccess(`FEFO aplicado: ${sugeridos.length} lote${sugeridos.length === 1 ? "" : "s"} asignado${sugeridos.length === 1 ? "" : "s"}.`);
+      setFefoRecursoId("");
+      setFefoCantidad("1");
+      setSuccess(`Recurso agregado con FEFO: ${sugeridos.length} lote${sugeridos.length === 1 ? "" : "s"} asignado${sugeridos.length === 1 ? "" : "s"}.`);
     } catch (err) {
       setError(err instanceof Error ? err.message : "No fue posible calcular la asignación FEFO");
     } finally {
@@ -1109,14 +1110,14 @@ export function RecursosAsistencialesPage() {
   }
 
   function agregarDetalleDespacho() {
-    setDespachoForm((actual) => (actual ? { ...actual, detalles: [...actual.detalles, detalleDespachoInicial()] } : actual));
+    setDespachoForm((actual) => (actual ? { ...actual, detalles: [...actual.detalles, detalleDespachoInicial(true)] } : actual));
   }
 
   function quitarDetalleDespacho(index: number) {
     setDespachoForm((actual) => {
       if (!actual) return actual;
       const detalles = actual.detalles.filter((_, idx) => idx !== index);
-      return { ...actual, detalles: detalles.length ? detalles : [detalleDespachoInicial()] };
+      return { ...actual, detalles };
     });
   }
 
@@ -2800,13 +2801,13 @@ export function RecursosAsistencialesPage() {
                 <div className="orden-section-head">
                   <h3>Lotes a despachar</h3>
                   <button className="secondary-btn" type="button" onClick={agregarDetalleDespacho}>
-                    <Plus size={15} /> Selección manual
+                    <Plus size={15} /> Excepción manual
                   </button>
                 </div>
                 <div className="fefo-assignment-box">
                   <div>
-                    <strong>Asignación automática FEFO</strong>
-                    <span>Distribuye la cantidad usando primero el lote con vencimiento más próximo.</span>
+                    <strong>Agregar recurso</strong>
+                    <span>El sistema asignará obligatoriamente el lote que vence primero y dividirá la cantidad si es necesario.</span>
                   </div>
                   <label>Recurso
                     <select value={fefoRecursoId} onChange={(event) => setFefoRecursoId(event.target.value)}>
@@ -2821,7 +2822,7 @@ export function RecursosAsistencialesPage() {
                     <input value={fefoCantidad} onChange={(event) => setFefoCantidad(event.target.value)} inputMode="decimal" />
                   </label>
                   <button className="primary-btn" type="button" onClick={aplicarFefoDespacho} disabled={accion === "aplicar-fefo"}>
-                    <PackagePlus size={16} /> Aplicar FEFO
+                    <PackagePlus size={16} /> Agregar recurso
                   </button>
                 </div>
                 <div className="orden-detalles">
@@ -2830,21 +2831,34 @@ export function RecursosAsistencialesPage() {
                     const fefo = loteSeleccionado ? prioridadFefo(loteSeleccionado) : null;
                     return (
                       <div className="orden-detalle-row despacho-detalle-row" key={`${index}-${detalle.inventario_lote_id || "lote"}`}>
-                        <label>Lote disponible *
-                          <select value={detalle.inventario_lote_id} onChange={(event) => actualizarDetalleDespacho(index, "inventario_lote_id", event.target.value)}>
-                            <option value="">Seleccionar lote</option>
-                            {lotesDisponiblesFefo.map((lote) => {
-                              const prioridad = prioridadFefo(lote);
-                              return (
-                              <option key={lote.id} value={lote.id}>
-                                FEFO #{prioridad.prioridad} · {texto(lote.recurso_codigo)} · {lote.recurso_nombre} · Lote {lote.lote} · Vence {texto(lote.fecha_vencimiento)} · Disp. {texto(cantidadDisponibleParaDespacho(lote))}
-                              </option>
-                              );
-                            })}
-                          </select>
-                        </label>
+                        {detalle.seleccion_manual ? (
+                          <label>Lote excepcional *
+                            <select value={detalle.inventario_lote_id} onChange={(event) => actualizarDetalleDespacho(index, "inventario_lote_id", event.target.value)}>
+                              <option value="">Seleccionar lote</option>
+                              {lotesDisponiblesFefo.map((lote) => {
+                                const prioridad = prioridadFefo(lote);
+                                return (
+                                <option key={lote.id} value={lote.id}>
+                                  FEFO #{prioridad.prioridad} · {texto(lote.recurso_codigo)} · {lote.recurso_nombre} · Lote {lote.lote} · Vence {texto(lote.fecha_vencimiento)} · Disp. {texto(cantidadDisponibleParaDespacho(lote))}
+                                </option>
+                                );
+                              })}
+                            </select>
+                          </label>
+                        ) : (
+                          <div className="fefo-lote-asignado">
+                            <span>Lote asignado automáticamente</span>
+                            <strong>{texto(loteSeleccionado?.recurso_nombre)} · Lote {texto(loteSeleccionado?.lote)}</strong>
+                            <small>Vence {texto(loteSeleccionado?.fecha_vencimiento)}</small>
+                          </div>
+                        )}
                         <label>Cantidad
-                          <input value={detalle.cantidad} onChange={(event) => actualizarDetalleDespacho(index, "cantidad", event.target.value)} inputMode="decimal" />
+                          <input
+                            value={detalle.cantidad}
+                            onChange={(event) => actualizarDetalleDespacho(index, "cantidad", event.target.value)}
+                            inputMode="decimal"
+                            disabled={!detalle.seleccion_manual}
+                          />
                         </label>
                         <div className="orden-detalle-total">
                           <span>{detalle.seleccion_manual ? "Selección manual" : "Prioridad FEFO"}</span>
@@ -2853,6 +2867,15 @@ export function RecursosAsistencialesPage() {
                         <button className="icon-danger-btn" type="button" onClick={() => quitarDetalleDespacho(index)} aria-label="Quitar lote">
                           <Trash2 size={16} />
                         </button>
+                        {!detalle.seleccion_manual && (
+                          <button
+                            className="secondary-btn wide-field fefo-exception-btn"
+                            type="button"
+                            onClick={() => actualizarDetalleDespacho(index, "seleccion_manual", true)}
+                          >
+                            Elegir otro lote por excepción
+                          </button>
+                        )}
                         <label className="wide-field">Recomendaciones de almacenamiento
                           <input value={detalle.recomendaciones_almacenamiento} onChange={(event) => actualizarDetalleDespacho(index, "recomendaciones_almacenamiento", event.target.value)} />
                         </label>

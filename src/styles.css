@@ -4089,6 +4089,40 @@ td small { display: block; color: var(--muted); margin-top: 4px; }
   color: #92400e !important;
 }
 
+.fefo-lote-asignado {
+  min-width: 0;
+  display: grid;
+  gap: 4px;
+  align-self: stretch;
+  align-content: center;
+  border: 1px solid #b7e4df;
+  border-radius: 8px;
+  background: #f0fdfa;
+  padding: 10px 12px;
+}
+
+.fefo-lote-asignado span,
+.fefo-lote-asignado small {
+  color: #52677d;
+  font-size: 11px;
+  font-weight: 800;
+}
+
+.fefo-lote-asignado strong {
+  color: #0f766e;
+  font-size: 13px;
+  font-weight: 950;
+  overflow-wrap: anywhere;
+}
+
+.orden-detalle-row .fefo-exception-btn {
+  width: fit-content;
+  justify-self: start;
+  color: #92400e;
+  border-color: #fbbf24;
+  background: #fffbeb;
+}
+
 @media (max-width: 900px) {
   .fefo-assignment-box {
     grid-template-columns: 1fr;
