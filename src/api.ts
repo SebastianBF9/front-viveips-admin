@@ -9,6 +9,7 @@ import type {
   ConfirmarEntregaDespachoPayload,
   DespachoRecurso,
   DespachoRecursoPayload,
+  SugerenciaFefoResponse,
   ExamenCapacitacion,
   ArchivoCapacitacionProfesional,
   ProfesionalServicioPayload,
@@ -700,6 +701,10 @@ export async function listarMovimientosInventario(params: { recurso_id?: number 
   });
   const suffix = query.toString() ? `?${query.toString()}` : "";
   return apiCall<{ success: boolean; movimientos: MovimientoInventarioRecurso[]; total: number }>("GET", `/inventario-recursos/movimientos${suffix}`);
+}
+
+export async function sugerirAsignacionFefo(payload: { recurso_id: number; cantidad: number; despacho_id?: number | null }) {
+  return apiCall<SugerenciaFefoResponse>("POST", "/inventario-recursos/sugerir-fefo", payload);
 }
 
 export async function ajustarInventarioLote(id: number, payload: AjusteInventarioPayload) {

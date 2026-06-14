@@ -57,6 +57,7 @@ import {
   marcarSalidaDespachoRecurso,
   obtenerRecursoAsistencial,
   subirFichaTecnicaRecurso,
+  sugerirAsignacionFefo,
   trasladarInventarioLote,
 } from "../api";
 import type {
@@ -195,6 +196,8 @@ type DespachoDetalleForm = {
   recurso_id: string;
   inventario_lote_id: string;
   cantidad: string;
+  seleccion_manual: boolean;
+  justificacion_seleccion_manual: string;
   recomendaciones_almacenamiento: string;
   observaciones: string;
 };
@@ -515,6 +518,8 @@ function detalleDespachoInicial(): DespachoDetalleForm {
     recurso_id: "",
     inventario_lote_id: "",
     cantidad: "1",
+    seleccion_manual: false,
+    justificacion_seleccion_manual: "",
     recomendaciones_almacenamiento: "",
     observaciones: "",
   };
@@ -553,6 +558,8 @@ function despachoAForm(despacho: DespachoRecurso): DespachoForm {
       recurso_id: detalle.recurso_id ? String(detalle.recurso_id) : "",
       inventario_lote_id: detalle.inventario_lote_id ? String(detalle.inventario_lote_id) : "",
       cantidad: detalle.cantidad != null ? String(detalle.cantidad) : "1",
+      seleccion_manual: bool(detalle.seleccion_manual),
+      justificacion_seleccion_manual: detalle.justificacion_seleccion_manual || "",
       recomendaciones_almacenamiento: detalle.recomendaciones_almacenamiento || "",
       observaciones: detalle.observaciones || "",
     })).concat(despacho.detalles && despacho.detalles.length ? [] : [detalleDespachoInicial()]),
@@ -612,6 +619,8 @@ export function RecursosAsistencialesPage() {
   const [alertaActiva, setAlertaActiva] = useState<AlertaKey | null>(null);
   const [auditoriaDetalle, setAuditoriaDetalle] = useState<AuditoriaRecurso | null>(null);
   const [operacionLoteForm, setOperacionLoteForm] = useState<OperacionLoteForm | null>(null);
+  const [fefoRecursoId, setFefoRecursoId] = useState("");
+  const [fefoCantidad, setFefoCantidad] = useState("1");
 
   async function cargar() {
     setLoading(true);
@@ -709,6 +718,47 @@ export function RecursosAsistencialesPage() {
       );
     });
   }, [inventarioEstado, inventarioQuery, lotesInventario]);
+
+  function cantidadDisponibleParaDespacho(lote: InventarioLoteRecurso) {
+    const reservadaEnEdicion = despachoForm?.id
+      ? despachoForm.detalles
+        .filter((detalle) => Number(detalle.inventario_lote_id) === lote.id)
+        .reduce((total, detalle) => total + (numero(detalle.cantidad) || 0), 0)
+      : 0;
+    return Number(lote.cantidad_disponible_despacho ?? lote.cantidad_actual ?? 0) + reservadaEnEdicion;
+  }
+
+  const lotesDisponiblesFefo = useMemo(() => lotesInventario
+    .filter((lote) => {
+      const dias = diasDesdeHoy(lote.fecha_vencimiento);
+      const reservadaEnEdicion = despachoForm?.id
+        ? despachoForm.detalles
+          .filter((detalle) => Number(detalle.inventario_lote_id) === lote.id)
+          .reduce((total, detalle) => total + (numero(detalle.cantidad) || 0), 0)
+        : 0;
+      const disponible = Number(lote.cantidad_disponible_despacho ?? lote.cantidad_actual ?? 0) + reservadaEnEdicion;
+      return lote.estado === "disponible" && disponible > 0 && (dias == null || dias >= 0);
+    })
+    .sort((a, b) => {
+      if (!a.fecha_vencimiento && b.fecha_vencimiento) return 1;
+      if (a.fecha_vencimiento && !b.fecha_vencimiento) return -1;
+      return String(a.fecha_vencimiento || "").localeCompare(String(b.fecha_vencimiento || ""))
+        || a.id - b.id;
+    }), [despachoForm, lotesInventario]);
+
+  const recursosConInventarioFefo = useMemo(() => {
+    const ids = new Set(lotesDisponiblesFefo.map((lote) => lote.recurso_id));
+    return recursos.filter((recurso) => ids.has(recurso.id));
+  }, [lotesDisponiblesFefo, recursos]);
+
+  function prioridadFefo(lote: InventarioLoteRecurso) {
+    const lotesRecurso = lotesDisponiblesFefo.filter((item) => item.recurso_id === lote.recurso_id);
+    const indice = lotesRecurso.findIndex((item) => item.id === lote.id);
+    return {
+      prioridad: indice >= 0 ? indice + 1 : null,
+      total: lotesRecurso.length,
+    };
+  }
 
   const despachosFiltrados = useMemo(() => {
     const q = despachoQuery.trim().toLowerCase();
@@ -995,20 +1045,67 @@ export function RecursosAsistencialesPage() {
     setDespachoForm((actual) => (actual ? { ...actual, [campo]: valor } : actual));
   }
 
-  function actualizarDetalleDespacho(index: number, campo: keyof DespachoDetalleForm, valor: string) {
+  function actualizarDetalleDespacho(index: number, campo: keyof DespachoDetalleForm, valor: string | boolean) {
     setDespachoForm((actual) => {
       if (!actual) return actual;
       const detalles = actual.detalles.map((detalle, idx) => {
         if (idx !== index) return detalle;
         const siguiente = { ...detalle, [campo]: valor };
-        if (campo === "inventario_lote_id") {
+        if (campo === "inventario_lote_id" && typeof valor === "string") {
           const lote = lotesInventario.find((item) => item.id === Number(valor));
           siguiente.recurso_id = lote?.recurso_id ? String(lote.recurso_id) : "";
+          const recomendado = lotesDisponiblesFefo.find((item) => item.recurso_id === lote?.recurso_id);
+          siguiente.seleccion_manual = Boolean(lote && recomendado && lote.id !== recomendado.id);
+          siguiente.justificacion_seleccion_manual = "";
         }
         return siguiente;
       });
       return { ...actual, detalles };
     });
+  }
+
+  async function aplicarFefoDespacho() {
+    if (!despachoForm || !fefoRecursoId) {
+      setError("Selecciona el recurso para aplicar FEFO.");
+      return;
+    }
+    const cantidad = numero(fefoCantidad);
+    if (!cantidad || cantidad <= 0) {
+      setError("La cantidad FEFO debe ser mayor a cero.");
+      return;
+    }
+    const recursoId = Number(fefoRecursoId);
+    const existentes = despachoForm.detalles.some((detalle) => Number(detalle.recurso_id) === recursoId);
+    if (existentes && !window.confirm("Este recurso ya tiene lotes en el despacho. ¿Reemplazarlos con la asignación FEFO?")) return;
+
+    setAccion("aplicar-fefo");
+    setError("");
+    try {
+      const data = await sugerirAsignacionFefo({
+        recurso_id: recursoId,
+        cantidad,
+        despacho_id: despachoForm.id || null,
+      });
+      const sugeridos: DespachoDetalleForm[] = data.asignaciones.map((asignacion) => ({
+        recurso_id: String(asignacion.recurso_id),
+        inventario_lote_id: String(asignacion.id),
+        cantidad: String(asignacion.cantidad_sugerida),
+        seleccion_manual: false,
+        justificacion_seleccion_manual: "",
+        recomendaciones_almacenamiento: "",
+        observaciones: "",
+      }));
+      setDespachoForm((actual) => {
+        if (!actual) return actual;
+        const otros = actual.detalles.filter((detalle) => detalle.inventario_lote_id && Number(detalle.recurso_id) !== recursoId);
+        return { ...actual, detalles: [...otros, ...sugeridos] };
+      });
+      setSuccess(`FEFO aplicado: ${sugeridos.length} lote${sugeridos.length === 1 ? "" : "s"} asignado${sugeridos.length === 1 ? "" : "s"}.`);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "No fue posible calcular la asignación FEFO");
+    } finally {
+      setAccion("");
+    }
   }
 
   function agregarDetalleDespacho() {
@@ -1121,6 +1218,8 @@ export function RecursosAsistencialesPage() {
           recurso_id: Number(detalle.recurso_id),
           inventario_lote_id: Number(detalle.inventario_lote_id),
           cantidad: numero(detalle.cantidad) || 0,
+          seleccion_manual: detalle.seleccion_manual,
+          justificacion_seleccion_manual: detalle.justificacion_seleccion_manual || null,
           recomendaciones_almacenamiento: detalle.recomendaciones_almacenamiento || null,
           observaciones: detalle.observaciones || null,
         })),
@@ -1343,6 +1442,10 @@ export function RecursosAsistencialesPage() {
     }
     if (!despachoForm.detalles.some((detalle) => detalle.inventario_lote_id && (numero(detalle.cantidad) || 0) > 0)) {
       setError("Agrega al menos un lote con cantidad mayor a cero.");
+      return;
+    }
+    if (despachoForm.detalles.some((detalle) => detalle.seleccion_manual && !detalle.justificacion_seleccion_manual.trim())) {
+      setError("Toda selección manual que se aparte de FEFO requiere justificación.");
       return;
     }
     setAccion("guardar-despacho");
@@ -1789,7 +1892,9 @@ export function RecursosAsistencialesPage() {
             <span>Acciones</span>
           </div>
           <div className="ordenes-grid recursos-desktop-list recursos-inventory-list">
-            {lotesFiltrados.map((lote) => (
+            {lotesFiltrados.map((lote) => {
+              const fefo = prioridadFefo(lote);
+              return (
               <article className="orden-card" key={lote.id}>
                 <div className="orden-card-head">
                   <div className="recurso-icon">
@@ -1802,10 +1907,12 @@ export function RecursosAsistencialesPage() {
                 </div>
                 <div className="meta-row">
                   <span className={`pill ${lote.estado}`}>{lote.estado}</span>
+                  {fefo.prioridad && <span className="tag fefo">FEFO #{fefo.prioridad} de {fefo.total}</span>}
                   {bool(lote.requiere_cadena_frio) && <span className="tag cold">Cadena de frio</span>}
                 </div>
                 <dl className="recurso-dl">
                   <div><dt>Cantidad actual</dt><dd>{texto(lote.cantidad_actual)}</dd></div>
+                  <div><dt>Disponible despacho</dt><dd>{texto(lote.cantidad_disponible_despacho ?? lote.cantidad_actual)}</dd></div>
                   <div><dt>Vencimiento</dt><dd>{texto(lote.fecha_vencimiento)}</dd></div>
                   <div><dt>Ubicación</dt><dd>{texto(lote.ubicacion)}</dd></div>
                   <div><dt>Orden origen</dt><dd>{texto(lote.numero_orden)}</dd></div>
@@ -1831,7 +1938,8 @@ export function RecursosAsistencialesPage() {
                   </details>
                 </div>
               </article>
-            ))}
+              );
+            })}
           </div>
           {!lotesFiltrados.length && <div className="empty-state">No hay lotes de inventario para los filtros seleccionados.</div>}
 
@@ -2692,35 +2800,55 @@ export function RecursosAsistencialesPage() {
                 <div className="orden-section-head">
                   <h3>Lotes a despachar</h3>
                   <button className="secondary-btn" type="button" onClick={agregarDetalleDespacho}>
-                    <Plus size={15} /> Agregar lote
+                    <Plus size={15} /> Selección manual
+                  </button>
+                </div>
+                <div className="fefo-assignment-box">
+                  <div>
+                    <strong>Asignación automática FEFO</strong>
+                    <span>Distribuye la cantidad usando primero el lote con vencimiento más próximo.</span>
+                  </div>
+                  <label>Recurso
+                    <select value={fefoRecursoId} onChange={(event) => setFefoRecursoId(event.target.value)}>
+                      <option value="">Seleccionar recurso</option>
+                      {recursosConInventarioFefo.map((recurso) => {
+                        const totalLotes = lotesDisponiblesFefo.filter((lote) => lote.recurso_id === recurso.id).length;
+                        return <option key={recurso.id} value={recurso.id}>{recurso.codigo} · {recurso.nombre} · {totalLotes} lote(s)</option>;
+                      })}
+                    </select>
+                  </label>
+                  <label>Cantidad total
+                    <input value={fefoCantidad} onChange={(event) => setFefoCantidad(event.target.value)} inputMode="decimal" />
+                  </label>
+                  <button className="primary-btn" type="button" onClick={aplicarFefoDespacho} disabled={accion === "aplicar-fefo"}>
+                    <PackagePlus size={16} /> Aplicar FEFO
                   </button>
                 </div>
                 <div className="orden-detalles">
                   {despachoForm.detalles.map((detalle, index) => {
                     const loteSeleccionado = lotesInventario.find((lote) => lote.id === Number(detalle.inventario_lote_id));
+                    const fefo = loteSeleccionado ? prioridadFefo(loteSeleccionado) : null;
                     return (
                       <div className="orden-detalle-row despacho-detalle-row" key={`${index}-${detalle.inventario_lote_id || "lote"}`}>
                         <label>Lote disponible *
                           <select value={detalle.inventario_lote_id} onChange={(event) => actualizarDetalleDespacho(index, "inventario_lote_id", event.target.value)}>
                             <option value="">Seleccionar lote</option>
-                            {lotesInventario.filter((lote) => {
-                              const diasVencimiento = diasDesdeHoy(lote.fecha_vencimiento);
-                              return lote.estado === "disponible"
-                                && Number(lote.cantidad_actual || 0) > 0
-                                && (diasVencimiento == null || diasVencimiento >= 0);
-                            }).map((lote) => (
+                            {lotesDisponiblesFefo.map((lote) => {
+                              const prioridad = prioridadFefo(lote);
+                              return (
                               <option key={lote.id} value={lote.id}>
-                                {texto(lote.recurso_codigo)} · {lote.recurso_nombre} · Lote {lote.lote} · Disp. {lote.cantidad_actual}
+                                FEFO #{prioridad.prioridad} · {texto(lote.recurso_codigo)} · {lote.recurso_nombre} · Lote {lote.lote} · Vence {texto(lote.fecha_vencimiento)} · Disp. {texto(cantidadDisponibleParaDespacho(lote))}
                               </option>
-                            ))}
+                              );
+                            })}
                           </select>
                         </label>
                         <label>Cantidad
                           <input value={detalle.cantidad} onChange={(event) => actualizarDetalleDespacho(index, "cantidad", event.target.value)} inputMode="decimal" />
                         </label>
                         <div className="orden-detalle-total">
-                          <span>Disponible</span>
-                          <strong>{texto(loteSeleccionado?.cantidad_actual)}</strong>
+                          <span>{detalle.seleccion_manual ? "Selección manual" : "Prioridad FEFO"}</span>
+                          <strong>{detalle.seleccion_manual ? "Justificar" : fefo?.prioridad ? `#${fefo.prioridad} de ${fefo.total}` : "-"}</strong>
                         </div>
                         <button className="icon-danger-btn" type="button" onClick={() => quitarDetalleDespacho(index)} aria-label="Quitar lote">
                           <Trash2 size={16} />
@@ -2728,6 +2856,16 @@ export function RecursosAsistencialesPage() {
                         <label className="wide-field">Recomendaciones de almacenamiento
                           <input value={detalle.recomendaciones_almacenamiento} onChange={(event) => actualizarDetalleDespacho(index, "recomendaciones_almacenamiento", event.target.value)} />
                         </label>
+                        {detalle.seleccion_manual && (
+                          <label className="wide-field fefo-manual-warning">Justificación obligatoria para apartarse de FEFO
+                            <textarea
+                              rows={2}
+                              value={detalle.justificacion_seleccion_manual}
+                              onChange={(event) => actualizarDetalleDespacho(index, "justificacion_seleccion_manual", event.target.value)}
+                              maxLength={500}
+                            />
+                          </label>
+                        )}
                         <label className="wide-field">Observaciones del lote
                           <input value={detalle.observaciones} onChange={(event) => actualizarDetalleDespacho(index, "observaciones", event.target.value)} />
                         </label>

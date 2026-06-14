@@ -3685,6 +3685,11 @@ td small { display: block; color: var(--muted); margin-top: 4px; }
   color: #1d4ed8;
 }
 
+.tag.fefo {
+  background: #ecfdf5;
+  color: #047857;
+}
+
 .recurso-dl {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -3896,6 +3901,15 @@ td small { display: block; color: var(--muted); margin-top: 4px; }
     right: 0;
     width: min(240px, calc(100vw - 32px));
   }
+
+  .fefo-assignment-box {
+    grid-template-columns: 1fr;
+  }
+
+  .fefo-assignment-box button {
+    width: 100%;
+    justify-content: center;
+  }
 }
 
 .recursos-placeholder {
@@ -4011,6 +4025,79 @@ td small { display: block; color: var(--muted); margin-top: 4px; }
 .orden-detalles {
   display: grid;
   gap: 14px;
+}
+
+.fefo-assignment-box {
+  display: grid;
+  grid-template-columns: minmax(220px, 1.2fr) minmax(220px, 1fr) minmax(120px, .45fr) auto;
+  align-items: end;
+  gap: 14px;
+  border: 1px solid #b7e4df;
+  border-radius: 10px;
+  background: #f0fdfa;
+  padding: 16px;
+}
+
+.fefo-assignment-box > div {
+  align-self: center;
+}
+
+.fefo-assignment-box strong,
+.fefo-assignment-box span {
+  display: block;
+}
+
+.fefo-assignment-box strong {
+  color: #0f766e;
+  font-size: 14px;
+  font-weight: 950;
+}
+
+.fefo-assignment-box span {
+  margin-top: 4px;
+  color: #52677d;
+  font-size: 12px;
+  line-height: 1.4;
+}
+
+.fefo-assignment-box label {
+  display: grid;
+  gap: 7px;
+  min-width: 0;
+  color: #1f3b53;
+  font-size: 12px;
+  font-weight: 900;
+}
+
+.fefo-assignment-box input,
+.fefo-assignment-box select {
+  width: 100%;
+  min-width: 0;
+  min-height: 44px;
+}
+
+.fefo-assignment-box button {
+  min-height: 44px;
+  white-space: nowrap;
+}
+
+.fefo-manual-warning {
+  border: 1px solid #fbbf24;
+  border-radius: 8px;
+  background: #fffbeb;
+  padding: 12px;
+  color: #92400e !important;
+}
+
+@media (max-width: 900px) {
+  .fefo-assignment-box {
+    grid-template-columns: 1fr;
+  }
+
+  .fefo-assignment-box button {
+    width: 100%;
+    justify-content: center;
+  }
 }
 
 .orden-detalle-row {

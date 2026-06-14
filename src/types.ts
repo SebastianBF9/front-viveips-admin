@@ -959,6 +959,8 @@ export interface InventarioLoteRecurso {
   fecha_vencimiento: string | null;
   cantidad_inicial: number | null;
   cantidad_actual: number | null;
+  cantidad_comprometida?: number | null;
+  cantidad_disponible_despacho?: number | null;
   ubicacion: string | null;
   estado: EstadoInventarioLote | string;
   requiere_cadena_frio: number | boolean;
@@ -1057,6 +1059,8 @@ export interface DespachoRecursoDetalle {
   recurso_id: number;
   inventario_lote_id: number;
   cantidad: number;
+  seleccion_manual?: number | boolean;
+  justificacion_seleccion_manual?: string | null;
   recomendaciones_almacenamiento?: string | null;
   observaciones?: string | null;
   recurso_codigo?: string | null;
@@ -1105,9 +1109,33 @@ export interface DespachoRecursoPayload {
     recurso_id: number;
     inventario_lote_id: number;
     cantidad: number;
+    seleccion_manual?: boolean;
+    justificacion_seleccion_manual?: string | null;
     recomendaciones_almacenamiento?: string | null;
     observaciones?: string | null;
   }>;
+}
+
+export interface AsignacionFefo {
+  id: number;
+  recurso_id: number;
+  lote: string;
+  fecha_vencimiento?: string | null;
+  ubicacion?: string | null;
+  cantidad_actual: number;
+  cantidad_disponible: number;
+  cantidad_sugerida: number;
+}
+
+export interface SugerenciaFefoResponse {
+  success: boolean;
+  recurso: {
+    id: number;
+    codigo?: string | null;
+    nombre: string;
+  };
+  cantidad_solicitada: number;
+  asignaciones: AsignacionFefo[];
 }
 
 export interface ConfirmarEntregaDespachoPayload {
