@@ -35,7 +35,9 @@ import {
   crearRecursoAsistencial,
   crearSolicitudCompraReorden,
   darBajaInventarioLote,
+  devolverDespachoInventarioRecurso,
   devolverInventarioLote,
+  downloadBlob,
   eliminarOrdenCompraRecurso,
   cancelarDespachoRecurso,
   eliminarProveedorDeRecurso,
@@ -47,6 +49,7 @@ import {
   listarInventarioLotes,
   listarMovimientosInventario,
   listarDespachosRecursos,
+  listarHistorialEntregasRecursos,
   listarOrdenesCompraRecursos,
   listarProfesionales,
   listarProveedoresRecursos,
@@ -58,6 +61,7 @@ import {
   obtenerRecepcionRecurso,
   marcarSalidaDespachoRecurso,
   obtenerRecursoAsistencial,
+  programarReintentoDespachoRecurso,
   subirFichaTecnicaRecurso,
   sugerirAsignacionFefo,
   trasladarInventarioLote,
@@ -222,6 +226,18 @@ type DespachoForm = {
   estado: string;
   observaciones: string;
   detalles: DespachoDetalleForm[];
+};
+
+type ReintentoForm = {
+  despacho: DespachoRecurso;
+  fecha_programada: string;
+  observaciones: string;
+};
+
+type DevolucionDespachoForm = {
+  despacho: DespachoRecurso;
+  apto_reintegro: boolean;
+  motivo: string;
 };
 
 type OperacionLote = "ajuste" | "baja" | "estado" | "traslado" | "devolucion";
@@ -612,6 +628,7 @@ export function RecursosAsistencialesPage() {
   const [movimientosInventario, setMovimientosInventario] = useState<MovimientoInventarioRecurso[]>([]);
   const [auditoria, setAuditoria] = useState<AuditoriaRecurso[]>([]);
   const [despachos, setDespachos] = useState<DespachoRecurso[]>([]);
+  const [historialEntregas, setHistorialEntregas] = useState<DespachoRecurso[]>([]);
   const [profesionales, setProfesionales] = useState<ProfesionalAdmin[]>([]);
   const [servicios, setServicios] = useState<ServicioIps[]>([]);
   const [loading, setLoading] = useState(true);
@@ -640,6 +657,10 @@ export function RecursosAsistencialesPage() {
   const [ordenForm, setOrdenForm] = useState<OrdenCompraForm | null>(null);
   const [recepcionForm, setRecepcionForm] = useState<RecepcionForm | null>(null);
   const [despachoForm, setDespachoForm] = useState<DespachoForm | null>(null);
+  const [reintentoForm, setReintentoForm] = useState<ReintentoForm | null>(null);
+  const [devolucionDespachoForm, setDevolucionDespachoForm] = useState<DevolucionDespachoForm | null>(null);
+  const [historialPaciente, setHistorialPaciente] = useState("");
+  const [historialProfesional, setHistorialProfesional] = useState("");
   const [loteDetalle, setLoteDetalle] = useState<InventarioLoteRecurso | null>(null);
   const [movimientosDetalle, setMovimientosDetalle] = useState<MovimientoInventarioRecurso[]>([]);
   const [cargandoMovimientos, setCargandoMovimientos] = useState(false);
@@ -1559,6 +1580,82 @@ export function RecursosAsistencialesPage() {
     }
   }
 
+  async function descargarActaDespacho(despacho: DespachoRecurso) {
+    setAccion(`acta-despacho-${despacho.id}`);
+    setError("");
+    try {
+      await downloadBlob(`/despachos-recursos/${despacho.id}/acta`, `acta_${despacho.numero_despacho}.html`);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "No fue posible descargar el acta");
+    } finally {
+      setAccion("");
+    }
+  }
+
+  async function cargarHistorialEntregas() {
+    setAccion("historial-entregas");
+    setError("");
+    try {
+      const data = await listarHistorialEntregasRecursos({
+        paciente_documento: historialPaciente || undefined,
+        responsable_entrega_id: historialProfesional || undefined,
+      });
+      setHistorialEntregas(data.despachos || []);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "No fue posible cargar el historial de entregas");
+    } finally {
+      setAccion("");
+    }
+  }
+
+  async function guardarReintentoDespacho() {
+    if (!reintentoForm) return;
+    if (!reintentoForm.fecha_programada) {
+      setError("Selecciona la fecha del reintento.");
+      return;
+    }
+    setAccion(`reintento-despacho-${reintentoForm.despacho.id}`);
+    setError("");
+    setSuccess("");
+    try {
+      await programarReintentoDespachoRecurso(reintentoForm.despacho.id, {
+        fecha_programada: reintentoForm.fecha_programada,
+        observaciones: reintentoForm.observaciones || null,
+      });
+      setReintentoForm(null);
+      setSuccess("Reintento programado correctamente.");
+      await cargar();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "No fue posible programar el reintento");
+    } finally {
+      setAccion("");
+    }
+  }
+
+  async function guardarDevolucionDespacho() {
+    if (!devolucionDespachoForm) return;
+    if (!devolucionDespachoForm.motivo.trim()) {
+      setError("El motivo de devolución es obligatorio.");
+      return;
+    }
+    setAccion(`devolver-despacho-${devolucionDespachoForm.despacho.id}`);
+    setError("");
+    setSuccess("");
+    try {
+      await devolverDespachoInventarioRecurso(devolucionDespachoForm.despacho.id, {
+        apto_reintegro: devolucionDespachoForm.apto_reintegro,
+        motivo: devolucionDespachoForm.motivo.trim(),
+      });
+      setDevolucionDespachoForm(null);
+      setSuccess(devolucionDespachoForm.apto_reintegro ? "Productos reintegrados al inventario." : "Devolución registrada sin reintegrar existencias.");
+      await cargar();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "No fue posible devolver el despacho");
+    } finally {
+      setAccion("");
+    }
+  }
+
   async function inactivarRecurso(recurso: RecursoAsistencial) {
     if (!window.confirm(`Inactivar ${recurso.nombre}?`)) return;
     setAccion(`inactivar-recurso-${recurso.id}`);
@@ -2120,15 +2217,26 @@ export function RecursosAsistencialesPage() {
                   <div><dt>Salida</dt><dd>{texto(despacho.fecha_salida)}</dd></div>
                   <div><dt>Documento paciente</dt><dd>{texto(despacho.paciente_documento)}</dd></div>
                   <div><dt>Dirección</dt><dd>{texto(despacho.direccion_entrega)}</dd></div>
+                  <div><dt>Reintentos</dt><dd>{texto(despacho.reintentos)}</dd></div>
+                  <div><dt>Última falla</dt><dd>{texto(despacho.motivo_entrega_fallida)}</dd></div>
                 </dl>
                 <div className="recursos-actions">
-                  <button type="button" onClick={() => marcarSalidaDespacho(despacho)} disabled={accion === `salida-despacho-${despacho.id}`}>
+                  {estadoNormalizado(despacho.estado) === "preparado" && <button type="button" onClick={() => marcarSalidaDespacho(despacho)} disabled={accion === `salida-despacho-${despacho.id}`}>
                     <Truck size={15} /> Marcar salida
-                  </button>
-                  <button type="button" onClick={() => abrirEditarDespacho(despacho)} disabled={accion === `editar-despacho-${despacho.id}`}>
+                  </button>}
+                  {estadoNormalizado(despacho.estado) === "fallido" && <button type="button" onClick={() => setReintentoForm({ despacho, fecha_programada: despacho.fecha_reintento ? String(despacho.fecha_reintento).slice(0, 16) : "", observaciones: "" })}>
+                    <Truck size={15} /> Reintentar
+                  </button>}
+                  {["en_camino", "fallido"].includes(estadoNormalizado(despacho.estado)) && !bool(despacho.devuelto_inventario) && <button type="button" onClick={() => setDevolucionDespachoForm({ despacho, apto_reintegro: true, motivo: "" })}>
+                    <Boxes size={15} /> Devolver
+                  </button>}
+                  {["entregado", "fallido", "devuelto"].includes(estadoNormalizado(despacho.estado)) && <button type="button" onClick={() => descargarActaDespacho(despacho)} disabled={accion === `acta-despacho-${despacho.id}`}>
+                    <ClipboardList size={15} /> Acta
+                  </button>}
+                  <button type="button" onClick={() => abrirEditarDespacho(despacho)} disabled={accion === `editar-despacho-${despacho.id}` || !despachoPreparado(despacho)}>
                     <Pencil size={15} /> Editar
                   </button>
-                  <button className="danger" type="button" onClick={() => cancelarDespacho(despacho)} disabled={accion === `cancelar-despacho-${despacho.id}`}>
+                  <button className="danger" type="button" onClick={() => cancelarDespacho(despacho)} disabled={accion === `cancelar-despacho-${despacho.id}` || !despachoPreparado(despacho)}>
                     <Trash2 size={15} /> Cancelar
                   </button>
                 </div>
@@ -2136,6 +2244,31 @@ export function RecursosAsistencialesPage() {
             ))}
           </div>
           {!despachosFiltrados.length && <div className="empty-state">No hay despachos para los filtros seleccionados.</div>}
+          <div className="recursos-history-panel">
+            <div>
+              <h3>Historial de entregas</h3>
+              <p>Consulta entregas por paciente o profesional sin mezclarlo con el flujo operativo.</p>
+            </div>
+            <input value={historialPaciente} onChange={(event) => setHistorialPaciente(event.target.value)} placeholder="Documento paciente" />
+            <select value={historialProfesional} onChange={(event) => setHistorialProfesional(event.target.value)}>
+              <option value="">Todos los profesionales</option>
+              {profesionales.map((profesional) => <option key={profesional.id} value={profesional.id}>{profesional.nombre}</option>)}
+            </select>
+            <button className="secondary-btn" type="button" onClick={cargarHistorialEntregas} disabled={accion === "historial-entregas"}>
+              <History size={15} /> Consultar historial
+            </button>
+          </div>
+          {historialEntregas.length > 0 && (
+            <div className="recursos-history-results">
+              {historialEntregas.map((item) => (
+                <article key={`historial-${item.id}`}>
+                  <strong>{item.numero_despacho} · {texto(item.estado)}</strong>
+                  <span>{texto(item.paciente_nombre)} · {texto(item.responsable_nombre)}</span>
+                  <small>Entrega: {texto(item.fecha_entrega)} · Falla: {texto(item.fecha_fallida)}</small>
+                </article>
+              ))}
+            </div>
+          )}
         </section>
       )}
 
@@ -2874,6 +3007,60 @@ export function RecursosAsistencialesPage() {
             <div className="modal-actions">
               <button className="secondary-btn" type="button" onClick={() => setRecepcionForm(null)}>Cancelar</button>
               <button className="primary-btn infra-save-btn" type="button" onClick={guardarRecepcion} disabled={accion === "guardar-recepcion"}><Save size={16} /> Guardar recepción</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {reintentoForm && (
+        <div className="modal-backdrop" onMouseDown={() => setReintentoForm(null)}>
+          <div className="modal recursos-modal compact-recursos-modal" onMouseDown={(event) => event.stopPropagation()}>
+            <div className="infra-modal-header">
+              <div>
+                <h2>Programar reintento</h2>
+                <p>{reintentoForm.despacho.numero_despacho} · {texto(reintentoForm.despacho.paciente_nombre)}</p>
+              </div>
+              <button type="button" onClick={() => setReintentoForm(null)} aria-label="Cerrar"><X size={20} /></button>
+            </div>
+            <div className="infra-form-body">
+              <Section title="Nuevo intento de entrega">
+                <label>Fecha y hora *
+                  <input type="datetime-local" value={reintentoForm.fecha_programada} onChange={(event) => setReintentoForm((actual) => actual ? { ...actual, fecha_programada: event.target.value } : actual)} />
+                </label>
+                <label className="wide-field">Observaciones
+                  <textarea rows={2} value={reintentoForm.observaciones} onChange={(event) => setReintentoForm((actual) => actual ? { ...actual, observaciones: event.target.value } : actual)} />
+                </label>
+              </Section>
+            </div>
+            <div className="modal-actions">
+              <button className="secondary-btn" type="button" onClick={() => setReintentoForm(null)}>Cancelar</button>
+              <button className="primary-btn" type="button" onClick={guardarReintentoDespacho} disabled={accion === `reintento-despacho-${reintentoForm.despacho.id}`}>Guardar reintento</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {devolucionDespachoForm && (
+        <div className="modal-backdrop" onMouseDown={() => setDevolucionDespachoForm(null)}>
+          <div className="modal recursos-modal compact-recursos-modal" onMouseDown={(event) => event.stopPropagation()}>
+            <div className="infra-modal-header">
+              <div>
+                <h2>Devolver productos</h2>
+                <p>{devolucionDespachoForm.despacho.numero_despacho} · {texto(devolucionDespachoForm.despacho.paciente_nombre)}</p>
+              </div>
+              <button type="button" onClick={() => setDevolucionDespachoForm(null)} aria-label="Cerrar"><X size={20} /></button>
+            </div>
+            <div className="infra-form-body">
+              <Section title="Reintegro a inventario">
+                <label className="infra-check-field"><input type="checkbox" checked={devolucionDespachoForm.apto_reintegro} onChange={(event) => setDevolucionDespachoForm((actual) => actual ? { ...actual, apto_reintegro: event.target.checked } : actual)} /> Productos aptos para reintegro</label>
+                <label className="wide-field">Motivo obligatorio
+                  <textarea rows={3} value={devolucionDespachoForm.motivo} onChange={(event) => setDevolucionDespachoForm((actual) => actual ? { ...actual, motivo: event.target.value } : actual)} placeholder="No entregado, paciente ausente, rechazo, daño..." />
+                </label>
+              </Section>
+            </div>
+            <div className="modal-actions">
+              <button className="secondary-btn" type="button" onClick={() => setDevolucionDespachoForm(null)}>Cancelar</button>
+              <button className="primary-btn" type="button" onClick={guardarDevolucionDespacho} disabled={accion === `devolver-despacho-${devolucionDespachoForm.despacho.id}`}>Registrar devolución</button>
             </div>
           </div>
         </div>

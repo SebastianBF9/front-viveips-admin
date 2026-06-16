@@ -7,6 +7,8 @@ import {
   getToken,
   listarMisEntregasRecursos,
   obtenerMiEntregaRecurso,
+  registrarMiEntregaFallida,
+  subirEvidenciaMiEntrega,
 } from "../api";
 import type { DespachoRecurso } from "../types";
 import { Loading } from "../ui/Loading";
@@ -18,6 +20,8 @@ type EntregaForm = {
   latitud_entrega: string;
   longitud_entrega: string;
   observaciones: string;
+  motivo_fallida: string;
+  fecha_reintento: string;
 };
 
 const ENTREGA_INICIAL: EntregaForm = {
@@ -27,6 +31,8 @@ const ENTREGA_INICIAL: EntregaForm = {
   latitud_entrega: "",
   longitud_entrega: "",
   observaciones: "",
+  motivo_fallida: "",
+  fecha_reintento: "",
 };
 
 export function EntregasRecursosPage() {
@@ -37,6 +43,7 @@ export function EntregasRecursosPage() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [geoLoading, setGeoLoading] = useState(false);
+  const [evidencia, setEvidencia] = useState<File | null>(null);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
   const [hasStroke, setHasStroke] = useState(false);
@@ -173,6 +180,7 @@ export function EntregasRecursosPage() {
         recibido_por_nombre: data.despacho.paciente_nombre || "",
         recibido_por_documento: data.despacho.paciente_documento || "",
       });
+      setEvidencia(null);
       setTimeout(() => capturarUbicacion(), 150);
     } catch (err) {
       setError(err instanceof Error ? err.message : "No fue posible abrir la entrega");
@@ -193,6 +201,7 @@ export function EntregasRecursosPage() {
     setError("");
     setSuccess("");
     try {
+      if (evidencia) await subirEvidenciaMiEntrega(entregaActiva.id, evidencia);
       const data = await confirmarMiEntregaRecurso(entregaActiva.id, {
         recibido_por_nombre: form.recibido_por_nombre.trim(),
         recibido_por_documento: form.recibido_por_documento.trim(),
@@ -207,6 +216,32 @@ export function EntregasRecursosPage() {
       await cargar();
     } catch (err) {
       setError(err instanceof Error ? err.message : "No fue posible confirmar la entrega");
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  async function registrarFallida() {
+    if (!entregaActiva) return;
+    if (!form.motivo_fallida.trim()) {
+      setError("Escribe el motivo de la entrega fallida.");
+      return;
+    }
+    setSaving(true);
+    setError("");
+    setSuccess("");
+    try {
+      if (evidencia) await subirEvidenciaMiEntrega(entregaActiva.id, evidencia);
+      const data = await registrarMiEntregaFallida(entregaActiva.id, {
+        motivo: form.motivo_fallida.trim(),
+        fecha_reintento: form.fecha_reintento || null,
+        observaciones: form.observaciones || null,
+      });
+      setSuccess(data.mensaje);
+      setEntregaActiva(null);
+      await cargar();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "No fue posible registrar la entrega fallida");
     } finally {
       setSaving(false);
     }
@@ -261,7 +296,10 @@ export function EntregasRecursosPage() {
           onCaptureLocation={capturarUbicacion}
           onClose={() => setEntregaActiva(null)}
           onSave={confirmarEntrega}
+          onFail={registrarFallida}
           onClear={limpiarFirma}
+          evidencia={evidencia}
+          onEvidence={setEvidencia}
           onPointerDown={iniciarFirma}
           onPointerMove={dibujarFirma}
           onPointerUp={terminarFirma}
@@ -271,17 +309,37 @@ export function EntregasRecursosPage() {
   );
 }
 
-function DeliveryModal({ entrega, form, saving, geoLoading, canvasRef, onChange, onCaptureLocation, onClose, onSave, onClear, onPointerDown, onPointerMove, onPointerUp }: {
+function DeliveryModal({
+  entrega,
+  form,
+  saving,
+  geoLoading,
+  canvasRef,
+  evidencia,
+  onChange,
+  onCaptureLocation,
+  onClose,
+  onSave,
+  onFail,
+  onClear,
+  onEvidence,
+  onPointerDown,
+  onPointerMove,
+  onPointerUp,
+}: {
   entrega: DespachoRecurso;
   form: EntregaForm;
   saving: boolean;
   geoLoading: boolean;
   canvasRef: { current: HTMLCanvasElement | null };
+  evidencia: File | null;
   onChange: (campo: keyof EntregaForm, valor: string) => void;
   onCaptureLocation: () => void;
   onClose: () => void;
   onSave: () => void;
+  onFail: () => void;
   onClear: () => void;
+  onEvidence: (archivo: File | null) => void;
   onPointerDown: (event: PointerEvent<HTMLCanvasElement>) => void;
   onPointerMove: (event: PointerEvent<HTMLCanvasElement>) => void;
   onPointerUp: (event: PointerEvent<HTMLCanvasElement>) => void;
@@ -332,6 +390,23 @@ function DeliveryModal({ entrega, form, saving, geoLoading, canvasRef, onChange,
           <label className="wide-field">Observaciones
             <input value={form.observaciones} onChange={(event) => onChange("observaciones", event.target.value)} />
           </label>
+          <label className="wide-field">Evidencia fotográfica opcional
+            <input type="file" accept="image/jpeg,image/png,image/webp" onChange={(event) => onEvidence(event.target.files?.[0] || null)} />
+            {evidencia && <small>{evidencia.name}</small>}
+          </label>
+        </div>
+        <div className="delivery-failed-box">
+          <strong>Registrar entrega fallida</strong>
+          <span>Úsalo si no fue posible entregar. La devolución al inventario la confirma administración.</span>
+          <label>Motivo de entrega fallida
+            <input value={form.motivo_fallida} onChange={(event) => onChange("motivo_fallida", event.target.value)} placeholder="Paciente ausente, dirección incorrecta, rechazo..." />
+          </label>
+          <label>Fecha sugerida de reintento
+            <input type="datetime-local" value={form.fecha_reintento} onChange={(event) => onChange("fecha_reintento", event.target.value)} />
+          </label>
+          <button className="secondary-btn" type="button" onClick={onFail} disabled={saving}>
+            Registrar fallida
+          </button>
         </div>
         <div className="portal-signature-pad">
           <strong>Firma de recibido</strong>

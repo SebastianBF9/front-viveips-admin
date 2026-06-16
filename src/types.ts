@@ -1096,6 +1096,20 @@ export interface DespachoRecurso {
   fecha_salida?: string | null;
   fecha_entrega?: string | null;
   estado: EstadoDespachoRecurso | string;
+  recibido_por_nombre?: string | null;
+  recibido_por_documento?: string | null;
+  recibido_por_parentesco?: string | null;
+  latitud_entrega?: number | null;
+  longitud_entrega?: number | null;
+  ip_entrega?: string | null;
+  firma_archivo?: string | null;
+  acta_archivo?: string | null;
+  motivo_entrega_fallida?: string | null;
+  fecha_fallida?: string | null;
+  fecha_reintento?: string | null;
+  reintentos?: number | null;
+  evidencia_fotografica_archivo?: string | null;
+  devuelto_inventario?: number | boolean | null;
   observaciones?: string | null;
   items?: number | null;
   detalles?: DespachoRecursoDetalle[];
@@ -1155,6 +1169,22 @@ export interface ConfirmarEntregaDespachoPayload {
   longitud_entrega?: number | null;
   firma_base64: string;
   observaciones?: string | null;
+}
+
+export interface EntregaFallidaPayload {
+  motivo: string;
+  fecha_reintento?: string | null;
+  observaciones?: string | null;
+}
+
+export interface ReintentoEntregaPayload {
+  fecha_programada: string;
+  observaciones?: string | null;
+}
+
+export interface DevolverDespachoInventarioPayload {
+  apto_reintegro: boolean;
+  motivo: string;
 }
 
 export interface AdherenciaCapacitacion {

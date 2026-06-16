@@ -7,8 +7,11 @@ import type {
   CapacitacionAdminPayload,
   CapacitacionPregunta,
   ConfirmarEntregaDespachoPayload,
+  DevolverDespachoInventarioPayload,
   DespachoRecurso,
   DespachoRecursoPayload,
+  EntregaFallidaPayload,
+  ReintentoEntregaPayload,
   SugerenciaFefoResponse,
   ExamenCapacitacion,
   ArchivoCapacitacionProfesional,
@@ -778,8 +781,25 @@ export async function marcarSalidaDespachoRecurso(id: number) {
   return apiCall<{ success: boolean; mensaje: string }>("POST", `/despachos-recursos/${id}/marcar-salida`);
 }
 
+export async function programarReintentoDespachoRecurso(id: number, payload: ReintentoEntregaPayload) {
+  return apiCall<{ success: boolean; mensaje: string }>("POST", `/despachos-recursos/${id}/reintentar`, payload);
+}
+
+export async function devolverDespachoInventarioRecurso(id: number, payload: DevolverDespachoInventarioPayload) {
+  return apiCall<{ success: boolean; mensaje: string }>("POST", `/despachos-recursos/${id}/devolver-inventario`, payload);
+}
+
 export async function cancelarDespachoRecurso(id: number) {
   return apiCall<{ success: boolean; mensaje: string }>("DELETE", `/despachos-recursos/${id}`);
+}
+
+export async function listarHistorialEntregasRecursos(params: { paciente_documento?: string; responsable_entrega_id?: number | string } = {}) {
+  const query = new URLSearchParams();
+  Object.entries(params).forEach(([key, value]) => {
+    if (value !== undefined && value !== null && String(value).trim()) query.set(key, String(value));
+  });
+  const suffix = query.toString() ? `?${query.toString()}` : "";
+  return apiCall<{ success: boolean; despachos: DespachoRecurso[]; total: number }>("GET", `/despachos-recursos/historial${suffix}`);
 }
 
 export async function listarMisEntregasRecursos() {
@@ -792,6 +812,16 @@ export async function obtenerMiEntregaRecurso(id: number) {
 
 export async function confirmarMiEntregaRecurso(id: number, payload: ConfirmarEntregaDespachoPayload) {
   return apiCall<{ success: boolean; mensaje: string; firma_archivo: string }>("POST", `/despachos-recursos/mis-entregas/${id}/confirmar`, payload);
+}
+
+export async function registrarMiEntregaFallida(id: number, payload: EntregaFallidaPayload) {
+  return apiCall<{ success: boolean; mensaje: string }>("POST", `/despachos-recursos/mis-entregas/${id}/fallar`, payload);
+}
+
+export async function subirEvidenciaMiEntrega(id: number, archivo: File) {
+  const form = new FormData();
+  form.set("archivo", archivo);
+  return apiFormCall<{ success: boolean; mensaje: string; ruta: string }>("POST", `/despachos-recursos/mis-entregas/${id}/evidencia`, form);
 }
 
 // --- Infraestructura / Tecnovigilancia ---
