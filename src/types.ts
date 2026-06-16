@@ -1083,6 +1083,71 @@ export interface AuditoriaRecurso {
   created_at?: string | null;
 }
 
+export interface ReportesRecursosResumen {
+  kardex: Array<{
+    recurso_id: number;
+    recurso_codigo: string | null;
+    recurso_nombre: string | null;
+    inventario_lote_id: number;
+    lote: string | null;
+    fecha_vencimiento: string | null;
+    ubicacion: string | null;
+    estado_lote: string | null;
+    entradas: number;
+    salidas: number;
+    saldo_reportado: number | null;
+    saldo_actual: number;
+    ultimo_movimiento: string | null;
+  }>;
+  consumo: Array<{
+    recurso_id: number;
+    recurso_codigo: string | null;
+    recurso_nombre: string | null;
+    cantidad_despachada: number;
+    cantidad_devuelta: number;
+    lotes_afectados: number;
+    ultimo_consumo: string | null;
+  }>;
+  vencimientos_bajas: Array<{
+    recurso_id: number;
+    recurso_codigo: string | null;
+    recurso_nombre: string | null;
+    lote: string | null;
+    fecha_vencimiento: string | null;
+    estado_lote: string | null;
+    cantidad_actual: number;
+    cantidad_baja: number;
+    ultima_baja: string | null;
+  }>;
+  compras_por_proveedor: Array<{
+    proveedor_id: number;
+    proveedor_nombre: string | null;
+    ordenes: number;
+    total_comprado: number;
+    cantidad_solicitada: number;
+    cantidad_recibida: number;
+    ultima_compra: string | null;
+  }>;
+  cumplimiento_entregas: Array<{
+    responsable_entrega_id: number;
+    responsable_nombre: string | null;
+    total_despachos: number;
+    entregados: number;
+    fallidos: number;
+    devueltos: number;
+    cumplimiento_porcentaje: number | null;
+    ultima_entrega: string | null;
+  }>;
+  rotacion: Array<{
+    recurso_id: number;
+    recurso_codigo: string | null;
+    recurso_nombre: string | null;
+    stock_actual: number;
+    cantidad_salida: number;
+    indice_rotacion: number | null;
+  }>;
+}
+
 export interface DespachoRecursoDetalle {
   id?: number;
   despacho_id?: number;

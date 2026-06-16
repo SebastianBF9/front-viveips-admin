@@ -62,6 +62,7 @@ import type {
   VacunaProfesional,
   EnviarExamenPayload,
   ResultadoExamenCapacitacion,
+  ReportesRecursosResumen,
 } from "./types";
 
 const API_URL = import.meta.env.VITE_API_URL || "https://api-pruebas.viveips.com.co";
@@ -754,6 +755,21 @@ export async function listarAuditoriaRecursos(params: {
   });
   const suffix = query.toString() ? `?${query.toString()}` : "";
   return apiCall<{ success: boolean; eventos: AuditoriaRecurso[]; total: number }>("GET", `/auditoria-recursos${suffix}`);
+}
+
+export async function obtenerReportesRecursos(params: {
+  fecha_desde?: string;
+  fecha_hasta?: string;
+  recurso_id?: number | string;
+  proveedor_id?: number | string;
+  responsable_entrega_id?: number | string;
+} = {}) {
+  const query = new URLSearchParams();
+  Object.entries(params).forEach(([key, value]) => {
+    if (value !== undefined && value !== null && String(value).trim()) query.set(key, String(value));
+  });
+  const suffix = query.toString() ? `?${query.toString()}` : "";
+  return apiCall<{ success: boolean; reportes: ReportesRecursosResumen }>("GET", `/reportes-recursos/resumen${suffix}`);
 }
 
 export async function listarDespachosRecursos(params: { estado?: string; responsable_entrega_id?: number | string; busqueda?: string } = {}) {

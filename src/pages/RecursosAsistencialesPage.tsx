@@ -48,6 +48,7 @@ import {
   listarAuditoriaRecursos,
   listarInventarioLotes,
   listarMovimientosInventario,
+  obtenerReportesRecursos,
   listarDespachosRecursos,
   listarHistorialEntregasRecursos,
   listarOrdenesCompraRecursos,
@@ -75,6 +76,7 @@ import type {
   InventarioLoteRecurso,
   MovimientoInventarioRecurso,
   AuditoriaRecurso,
+  ReportesRecursosResumen,
   DespachoRecurso,
   DespachoRecursoDetalle,
   DespachoRecursoPayload,
@@ -103,7 +105,7 @@ const TIPOS_RECEPCION = ["tecnica", "administrativa", "tecnica_administrativa"];
 const ESTADOS_RECEPCION = ["pendiente", "aprobada", "rechazada", "parcial"];
 const ESTADOS_LOTE = ["disponible", "cuarentena", "bloqueado", "vencido", "agotado", "dado_de_baja"];
 const ESTADOS_DESPACHO = ["preparado", "en_camino", "entregado", "devuelto", "fallido", "cancelado"];
-const TABS = ["catalogo", "proveedores", "compras", "recepcion", "inventario", "distribucion", "auditoria"] as const;
+const TABS = ["catalogo", "proveedores", "compras", "recepcion", "inventario", "distribucion", "auditoria", "reportes"] as const;
 
 type TabKey = (typeof TABS)[number];
 type AlertaKey = "proximos_vencer" | "vencidos" | "stock_minimo" | "reorden" | "recepciones" | "entregas";
@@ -115,6 +117,15 @@ type AlertaDetalle = {
   meta?: string;
   recurso_id?: number;
   cantidad_sugerida?: number;
+};
+
+const REPORTES_VACIOS: ReportesRecursosResumen = {
+  kardex: [],
+  consumo: [],
+  vencimientos_bajas: [],
+  compras_por_proveedor: [],
+  cumplimiento_entregas: [],
+  rotacion: [],
 };
 
 type RecursoForm = {
@@ -314,6 +325,45 @@ function datosAuditoria(valor: unknown) {
     }
   }
   return valor;
+}
+
+function valorLegible(valor: unknown) {
+  if (valor === null || valor === undefined || valor === "") return "-";
+  if (typeof valor === "object") return JSON.stringify(valor);
+  return String(valor);
+}
+
+function diferenciasAuditoria(evento: AuditoriaRecurso) {
+  const anteriores = datosAuditoria(evento.datos_anteriores);
+  const nuevos = datosAuditoria(evento.datos_nuevos);
+  if (!anteriores || !nuevos || typeof anteriores !== "object" || typeof nuevos !== "object" || Array.isArray(anteriores) || Array.isArray(nuevos)) {
+    return [];
+  }
+  const anteriorObj = anteriores as Record<string, unknown>;
+  const nuevoObj = nuevos as Record<string, unknown>;
+  return [...new Set([...Object.keys(anteriorObj), ...Object.keys(nuevoObj)])]
+    .filter((campo) => JSON.stringify(anteriorObj[campo] ?? null) !== JSON.stringify(nuevoObj[campo] ?? null))
+    .slice(0, 12)
+    .map((campo) => ({ campo, antes: anteriorObj[campo], despues: nuevoObj[campo] }));
+}
+
+function exportarCsv(nombre: string, filas: Array<Record<string, unknown>>) {
+  if (!filas.length) return;
+  const columnas = Object.keys(filas[0]);
+  const escapar = (valor: unknown) => `"${valorLegible(valor).replaceAll('"', '""')}"`;
+  const contenido = [
+    columnas.join(","),
+    ...filas.map((fila) => columnas.map((columna) => escapar(fila[columna])).join(",")),
+  ].join("\n");
+  const blob = new Blob([`\ufeff${contenido}`], { type: "text/csv;charset=utf-8" });
+  const url = URL.createObjectURL(blob);
+  const enlace = document.createElement("a");
+  enlace.href = url;
+  enlace.download = nombre;
+  document.body.appendChild(enlace);
+  enlace.click();
+  enlace.remove();
+  URL.revokeObjectURL(url);
 }
 
 function fechaLocal(valor?: string | null) {
@@ -629,6 +679,7 @@ export function RecursosAsistencialesPage() {
   const [lotesInventario, setLotesInventario] = useState<InventarioLoteRecurso[]>([]);
   const [movimientosInventario, setMovimientosInventario] = useState<MovimientoInventarioRecurso[]>([]);
   const [auditoria, setAuditoria] = useState<AuditoriaRecurso[]>([]);
+  const [reportes, setReportes] = useState<ReportesRecursosResumen>(REPORTES_VACIOS);
   const [despachos, setDespachos] = useState<DespachoRecurso[]>([]);
   const [historialEntregas, setHistorialEntregas] = useState<DespachoRecurso[]>([]);
   const [profesionales, setProfesionales] = useState<ProfesionalAdmin[]>([]);
@@ -653,8 +704,16 @@ export function RecursosAsistencialesPage() {
   const [auditoriaQuery, setAuditoriaQuery] = useState("");
   const [auditoriaModulo, setAuditoriaModulo] = useState("");
   const [auditoriaAccion, setAuditoriaAccion] = useState("");
+  const [auditoriaUsuarioId, setAuditoriaUsuarioId] = useState("");
+  const [auditoriaRecursoId, setAuditoriaRecursoId] = useState("");
+  const [auditoriaLote, setAuditoriaLote] = useState("");
   const [auditoriaDesde, setAuditoriaDesde] = useState("");
   const [auditoriaHasta, setAuditoriaHasta] = useState("");
+  const [reporteDesde, setReporteDesde] = useState("");
+  const [reporteHasta, setReporteHasta] = useState("");
+  const [reporteRecursoId, setReporteRecursoId] = useState("");
+  const [reporteProveedorId, setReporteProveedorId] = useState("");
+  const [reporteProfesionalId, setReporteProfesionalId] = useState("");
   const [recursoForm, setRecursoForm] = useState<RecursoForm | null>(null);
   const [proveedorForm, setProveedorForm] = useState<ProveedorForm | null>(null);
   const [ordenForm, setOrdenForm] = useState<OrdenCompraForm | null>(null);
@@ -679,7 +738,7 @@ export function RecursosAsistencialesPage() {
     try {
       const accesoData = await obtenerMiAcceso();
       const puedeConsultarAuditoria = Boolean(accesoData.permiso_ver_todo || accesoData.permiso_recursos_auditoria);
-      const [recursosData, proveedoresData, serviciosData, ordenesData, recepcionesData, lotesData, movimientosData, despachosData, profesionalesData, auditoriaData] = await Promise.all([
+      const [recursosData, proveedoresData, serviciosData, ordenesData, recepcionesData, lotesData, movimientosData, despachosData, profesionalesData, auditoriaData, reportesData] = await Promise.all([
         listarRecursosAsistenciales(),
         listarProveedoresRecursos(),
         listarServiciosIps(),
@@ -690,6 +749,7 @@ export function RecursosAsistencialesPage() {
         listarDespachosRecursos(),
         listarProfesionales(),
         puedeConsultarAuditoria ? listarAuditoriaRecursos({ limite: 500 }) : Promise.resolve({ eventos: [] }),
+        puedeConsultarAuditoria ? obtenerReportesRecursos() : Promise.resolve({ reportes: REPORTES_VACIOS }),
       ]);
       setAcceso(accesoData);
       setRecursos(recursosData.recursos || []);
@@ -701,6 +761,7 @@ export function RecursosAsistencialesPage() {
       setDespachos(despachosData.despachos || []);
       setProfesionales((profesionalesData.profesionales || []).filter((profesional) => Number(profesional.activo) === 1));
       setAuditoria(auditoriaData.eventos || []);
+      setReportes(reportesData.reportes || REPORTES_VACIOS);
       setServicios(
         (serviciosData.servicios || [])
           .filter((servicio) => servicio.estado === "habilitado" || servicio.estado === "proximo")
@@ -717,6 +778,43 @@ export function RecursosAsistencialesPage() {
     cargar();
   }, []);
 
+  async function cargarReportesFiltrados() {
+    setAccion("cargar-reportes");
+    setError("");
+    try {
+      const data = await obtenerReportesRecursos({
+        fecha_desde: reporteDesde,
+        fecha_hasta: reporteHasta,
+        recurso_id: reporteRecursoId,
+        proveedor_id: reporteProveedorId,
+        responsable_entrega_id: reporteProfesionalId,
+      });
+      setReportes(data.reportes || REPORTES_VACIOS);
+      setSuccess("Reportes actualizados");
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "No fue posible cargar los reportes");
+    } finally {
+      setAccion("");
+    }
+  }
+
+  function exportarAuditoria() {
+    exportarCsv("auditoria_recursos.csv", auditoriaFiltrada.map((evento) => ({
+      fecha: evento.created_at,
+      usuario: evento.usuario_nombre,
+      modulo: labelAuditoria(evento.modulo),
+      accion: labelAuditoria(evento.accion),
+      entidad: labelAuditoria(evento.entidad),
+      referencia: evento.referencia,
+      recurso: evento.recurso_nombre ? `${texto(evento.recurso_codigo)} ${evento.recurso_nombre}` : "",
+      lote: evento.lote,
+      estado_anterior: evento.estado_anterior,
+      estado_nuevo: evento.estado_nuevo,
+      observaciones: evento.observaciones,
+      ip: evento.ip,
+    })));
+  }
+
   const permisoTotal = Boolean(acceso?.permiso_ver_todo);
   const puedeComprar = permisoTotal || Boolean(acceso?.permiso_recursos_comprar);
   const puedeAprobarCompras = permisoTotal || Boolean(acceso?.permiso_recursos_aprobar);
@@ -725,7 +823,7 @@ export function RecursosAsistencialesPage() {
   const puedeDarBajaInventario = permisoTotal || Boolean(acceso?.permiso_recursos_dar_baja);
   const puedeDespachar = permisoTotal || Boolean(acceso?.permiso_recursos_despachar);
   const puedeConsultarAuditoria = permisoTotal || Boolean(acceso?.permiso_recursos_auditoria);
-  const tabsVisibles = TABS.filter((item) => item !== "auditoria" || puedeConsultarAuditoria);
+  const tabsVisibles = TABS.filter((item) => !["auditoria", "reportes"].includes(item) || puedeConsultarAuditoria);
 
   const recursosFiltrados = useMemo(() => {
     const q = query.trim().toLowerCase();
@@ -840,6 +938,9 @@ export function RecursosAsistencialesPage() {
     return auditoria.filter((evento) => {
       if (auditoriaModulo && evento.modulo !== auditoriaModulo) return false;
       if (auditoriaAccion && evento.accion !== auditoriaAccion) return false;
+      if (auditoriaUsuarioId && String(evento.usuario_id || "") !== auditoriaUsuarioId) return false;
+      if (auditoriaRecursoId && String(evento.recurso_id || "") !== auditoriaRecursoId) return false;
+      if (auditoriaLote && String(evento.lote || "") !== auditoriaLote) return false;
       const fecha = String(evento.created_at || "").slice(0, 10);
       if (auditoriaDesde && fecha < auditoriaDesde) return false;
       if (auditoriaHasta && fecha > auditoriaHasta) return false;
@@ -849,7 +950,7 @@ export function RecursosAsistencialesPage() {
         evento.usuario_nombre, evento.accion, evento.entidad, evento.observaciones,
       ].some((valor) => String(valor || "").toLowerCase().includes(q));
     });
-  }, [auditoria, auditoriaAccion, auditoriaDesde, auditoriaHasta, auditoriaModulo, auditoriaQuery]);
+  }, [auditoria, auditoriaAccion, auditoriaDesde, auditoriaHasta, auditoriaLote, auditoriaModulo, auditoriaQuery, auditoriaRecursoId, auditoriaUsuarioId]);
 
   const modulosAuditoria = useMemo(
     () => [...new Set(auditoria.map((evento) => evento.modulo).filter(Boolean))].sort(),
@@ -858,6 +959,21 @@ export function RecursosAsistencialesPage() {
 
   const accionesAuditoria = useMemo(
     () => [...new Set(auditoria.map((evento) => evento.accion).filter(Boolean))].sort(),
+    [auditoria],
+  );
+
+  const usuariosAuditoria = useMemo(
+    () => [...new Map(auditoria
+      .filter((evento) => evento.usuario_id || evento.usuario_nombre)
+      .map((evento) => [String(evento.usuario_id || evento.usuario_nombre), {
+        id: String(evento.usuario_id || evento.usuario_nombre),
+        nombre: texto(evento.usuario_nombre),
+      }])).values()].sort((a, b) => a.nombre.localeCompare(b.nombre, "es")),
+    [auditoria],
+  );
+
+  const lotesAuditoria = useMemo(
+    () => [...new Set(auditoria.map((evento) => evento.lote).filter(Boolean).map(String))].sort(),
     [auditoria],
   );
 
@@ -2311,9 +2427,14 @@ export function RecursosAsistencialesPage() {
               <h2>Auditoría de recursos</h2>
               <p>Historial consolidado de cambios administrativos, entradas, salidas y entregas.</p>
             </div>
-            <button className="secondary-btn" type="button" onClick={cargar} disabled={loading}>
-              Actualizar
-            </button>
+            <div className="infra-inline-actions">
+              <button className="secondary-btn" type="button" onClick={exportarAuditoria} disabled={!auditoriaFiltrada.length}>
+                Exportar CSV
+              </button>
+              <button className="secondary-btn" type="button" onClick={cargar} disabled={loading}>
+                Actualizar
+              </button>
+            </div>
           </div>
 
           <div className="auditoria-summary">
@@ -2338,6 +2459,18 @@ export function RecursosAsistencialesPage() {
             <select value={auditoriaAccion} onChange={(event) => setAuditoriaAccion(event.target.value)}>
               <option value="">Todas las acciones</option>
               {accionesAuditoria.map((item) => <option key={item} value={item}>{labelAuditoria(item)}</option>)}
+            </select>
+            <select value={auditoriaUsuarioId} onChange={(event) => setAuditoriaUsuarioId(event.target.value)}>
+              <option value="">Todos los usuarios</option>
+              {usuariosAuditoria.map((item) => <option key={item.id} value={item.id}>{item.nombre}</option>)}
+            </select>
+            <select value={auditoriaRecursoId} onChange={(event) => setAuditoriaRecursoId(event.target.value)}>
+              <option value="">Todos los recursos</option>
+              {recursos.map((item) => <option key={item.id} value={item.id}>{item.codigo} · {item.nombre}</option>)}
+            </select>
+            <select value={auditoriaLote} onChange={(event) => setAuditoriaLote(event.target.value)}>
+              <option value="">Todos los lotes</option>
+              {lotesAuditoria.map((item) => <option key={item} value={item}>{item}</option>)}
             </select>
             <label className="auditoria-date-field">
               <span>Desde</span>
@@ -2398,7 +2531,200 @@ export function RecursosAsistencialesPage() {
         </section>
       )}
 
-      {!loading && !["catalogo", "proveedores", "compras", "recepcion", "inventario", "distribucion", "auditoria"].includes(tab) && (
+      {!loading && tab === "reportes" && puedeConsultarAuditoria && (
+        <section className="table-card compras-card reportes-card">
+          <div className="section-heading inline-heading">
+            <div>
+              <h2>Reportes de recursos</h2>
+              <p>Kardex, consumo, vencimientos, compras, rotación y cumplimiento de entregas.</p>
+            </div>
+            <button className="secondary-btn" type="button" onClick={cargarReportesFiltrados} disabled={accion === "cargar-reportes"}>
+              Aplicar filtros
+            </button>
+          </div>
+
+          <div className="toolbar auditoria-toolbar">
+            <label className="auditoria-date-field">
+              <span>Desde</span>
+              <input type="date" value={reporteDesde} onChange={(event) => setReporteDesde(event.target.value)} />
+            </label>
+            <label className="auditoria-date-field">
+              <span>Hasta</span>
+              <input type="date" value={reporteHasta} onChange={(event) => setReporteHasta(event.target.value)} />
+            </label>
+            <select value={reporteRecursoId} onChange={(event) => setReporteRecursoId(event.target.value)}>
+              <option value="">Todos los recursos</option>
+              {recursos.map((item) => <option key={item.id} value={item.id}>{item.codigo} · {item.nombre}</option>)}
+            </select>
+            <select value={reporteProveedorId} onChange={(event) => setReporteProveedorId(event.target.value)}>
+              <option value="">Todos los proveedores</option>
+              {proveedores.map((item) => <option key={item.id} value={item.id}>{item.nombre}</option>)}
+            </select>
+            <select value={reporteProfesionalId} onChange={(event) => setReporteProfesionalId(event.target.value)}>
+              <option value="">Todos los profesionales</option>
+              {profesionales.map((item) => <option key={item.id} value={item.id}>{item.nombre}</option>)}
+            </select>
+          </div>
+
+          <div className="reportes-grid">
+            <section className="reporte-panel">
+              <div className="section-heading inline-heading">
+                <div>
+                  <h3>Kardex por producto y lote</h3>
+                  <p>{reportes.kardex.length} registros</p>
+                </div>
+                <button className="secondary-btn" type="button" onClick={() => exportarCsv("kardex_recursos.csv", reportes.kardex)} disabled={!reportes.kardex.length}>CSV</button>
+              </div>
+              <div className="movimientos-table-wrap">
+                <table className="movimientos-table">
+                  <thead><tr><th>Recurso</th><th>Lote</th><th>Entradas</th><th>Salidas</th><th>Saldo</th></tr></thead>
+                  <tbody>
+                    {reportes.kardex.slice(0, 12).map((fila) => (
+                      <tr key={`${fila.inventario_lote_id}-${fila.lote}`}>
+                        <td>{texto(fila.recurso_codigo)} · {texto(fila.recurso_nombre)}</td>
+                        <td>{texto(fila.lote)}<br /><small>{texto(fila.fecha_vencimiento)}</small></td>
+                        <td>{texto(fila.entradas)}</td>
+                        <td>{texto(fila.salidas)}</td>
+                        <td>{texto(fila.saldo_actual)}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </section>
+
+            <section className="reporte-panel">
+              <div className="section-heading inline-heading">
+                <div>
+                  <h3>Consumo por recurso</h3>
+                  <p>{reportes.consumo.length} registros</p>
+                </div>
+                <button className="secondary-btn" type="button" onClick={() => exportarCsv("consumo_recursos.csv", reportes.consumo)} disabled={!reportes.consumo.length}>CSV</button>
+              </div>
+              <div className="movimientos-table-wrap">
+                <table className="movimientos-table">
+                  <thead><tr><th>Recurso</th><th>Despachado</th><th>Devuelto</th><th>Lotes</th></tr></thead>
+                  <tbody>
+                    {reportes.consumo.slice(0, 12).map((fila) => (
+                      <tr key={fila.recurso_id}>
+                        <td>{texto(fila.recurso_codigo)} · {texto(fila.recurso_nombre)}</td>
+                        <td>{texto(fila.cantidad_despachada)}</td>
+                        <td>{texto(fila.cantidad_devuelta)}</td>
+                        <td>{texto(fila.lotes_afectados)}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </section>
+
+            <section className="reporte-panel">
+              <div className="section-heading inline-heading">
+                <div>
+                  <h3>Vencimientos, bajas y pérdidas</h3>
+                  <p>{reportes.vencimientos_bajas.length} registros</p>
+                </div>
+                <button className="secondary-btn" type="button" onClick={() => exportarCsv("vencimientos_bajas_recursos.csv", reportes.vencimientos_bajas)} disabled={!reportes.vencimientos_bajas.length}>CSV</button>
+              </div>
+              <div className="movimientos-table-wrap">
+                <table className="movimientos-table">
+                  <thead><tr><th>Recurso</th><th>Lote</th><th>Vence</th><th>Estado</th><th>Baja</th></tr></thead>
+                  <tbody>
+                    {reportes.vencimientos_bajas.slice(0, 12).map((fila) => (
+                      <tr key={`${fila.recurso_id}-${fila.lote}-${fila.fecha_vencimiento}`}>
+                        <td>{texto(fila.recurso_codigo)} · {texto(fila.recurso_nombre)}</td>
+                        <td>{texto(fila.lote)}</td>
+                        <td>{texto(fila.fecha_vencimiento)}</td>
+                        <td>{labelAuditoria(fila.estado_lote)}</td>
+                        <td>{texto(fila.cantidad_baja)}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </section>
+
+            <section className="reporte-panel">
+              <div className="section-heading inline-heading">
+                <div>
+                  <h3>Compras por proveedor</h3>
+                  <p>{reportes.compras_por_proveedor.length} registros</p>
+                </div>
+                <button className="secondary-btn" type="button" onClick={() => exportarCsv("compras_por_proveedor.csv", reportes.compras_por_proveedor)} disabled={!reportes.compras_por_proveedor.length}>CSV</button>
+              </div>
+              <div className="movimientos-table-wrap">
+                <table className="movimientos-table">
+                  <thead><tr><th>Proveedor</th><th>Órdenes</th><th>Total</th><th>Solicitado</th><th>Recibido</th></tr></thead>
+                  <tbody>
+                    {reportes.compras_por_proveedor.slice(0, 12).map((fila) => (
+                      <tr key={fila.proveedor_id}>
+                        <td>{texto(fila.proveedor_nombre)}</td>
+                        <td>{texto(fila.ordenes)}</td>
+                        <td>{dinero(fila.total_comprado)}</td>
+                        <td>{texto(fila.cantidad_solicitada)}</td>
+                        <td>{texto(fila.cantidad_recibida)}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </section>
+
+            <section className="reporte-panel">
+              <div className="section-heading inline-heading">
+                <div>
+                  <h3>Cumplimiento de entregas</h3>
+                  <p>{reportes.cumplimiento_entregas.length} registros</p>
+                </div>
+                <button className="secondary-btn" type="button" onClick={() => exportarCsv("cumplimiento_entregas.csv", reportes.cumplimiento_entregas)} disabled={!reportes.cumplimiento_entregas.length}>CSV</button>
+              </div>
+              <div className="movimientos-table-wrap">
+                <table className="movimientos-table">
+                  <thead><tr><th>Profesional</th><th>Total</th><th>Entregadas</th><th>Fallidas</th><th>%</th></tr></thead>
+                  <tbody>
+                    {reportes.cumplimiento_entregas.slice(0, 12).map((fila) => (
+                      <tr key={fila.responsable_entrega_id}>
+                        <td>{texto(fila.responsable_nombre)}</td>
+                        <td>{texto(fila.total_despachos)}</td>
+                        <td>{texto(fila.entregados)}</td>
+                        <td>{texto(fila.fallidos)}</td>
+                        <td>{texto(fila.cumplimiento_porcentaje)}%</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </section>
+
+            <section className="reporte-panel">
+              <div className="section-heading inline-heading">
+                <div>
+                  <h3>Rotación del inventario</h3>
+                  <p>{reportes.rotacion.length} registros</p>
+                </div>
+                <button className="secondary-btn" type="button" onClick={() => exportarCsv("rotacion_inventario.csv", reportes.rotacion)} disabled={!reportes.rotacion.length}>CSV</button>
+              </div>
+              <div className="movimientos-table-wrap">
+                <table className="movimientos-table">
+                  <thead><tr><th>Recurso</th><th>Stock actual</th><th>Salidas</th><th>Índice</th></tr></thead>
+                  <tbody>
+                    {reportes.rotacion.slice(0, 12).map((fila) => (
+                      <tr key={fila.recurso_id}>
+                        <td>{texto(fila.recurso_codigo)} · {texto(fila.recurso_nombre)}</td>
+                        <td>{texto(fila.stock_actual)}</td>
+                        <td>{texto(fila.cantidad_salida)}</td>
+                        <td>{texto(fila.indice_rotacion)}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </section>
+          </div>
+        </section>
+      )}
+
+      {!loading && !["catalogo", "proveedores", "compras", "recepcion", "inventario", "distribucion", "auditoria", "reportes"].includes(tab) && (
         <div className="standard-card recursos-placeholder">
           <ClipboardList size={22} />
           <div>
@@ -2435,6 +2761,18 @@ export function RecursosAsistencialesPage() {
                 <div className="auditoria-note">
                   <strong>Observaciones</strong>
                   <p>{auditoriaDetalle.observaciones}</p>
+                </div>
+              )}
+              {diferenciasAuditoria(auditoriaDetalle).length > 0 && (
+                <div className="auditoria-diff">
+                  <h3>Cambios legibles</h3>
+                  {diferenciasAuditoria(auditoriaDetalle).map((cambio) => (
+                    <div className="auditoria-diff-row" key={cambio.campo}>
+                      <strong>{labelAuditoria(cambio.campo)}</strong>
+                      <span>{valorLegible(cambio.antes)}</span>
+                      <span>{valorLegible(cambio.despues)}</span>
+                    </div>
+                  ))}
                 </div>
               )}
               <div className="auditoria-json-grid">
