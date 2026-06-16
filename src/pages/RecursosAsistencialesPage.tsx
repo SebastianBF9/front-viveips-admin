@@ -2233,12 +2233,16 @@ export function RecursosAsistencialesPage() {
                   {["entregado", "fallido", "devuelto"].includes(estadoNormalizado(despacho.estado)) && <button type="button" onClick={() => descargarActaDespacho(despacho)} disabled={accion === `acta-despacho-${despacho.id}`}>
                     <ClipboardList size={15} /> Acta
                   </button>}
-                  <button type="button" onClick={() => abrirEditarDespacho(despacho)} disabled={accion === `editar-despacho-${despacho.id}` || !despachoPreparado(despacho)}>
-                    <Pencil size={15} /> Editar
-                  </button>
-                  <button className="danger" type="button" onClick={() => cancelarDespacho(despacho)} disabled={accion === `cancelar-despacho-${despacho.id}` || !despachoPreparado(despacho)}>
-                    <Trash2 size={15} /> Cancelar
-                  </button>
+                  {despachoPreparado(despacho) && (
+                    <>
+                      <button type="button" onClick={() => abrirEditarDespacho(despacho)} disabled={accion === `editar-despacho-${despacho.id}`}>
+                        <Pencil size={15} /> Editar
+                      </button>
+                      <button className="danger" type="button" onClick={() => cancelarDespacho(despacho)} disabled={accion === `cancelar-despacho-${despacho.id}`}>
+                        <Trash2 size={15} /> Cancelar
+                      </button>
+                    </>
+                  )}
                 </div>
               </article>
             ))}
