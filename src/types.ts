@@ -841,6 +841,8 @@ export interface OrdenCompraRecursoDetalle {
   orden_compra_id?: number;
   recurso_id: number;
   cantidad: number;
+  cantidad_recibida_acumulada?: number | null;
+  cantidad_pendiente?: number | null;
   valor_unitario?: number | null;
   valor_total?: number | null;
   fecha_estimada_entrega?: string | null;
@@ -866,6 +868,9 @@ export interface OrdenCompraRecurso {
   factura_archivo: string | null;
   observaciones: string | null;
   items?: number | null;
+  cantidad_solicitada_total?: number | null;
+  cantidad_recibida_total?: number | null;
+  cantidad_pendiente_total?: number | null;
   detalles?: OrdenCompraRecursoDetalle[];
   created_at?: string | null;
   updated_at?: string | null;
@@ -897,6 +902,8 @@ export interface RecepcionRecursoDetalle {
   lote?: string | null;
   cantidad_recibida: number;
   fecha_vencimiento?: string | null;
+  permitir_exceso?: number | boolean;
+  justificacion_exceso?: string | null;
   registro_sanitario_validado?: number | boolean;
   empaque_integro?: number | boolean;
   temperatura_recibida?: number | null;
@@ -942,6 +949,8 @@ export interface RecepcionRecursoPayload {
     lote?: string | null;
     cantidad_recibida: number;
     fecha_vencimiento?: string | null;
+    permitir_exceso?: boolean;
+    justificacion_exceso?: string | null;
     registro_sanitario_validado?: boolean;
     empaque_integro?: boolean;
     temperatura_recibida?: number | null;

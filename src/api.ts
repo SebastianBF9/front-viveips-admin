@@ -652,8 +652,16 @@ export async function crearOrdenCompraRecurso(payload: OrdenCompraRecursoPayload
   return apiCall<{ success: boolean; mensaje: string; orden_id: number }>("POST", "/ordenes-compra-recursos", payload);
 }
 
+export async function crearSolicitudCompraReorden(payload: { recurso_id: number; cantidad: number; proveedor_id?: number | null; observaciones?: string | null }) {
+  return apiCall<{ success: boolean; mensaje: string; orden_id: number }>("POST", "/ordenes-compra-recursos/desde-reorden", payload);
+}
+
 export async function actualizarOrdenCompraRecurso(id: number, payload: OrdenCompraRecursoPayload) {
   return apiCall<{ success: boolean; mensaje: string }>("PUT", `/ordenes-compra-recursos/${id}`, payload);
+}
+
+export async function aprobarOrdenCompraRecurso(id: number) {
+  return apiCall<{ success: boolean; mensaje: string }>("POST", `/ordenes-compra-recursos/${id}/aprobar`);
 }
 
 export async function eliminarOrdenCompraRecurso(id: number) {

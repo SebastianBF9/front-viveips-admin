@@ -24,6 +24,7 @@ import {
   actualizarProveedorRecurso,
   actualizarRecursoAsistencial,
   ajustarInventarioLote,
+  aprobarOrdenCompraRecurso,
   asociarProveedorRecurso,
   asociarServicioRecurso,
   cambiarEstadoInventarioLote,
@@ -32,6 +33,7 @@ import {
   crearRecepcionRecurso,
   crearProveedorRecurso,
   crearRecursoAsistencial,
+  crearSolicitudCompraReorden,
   darBajaInventarioLote,
   devolverInventarioLote,
   eliminarOrdenCompraRecurso,
@@ -105,6 +107,8 @@ type AlertaDetalle = {
   titulo: string;
   detalle: string;
   meta?: string;
+  recurso_id?: number;
+  cantidad_sugerida?: number;
 };
 
 type RecursoForm = {
@@ -172,6 +176,9 @@ type RecepcionDetalleForm = {
   lote: string;
   cantidad_recibida: string;
   fecha_vencimiento: string;
+  cantidad_pendiente: string;
+  permitir_exceso: boolean;
+  justificacion_exceso: string;
   registro_sanitario_validado: boolean;
   empaque_integro: boolean;
   temperatura_recibida: string;
@@ -258,6 +265,14 @@ function labelTipo(tipo?: string | null) {
 
 function estadoNormalizado(valor?: string | null) {
   return String(valor || "").trim().toLowerCase();
+}
+
+function puedeRecibirOrden(orden?: Pick<OrdenCompraRecurso, "estado"> | null) {
+  return ["aprobada", "enviada_proveedor", "parcialmente_recibida"].includes(estadoNormalizado(orden?.estado));
+}
+
+function puedeAprobarOrden(orden?: Pick<OrdenCompraRecurso, "estado"> | null) {
+  return ["borrador", "solicitada"].includes(estadoNormalizado(orden?.estado));
 }
 
 function fechaHora(valor?: string | null) {
@@ -460,6 +475,9 @@ function detalleRecepcionInicial(): RecepcionDetalleForm {
     lote: "",
     cantidad_recibida: "1",
     fecha_vencimiento: "",
+    cantidad_pendiente: "",
+    permitir_exceso: false,
+    justificacion_exceso: "",
     registro_sanitario_validado: false,
     empaque_integro: true,
     temperatura_recibida: "",
@@ -472,6 +490,8 @@ function detalleRecepcionInicial(): RecepcionDetalleForm {
 
 function recepcionDesdeOrden(orden: OrdenCompraRecurso): RecepcionForm {
   const hoy = new Date().toISOString().slice(0, 10);
+  const detallesPendientes = (orden.detalles && orden.detalles.length ? orden.detalles : [])
+    .filter((detalle) => Number(detalle.cantidad_pendiente ?? detalle.cantidad ?? 0) > 0);
   return {
     orden_compra_id: String(orden.id),
     proveedor_id: orden.proveedor_id ? String(orden.proveedor_id) : "",
@@ -479,12 +499,16 @@ function recepcionDesdeOrden(orden: OrdenCompraRecurso): RecepcionForm {
     tipo_recepcion: "tecnica_administrativa",
     estado: "pendiente",
     observaciones: "",
-    detalles: (orden.detalles && orden.detalles.length ? orden.detalles : []).map((detalle) => ({
-      ...detalleRecepcionInicial(),
-      recurso_id: detalle.recurso_id ? String(detalle.recurso_id) : "",
-      cantidad_recibida: detalle.cantidad != null ? String(detalle.cantidad) : "1",
-      fecha_vencimiento: "",
-    })).concat(orden.detalles && orden.detalles.length ? [] : [detalleRecepcionInicial()]),
+    detalles: detallesPendientes.map((detalle) => {
+      const pendiente = Number(detalle.cantidad_pendiente ?? detalle.cantidad ?? 1);
+      return {
+        ...detalleRecepcionInicial(),
+        recurso_id: detalle.recurso_id ? String(detalle.recurso_id) : "",
+        cantidad_recibida: String(pendiente || 1),
+        cantidad_pendiente: String(pendiente || 0),
+        fecha_vencimiento: "",
+      };
+    }).concat(detallesPendientes.length ? [] : [detalleRecepcionInicial()]),
   };
 }
 
@@ -502,6 +526,9 @@ function recepcionAForm(recepcion: RecepcionRecurso): RecepcionForm {
       lote: detalle.lote || "",
       cantidad_recibida: detalle.cantidad_recibida != null ? String(detalle.cantidad_recibida) : "1",
       fecha_vencimiento: detalle.fecha_vencimiento || "",
+      cantidad_pendiente: "",
+      permitir_exceso: bool(detalle.permitir_exceso),
+      justificacion_exceso: detalle.justificacion_exceso || "",
       registro_sanitario_validado: bool(detalle.registro_sanitario_validado),
       empaque_integro: bool(detalle.empaque_integro),
       temperatura_recibida: detalle.temperatura_recibida != null ? String(detalle.temperatura_recibida) : "",
@@ -844,7 +871,15 @@ export function RecursosAsistencialesPage() {
         stockMinimo.push({ id: `minimo-${lote.recurso_id}`, ...base, meta: `Stock mínimo: ${minimo}` });
       }
       if (punto > 0 && disponible <= punto) {
-        reorden.push({ id: `reorden-${lote.recurso_id}`, ...base, meta: `Punto de reorden: ${punto}` });
+        const maximo = Number(lote.stock_maximo || 0);
+        const cantidadSugerida = Math.max(maximo > disponible ? maximo - disponible : punto - disponible, 1);
+        reorden.push({
+          id: `reorden-${lote.recurso_id}`,
+          ...base,
+          meta: `Punto de reorden: ${punto} · Sugerido: ${Math.ceil(cantidadSugerida)}`,
+          recurso_id: lote.recurso_id,
+          cantidad_sugerida: Math.ceil(cantidadSugerida),
+        });
       }
     });
 
@@ -1190,6 +1225,8 @@ export function RecursosAsistencialesPage() {
           lote: detalle.lote || null,
           cantidad_recibida: numero(detalle.cantidad_recibida) || 0,
           fecha_vencimiento: detalle.fecha_vencimiento || null,
+          permitir_exceso: detalle.permitir_exceso,
+          justificacion_exceso: detalle.justificacion_exceso || null,
           registro_sanitario_validado: detalle.registro_sanitario_validado,
           empaque_integro: detalle.empaque_integro,
           temperatura_recibida: numero(detalle.temperatura_recibida),
@@ -1348,9 +1385,17 @@ export function RecursosAsistencialesPage() {
   }
 
   async function abrirRecepcionDesdeOrden(orden: OrdenCompraRecurso) {
+    if (!puedeRecibirOrden(orden)) {
+      setError("La orden debe estar aprobada o parcialmente recibida antes de registrar recepción.");
+      return;
+    }
     setAccion(`recibir-orden-${orden.id}`);
     try {
       const data = await obtenerOrdenCompraRecurso(orden.id);
+      if (!puedeRecibirOrden(data.orden)) {
+        setError("La orden debe estar aprobada o parcialmente recibida antes de registrar recepción.");
+        return;
+      }
       setRecepcionForm(recepcionDesdeOrden(data.orden));
       setTab("recepcion");
     } catch (err) {
@@ -1380,6 +1425,15 @@ export function RecursosAsistencialesPage() {
     }
     if (!recepcionForm.detalles.some((detalle) => detalle.recurso_id && (numero(detalle.cantidad_recibida) || 0) > 0)) {
       setError("Agrega al menos un recurso recibido con cantidad mayor a cero.");
+      return;
+    }
+    const excesoSinJustificar = recepcionForm.detalles.some((detalle) => {
+      const cantidad = numero(detalle.cantidad_recibida) || 0;
+      const pendiente = numero(detalle.cantidad_pendiente) || 0;
+      return detalle.cumple && pendiente > 0 && cantidad > pendiente && (!detalle.permitir_exceso || !detalle.justificacion_exceso.trim());
+    });
+    if (excesoSinJustificar) {
+      setError("Para recibir más de lo pendiente debes marcar permiso especial y escribir una justificación.");
       return;
     }
     setAccion("guardar-recepcion");
@@ -1542,6 +1596,44 @@ export function RecursosAsistencialesPage() {
       await cargar();
     } catch (err) {
       setError(err instanceof Error ? err.message : "No fue posible cancelar la orden");
+    } finally {
+      setAccion("");
+    }
+  }
+
+  async function aprobarOrden(orden: OrdenCompraRecurso) {
+    if (!puedeAprobarOrden(orden)) return;
+    setAccion(`aprobar-orden-${orden.id}`);
+    setError("");
+    setSuccess("");
+    try {
+      await aprobarOrdenCompraRecurso(orden.id);
+      setSuccess("Orden aprobada correctamente.");
+      await cargar();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "No fue posible aprobar la orden");
+    } finally {
+      setAccion("");
+    }
+  }
+
+  async function crearSolicitudDesdeReorden(alerta: AlertaDetalle) {
+    if (!alerta.recurso_id) return;
+    setAccion(`solicitud-reorden-${alerta.recurso_id}`);
+    setError("");
+    setSuccess("");
+    try {
+      await crearSolicitudCompraReorden({
+        recurso_id: alerta.recurso_id,
+        cantidad: alerta.cantidad_sugerida || 1,
+        observaciones: `Solicitud generada desde alerta de punto de reorden. ${alerta.detalle}`,
+      });
+      setAlertaActiva(null);
+      setTab("compras");
+      setSuccess("Solicitud de compra creada desde la alerta de reorden.");
+      await cargar();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "No fue posible crear la solicitud de compra");
     } finally {
       setAccion("");
     }
@@ -1776,14 +1868,21 @@ export function RecursosAsistencialesPage() {
                 <dl className="recurso-dl">
                   <div><dt>Fecha orden</dt><dd>{texto(orden.fecha_orden)}</dd></div>
                   <div><dt>Entrega estimada</dt><dd>{texto(orden.fecha_estimada_entrega)}</dd></div>
+                  <div><dt>Solicitado</dt><dd>{texto(orden.cantidad_solicitada_total)}</dd></div>
+                  <div><dt>Recibido / pendiente</dt><dd>{texto(orden.cantidad_recibida_total)} / {texto(orden.cantidad_pendiente_total)}</dd></div>
                   <div><dt>Factura</dt><dd>{texto(orden.factura_numero)}</dd></div>
                   <div><dt>Total</dt><dd>{dinero(orden.total)}</dd></div>
                 </dl>
                 <div className="recursos-actions">
-                  <button type="button" onClick={() => abrirRecepcionDesdeOrden(orden)} disabled={accion === `recibir-orden-${orden.id}` || orden.estado === "cancelada"}>
+                  {puedeAprobarOrden(orden) && (
+                    <button type="button" onClick={() => aprobarOrden(orden)} disabled={accion === `aprobar-orden-${orden.id}`}>
+                      <Save size={15} /> Aprobar
+                    </button>
+                  )}
+                  <button type="button" onClick={() => abrirRecepcionDesdeOrden(orden)} disabled={accion === `recibir-orden-${orden.id}` || !puedeRecibirOrden(orden)}>
                     <ClipboardList size={15} /> Recibir
                   </button>
-                  <button type="button" onClick={() => abrirEditarOrden(orden)} disabled={accion === `editar-orden-${orden.id}`}>
+                  <button type="button" onClick={() => abrirEditarOrden(orden)} disabled={accion === `editar-orden-${orden.id}` || ["cerrada", "cancelada"].includes(estadoNormalizado(orden.estado))}>
                     <Pencil size={15} /> Editar
                   </button>
                   <button className="danger" type="button" onClick={() => cancelarOrden(orden)} disabled={accion === `cancelar-orden-${orden.id}` || orden.estado === "cancelada"}>
@@ -2403,6 +2502,16 @@ export function RecursosAsistencialesPage() {
                       <span>{item.detalle}</span>
                     </div>
                     {item.meta && <small>{item.meta}</small>}
+                    {alertaActiva === "reorden" && item.recurso_id && (
+                      <button
+                        className="secondary-btn recursos-alert-action"
+                        type="button"
+                        onClick={() => crearSolicitudDesdeReorden(item)}
+                        disabled={accion === `solicitud-reorden-${item.recurso_id}`}
+                      >
+                        Crear solicitud
+                      </button>
+                    )}
                   </article>
                 ))
               ) : (
@@ -2699,8 +2808,12 @@ export function RecursosAsistencialesPage() {
                   <h3>Checklist por recurso</h3>
                 </div>
                 <div className="orden-detalles recepcion-detalles">
-                  {recepcionForm.detalles.map((detalle, index) => (
-                    <div className="recepcion-detalle-row" key={`${index}-${detalle.recurso_id || "recurso"}`}>
+                  {recepcionForm.detalles.map((detalle, index) => {
+                    const cantidadRecibida = numero(detalle.cantidad_recibida) || 0;
+                    const cantidadPendiente = numero(detalle.cantidad_pendiente) || 0;
+                    const excedePendiente = detalle.cumple && cantidadPendiente > 0 && cantidadRecibida > cantidadPendiente;
+                    return (
+                    <div className={`recepcion-detalle-row${excedePendiente ? " has-overage" : ""}`} key={`${index}-${detalle.recurso_id || "recurso"}`}>
                       <label>Recurso
                         <select value={detalle.recurso_id} onChange={(event) => actualizarDetalleRecepcion(index, "recurso_id", event.target.value)} disabled>
                           <option value="">Seleccionar recurso</option>
@@ -2713,6 +2826,12 @@ export function RecursosAsistencialesPage() {
                       <label>Cantidad recibida
                         <input value={detalle.cantidad_recibida} onChange={(event) => actualizarDetalleRecepcion(index, "cantidad_recibida", event.target.value)} inputMode="decimal" />
                       </label>
+                      {detalle.cantidad_pendiente && (
+                        <div className="recepcion-pendiente-box">
+                          <span>Pendiente autorizado</span>
+                          <strong>{detalle.cantidad_pendiente}</strong>
+                        </div>
+                      )}
                       <label>Fecha vencimiento
                         <input type="date" value={detalle.fecha_vencimiento} onChange={(event) => actualizarDetalleRecepcion(index, "fecha_vencimiento", event.target.value)} />
                       </label>
@@ -2725,6 +2844,19 @@ export function RecursosAsistencialesPage() {
                       <label className="infra-check-field"><input type="checkbox" checked={detalle.registro_sanitario_validado} onChange={(event) => actualizarDetalleRecepcion(index, "registro_sanitario_validado", event.target.checked)} /> Registro sanitario validado</label>
                       <label className="infra-check-field"><input type="checkbox" checked={detalle.empaque_integro} onChange={(event) => actualizarDetalleRecepcion(index, "empaque_integro", event.target.checked)} /> Empaque íntegro</label>
                       <label className="infra-check-field"><input type="checkbox" checked={detalle.cumple} onChange={(event) => actualizarDetalleRecepcion(index, "cumple", event.target.checked)} /> Cumple recepción</label>
+                      {excedePendiente && (
+                        <div className="recursos-inline-warning wide-field">
+                          La cantidad supera el pendiente autorizado. Requiere permiso especial y justificación.
+                        </div>
+                      )}
+                      {(excedePendiente || detalle.permitir_exceso) && (
+                        <>
+                          <label className="infra-check-field"><input type="checkbox" checked={detalle.permitir_exceso} onChange={(event) => actualizarDetalleRecepcion(index, "permitir_exceso", event.target.checked)} /> Permitir exceso autorizado</label>
+                          <label className="wide-field">Justificación de exceso
+                            <input value={detalle.justificacion_exceso} onChange={(event) => actualizarDetalleRecepcion(index, "justificacion_exceso", event.target.value)} />
+                          </label>
+                        </>
+                      )}
                       {!detalle.cumple && (
                         <label className="wide-field">Motivo de rechazo *
                           <input value={detalle.motivo_rechazo} onChange={(event) => actualizarDetalleRecepcion(index, "motivo_rechazo", event.target.value)} />
@@ -2734,7 +2866,8 @@ export function RecursosAsistencialesPage() {
                         <input value={detalle.observaciones} onChange={(event) => actualizarDetalleRecepcion(index, "observaciones", event.target.value)} />
                       </label>
                     </div>
-                  ))}
+                    );
+                  })}
                 </div>
               </section>
             </div>
