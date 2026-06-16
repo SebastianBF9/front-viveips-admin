@@ -37,7 +37,16 @@ export function AppLayout() {
   const puedeVerTalento = Boolean(acceso?.permiso_ver_todo || acceso?.permiso_ver_profesionales || acceso?.permiso_crear_profesionales);
   const puedeVerAccesos = Boolean(acceso?.permiso_ver_todo);
   const puedeVerInfraestructura = Boolean(acceso?.permiso_ver_todo || acceso?.permiso_tecnovigilancia);
-  const puedeVerRecursos = Boolean(acceso?.permiso_ver_todo);
+  const puedeVerRecursos = Boolean(
+    acceso?.permiso_ver_todo ||
+    acceso?.permiso_recursos_comprar ||
+    acceso?.permiso_recursos_aprobar ||
+    acceso?.permiso_recursos_recibir ||
+    acceso?.permiso_recursos_ajustar ||
+    acceso?.permiso_recursos_dar_baja ||
+    acceso?.permiso_recursos_despachar ||
+    acceso?.permiso_recursos_auditoria
+  );
 
   return (
     <div className="app-shell">

@@ -58,6 +58,7 @@ import {
   listarServiciosIps,
   obtenerOrdenCompraRecurso,
   obtenerDespachoRecurso,
+  obtenerMiAcceso,
   obtenerRecepcionRecurso,
   marcarSalidaDespachoRecurso,
   obtenerRecursoAsistencial,
@@ -70,6 +71,7 @@ import type {
   OrdenCompraRecurso,
   OrdenCompraRecursoDetalle,
   OrdenCompraRecursoPayload,
+  PermisosAcceso,
   InventarioLoteRecurso,
   MovimientoInventarioRecurso,
   AuditoriaRecurso,
@@ -631,6 +633,7 @@ export function RecursosAsistencialesPage() {
   const [historialEntregas, setHistorialEntregas] = useState<DespachoRecurso[]>([]);
   const [profesionales, setProfesionales] = useState<ProfesionalAdmin[]>([]);
   const [servicios, setServicios] = useState<ServicioIps[]>([]);
+  const [acceso, setAcceso] = useState<PermisosAcceso | null>(null);
   const [loading, setLoading] = useState(true);
   const [accion, setAccion] = useState("");
   const [error, setError] = useState("");
@@ -674,6 +677,8 @@ export function RecursosAsistencialesPage() {
     setLoading(true);
     setError("");
     try {
+      const accesoData = await obtenerMiAcceso();
+      const puedeConsultarAuditoria = Boolean(accesoData.permiso_ver_todo || accesoData.permiso_recursos_auditoria);
       const [recursosData, proveedoresData, serviciosData, ordenesData, recepcionesData, lotesData, movimientosData, despachosData, profesionalesData, auditoriaData] = await Promise.all([
         listarRecursosAsistenciales(),
         listarProveedoresRecursos(),
@@ -684,8 +689,9 @@ export function RecursosAsistencialesPage() {
         listarMovimientosInventario(),
         listarDespachosRecursos(),
         listarProfesionales(),
-        listarAuditoriaRecursos({ limite: 500 }),
+        puedeConsultarAuditoria ? listarAuditoriaRecursos({ limite: 500 }) : Promise.resolve({ eventos: [] }),
       ]);
+      setAcceso(accesoData);
       setRecursos(recursosData.recursos || []);
       setProveedores(proveedoresData.proveedores || []);
       setOrdenes(ordenesData.ordenes || []);
@@ -710,6 +716,16 @@ export function RecursosAsistencialesPage() {
   useEffect(() => {
     cargar();
   }, []);
+
+  const permisoTotal = Boolean(acceso?.permiso_ver_todo);
+  const puedeComprar = permisoTotal || Boolean(acceso?.permiso_recursos_comprar);
+  const puedeAprobarCompras = permisoTotal || Boolean(acceso?.permiso_recursos_aprobar);
+  const puedeRecibirCompras = permisoTotal || Boolean(acceso?.permiso_recursos_recibir);
+  const puedeAjustarInventario = permisoTotal || Boolean(acceso?.permiso_recursos_ajustar);
+  const puedeDarBajaInventario = permisoTotal || Boolean(acceso?.permiso_recursos_dar_baja);
+  const puedeDespachar = permisoTotal || Boolean(acceso?.permiso_recursos_despachar);
+  const puedeConsultarAuditoria = permisoTotal || Boolean(acceso?.permiso_recursos_auditoria);
+  const tabsVisibles = TABS.filter((item) => item !== "auditoria" || puedeConsultarAuditoria);
 
   const recursosFiltrados = useMemo(() => {
     const q = query.trim().toLowerCase();
@@ -963,6 +979,14 @@ export function RecursosAsistencialesPage() {
 
   function abrirOperacionLote(lote: InventarioLoteRecurso, operacion: OperacionLote, elemento?: HTMLElement) {
     elemento?.closest("details")?.removeAttribute("open");
+    if (operacion === "baja" && !puedeDarBajaInventario) {
+      setError("No tienes permiso para dar de baja inventario.");
+      return;
+    }
+    if (operacion !== "baja" && !puedeAjustarInventario) {
+      setError("No tienes permiso para ajustar inventario.");
+      return;
+    }
     const estadoDestino = lote.estado === "bloqueado" || lote.estado === "cuarentena" ? "disponible" : "bloqueado";
     setOperacionLoteForm({
       lote,
@@ -1748,9 +1772,9 @@ export function RecursosAsistencialesPage() {
           <button className="secondary-btn" type="button" onClick={cargar} disabled={loading}>
             Actualizar
           </button>
-          <button className="brand-action-btn" type="button" onClick={() => setRecursoForm(inicialRecurso())}>
+          {permisoTotal && <button className="brand-action-btn" type="button" onClick={() => setRecursoForm(inicialRecurso())}>
             <Plus size={17} /> Nuevo recurso
-          </button>
+          </button>}
         </div>
       </header>
 
@@ -1789,7 +1813,7 @@ export function RecursosAsistencialesPage() {
       </section>
 
       <div className="tabs recursos-tabs">
-        {TABS.map((item) => (
+        {tabsVisibles.map((item) => (
           <button key={item} className={tab === item ? "active" : ""} type="button" onClick={() => setTab(item)}>
             {item === "catalogo" ? "Catálogo" : item === "recepcion" ? "Recepción" : item[0].toUpperCase() + item.slice(1)}
           </button>
@@ -1861,14 +1885,16 @@ export function RecursosAsistencialesPage() {
                   <div><dt>Registro sanitario</dt><dd>{texto(recurso.registro_sanitario)}</dd></div>
                   <div><dt>Stock mín / máx</dt><dd>{texto(recurso.stock_minimo)} / {texto(recurso.stock_maximo)}</dd></div>
                 </dl>
-                <div className="recursos-actions">
-                  <button type="button" onClick={() => abrirEditarRecurso(recurso)} disabled={accion === `editar-recurso-${recurso.id}`}>
-                    <Pencil size={15} /> Editar
-                  </button>
-                  <button className="danger" type="button" onClick={() => inactivarRecurso(recurso)} disabled={accion === `inactivar-recurso-${recurso.id}`}>
-                    <Trash2 size={15} /> Inactivar
-                  </button>
-                </div>
+                {permisoTotal && (
+                  <div className="recursos-actions">
+                    <button type="button" onClick={() => abrirEditarRecurso(recurso)} disabled={accion === `editar-recurso-${recurso.id}`}>
+                      <Pencil size={15} /> Editar
+                    </button>
+                    <button className="danger" type="button" onClick={() => inactivarRecurso(recurso)} disabled={accion === `inactivar-recurso-${recurso.id}`}>
+                      <Trash2 size={15} /> Inactivar
+                    </button>
+                  </div>
+                )}
               </article>
             ))}
           </div>
@@ -1883,9 +1909,9 @@ export function RecursosAsistencialesPage() {
               <h2>Proveedores</h2>
               <p>Aliados para compra y suministro de recursos asistenciales.</p>
             </div>
-            <button className="primary-btn" type="button" onClick={() => setProveedorForm(inicialProveedor())}>
+            {permisoTotal && <button className="primary-btn" type="button" onClick={() => setProveedorForm(inicialProveedor())}>
               <Plus size={16} /> Nuevo proveedor
-            </button>
+            </button>}
           </div>
           <div className="recursos-list-head recursos-list-head-provider" aria-hidden="true">
             <span>Proveedor</span>
@@ -1901,14 +1927,16 @@ export function RecursosAsistencialesPage() {
                 <span>NIT: {texto(proveedor.nit)}</span>
                 <span>{texto(proveedor.telefono)} · {texto(proveedor.correo)}</span>
                 <span className={`pill ${proveedor.estado}`}>{proveedor.estado}</span>
-                <div className="recursos-actions">
-                  <button type="button" onClick={() => setProveedorForm(proveedorAForm(proveedor))}>
-                    <Pencil size={15} /> Editar
-                  </button>
-                  <button className="danger" type="button" onClick={() => inactivarProveedor(proveedor)}>
-                    <Trash2 size={15} /> Inactivar
-                  </button>
-                </div>
+                {permisoTotal && (
+                  <div className="recursos-actions">
+                    <button type="button" onClick={() => setProveedorForm(proveedorAForm(proveedor))}>
+                      <Pencil size={15} /> Editar
+                    </button>
+                    <button className="danger" type="button" onClick={() => inactivarProveedor(proveedor)}>
+                      <Trash2 size={15} /> Inactivar
+                    </button>
+                  </div>
+                )}
               </article>
             ))}
           </div>
@@ -1922,9 +1950,9 @@ export function RecursosAsistencialesPage() {
               <h2>Órdenes de compra</h2>
               <p>Adquisición de medicamentos, dispositivos médicos e insumos desde proveedores registrados.</p>
             </div>
-            <button className="primary-btn" type="button" onClick={() => setOrdenForm(inicialOrdenCompra())}>
+            {puedeComprar && <button className="primary-btn" type="button" onClick={() => setOrdenForm(inicialOrdenCompra())}>
               <Plus size={16} /> Nueva orden
-            </button>
+            </button>}
           </div>
 
           <div className="toolbar compras-toolbar">
@@ -1971,20 +1999,20 @@ export function RecursosAsistencialesPage() {
                   <div><dt>Total</dt><dd>{dinero(orden.total)}</dd></div>
                 </dl>
                 <div className="recursos-actions">
-                  {puedeAprobarOrden(orden) && (
+                  {puedeAprobarCompras && puedeAprobarOrden(orden) && (
                     <button type="button" onClick={() => aprobarOrden(orden)} disabled={accion === `aprobar-orden-${orden.id}`}>
                       <Save size={15} /> Aprobar
                     </button>
                   )}
-                  <button type="button" onClick={() => abrirRecepcionDesdeOrden(orden)} disabled={accion === `recibir-orden-${orden.id}` || !puedeRecibirOrden(orden)}>
+                  {puedeRecibirCompras && <button type="button" onClick={() => abrirRecepcionDesdeOrden(orden)} disabled={accion === `recibir-orden-${orden.id}` || !puedeRecibirOrden(orden)}>
                     <ClipboardList size={15} /> Recibir
-                  </button>
-                  <button type="button" onClick={() => abrirEditarOrden(orden)} disabled={accion === `editar-orden-${orden.id}` || ["cerrada", "cancelada"].includes(estadoNormalizado(orden.estado))}>
+                  </button>}
+                  {puedeComprar && <button type="button" onClick={() => abrirEditarOrden(orden)} disabled={accion === `editar-orden-${orden.id}` || ["cerrada", "cancelada"].includes(estadoNormalizado(orden.estado))}>
                     <Pencil size={15} /> Editar
-                  </button>
-                  <button className="danger" type="button" onClick={() => cancelarOrden(orden)} disabled={accion === `cancelar-orden-${orden.id}` || orden.estado === "cancelada"}>
+                  </button>}
+                  {puedeComprar && <button className="danger" type="button" onClick={() => cancelarOrden(orden)} disabled={accion === `cancelar-orden-${orden.id}` || orden.estado === "cancelada"}>
                     <Trash2 size={15} /> Cancelar
-                  </button>
+                  </button>}
                 </div>
               </article>
             ))}
@@ -2045,12 +2073,12 @@ export function RecursosAsistencialesPage() {
                   <div><dt>Observaciones</dt><dd>{texto(recepcion.observaciones)}</dd></div>
                 </dl>
                 <div className="recursos-actions">
-                  <button type="button" onClick={() => ingresarInventario(recepcion)} disabled={accion === `inventario-recepcion-${recepcion.id}` || !["aprobada", "parcial"].includes(String(recepcion.estado))}>
+                  {puedeRecibirCompras && <button type="button" onClick={() => ingresarInventario(recepcion)} disabled={accion === `inventario-recepcion-${recepcion.id}` || !["aprobada", "parcial"].includes(String(recepcion.estado))}>
                     <Boxes size={15} /> Inventario
-                  </button>
-                  <button type="button" onClick={() => abrirEditarRecepcion(recepcion)} disabled={accion === `editar-recepcion-${recepcion.id}`}>
+                  </button>}
+                  {puedeRecibirCompras && <button type="button" onClick={() => abrirEditarRecepcion(recepcion)} disabled={accion === `editar-recepcion-${recepcion.id}`}>
                     <Pencil size={15} /> Editar
-                  </button>
+                  </button>}
                 </div>
               </article>
             ))}
@@ -2118,21 +2146,21 @@ export function RecursosAsistencialesPage() {
                   <button type="button" onClick={() => abrirMovimientosLote(lote)}>
                     <ClipboardList size={15} /> Ver movimientos
                   </button>
-                  <details className="lote-options">
+                  {(puedeAjustarInventario || puedeDarBajaInventario) && <details className="lote-options">
                     <summary><MoreVertical size={15} /> Opciones</summary>
                     <div className="lote-options-menu">
-                      <button type="button" onClick={(event) => abrirOperacionLote(lote, "ajuste", event.currentTarget)}>Ajustar existencias</button>
-                      {lote.estado !== "bloqueado" && (
+                      {puedeAjustarInventario && <button type="button" onClick={(event) => abrirOperacionLote(lote, "ajuste", event.currentTarget)}>Ajustar existencias</button>}
+                      {puedeAjustarInventario && lote.estado !== "bloqueado" && (
                         <button type="button" onClick={(event) => abrirOperacionLote(lote, "estado", event.currentTarget)}>Bloquear o poner en cuarentena</button>
                       )}
-                      {(lote.estado === "bloqueado" || lote.estado === "cuarentena") && (
+                      {puedeAjustarInventario && (lote.estado === "bloqueado" || lote.estado === "cuarentena") && (
                         <button type="button" onClick={(event) => abrirOperacionLote(lote, "estado", event.currentTarget)}>Desbloquear lote</button>
                       )}
-                      <button type="button" onClick={(event) => abrirOperacionLote(lote, "traslado", event.currentTarget)}>Trasladar</button>
-                      <button type="button" onClick={(event) => abrirOperacionLote(lote, "devolucion", event.currentTarget)}>Registrar devolución</button>
-                      <button className="danger" type="button" onClick={(event) => abrirOperacionLote(lote, "baja", event.currentTarget)}>Dar de baja</button>
+                      {puedeAjustarInventario && <button type="button" onClick={(event) => abrirOperacionLote(lote, "traslado", event.currentTarget)}>Trasladar</button>}
+                      {puedeAjustarInventario && <button type="button" onClick={(event) => abrirOperacionLote(lote, "devolucion", event.currentTarget)}>Registrar devolución</button>}
+                      {puedeDarBajaInventario && <button className="danger" type="button" onClick={(event) => abrirOperacionLote(lote, "baja", event.currentTarget)}>Dar de baja</button>}
                     </div>
-                  </details>
+                  </details>}
                 </div>
               </article>
               );
@@ -2174,9 +2202,9 @@ export function RecursosAsistencialesPage() {
               <h2>Distribución domiciliaria</h2>
               <p>Entrega interna al responsable de ruta y salida de inventario hacia domicilio del paciente.</p>
             </div>
-            <button className="primary-btn" type="button" onClick={() => setDespachoForm(inicialDespacho())}>
+            {puedeDespachar && <button className="primary-btn" type="button" onClick={() => setDespachoForm(inicialDespacho())}>
               <Plus size={16} /> Nuevo despacho
-            </button>
+            </button>}
           </div>
 
           <div className="toolbar compras-toolbar">
@@ -2221,19 +2249,19 @@ export function RecursosAsistencialesPage() {
                   <div><dt>Última falla</dt><dd>{texto(despacho.motivo_entrega_fallida)}</dd></div>
                 </dl>
                 <div className="recursos-actions">
-                  {estadoNormalizado(despacho.estado) === "preparado" && <button type="button" onClick={() => marcarSalidaDespacho(despacho)} disabled={accion === `salida-despacho-${despacho.id}`}>
+                  {puedeDespachar && estadoNormalizado(despacho.estado) === "preparado" && <button type="button" onClick={() => marcarSalidaDespacho(despacho)} disabled={accion === `salida-despacho-${despacho.id}`}>
                     <Truck size={15} /> Marcar salida
                   </button>}
-                  {estadoNormalizado(despacho.estado) === "fallido" && <button type="button" onClick={() => setReintentoForm({ despacho, fecha_programada: despacho.fecha_reintento ? String(despacho.fecha_reintento).slice(0, 16) : "", observaciones: "" })}>
+                  {puedeDespachar && estadoNormalizado(despacho.estado) === "fallido" && <button type="button" onClick={() => setReintentoForm({ despacho, fecha_programada: despacho.fecha_reintento ? String(despacho.fecha_reintento).slice(0, 16) : "", observaciones: "" })}>
                     <Truck size={15} /> Reintentar
                   </button>}
-                  {["en_camino", "fallido"].includes(estadoNormalizado(despacho.estado)) && !bool(despacho.devuelto_inventario) && <button type="button" onClick={() => setDevolucionDespachoForm({ despacho, apto_reintegro: true, motivo: "" })}>
+                  {puedeDespachar && ["en_camino", "fallido"].includes(estadoNormalizado(despacho.estado)) && !bool(despacho.devuelto_inventario) && <button type="button" onClick={() => setDevolucionDespachoForm({ despacho, apto_reintegro: true, motivo: "" })}>
                     <Boxes size={15} /> Devolver
                   </button>}
                   {["entregado", "fallido", "devuelto"].includes(estadoNormalizado(despacho.estado)) && <button type="button" onClick={() => descargarActaDespacho(despacho)} disabled={accion === `acta-despacho-${despacho.id}`}>
                     <ClipboardList size={15} /> Acta
                   </button>}
-                  {despachoPreparado(despacho) && (
+                  {puedeDespachar && despachoPreparado(despacho) && (
                     <>
                       <button type="button" onClick={() => abrirEditarDespacho(despacho)} disabled={accion === `editar-despacho-${despacho.id}`}>
                         <Pencil size={15} /> Editar
@@ -2276,7 +2304,7 @@ export function RecursosAsistencialesPage() {
         </section>
       )}
 
-      {!loading && tab === "auditoria" && (
+      {!loading && tab === "auditoria" && puedeConsultarAuditoria && (
         <section className="table-card compras-card auditoria-card">
           <div className="section-heading inline-heading">
             <div>
@@ -2448,11 +2476,11 @@ export function RecursosAsistencialesPage() {
                   value={operacionLoteForm.operacion}
                   onChange={(event) => setOperacionLoteForm((actual) => actual ? { ...actual, operacion: event.target.value as OperacionLote } : actual)}
                 >
-                  <option value="ajuste">Ajuste de existencias</option>
-                  <option value="baja">Baja de inventario</option>
-                  <option value="estado">Bloqueo, cuarentena o desbloqueo</option>
-                  <option value="traslado">Traslado de ubicación</option>
-                  <option value="devolucion">Devolución</option>
+                  {puedeAjustarInventario && <option value="ajuste">Ajuste de existencias</option>}
+                  {puedeDarBajaInventario && <option value="baja">Baja de inventario</option>}
+                  {puedeAjustarInventario && <option value="estado">Bloqueo, cuarentena o desbloqueo</option>}
+                  {puedeAjustarInventario && <option value="traslado">Traslado de ubicación</option>}
+                  {puedeAjustarInventario && <option value="devolucion">Devolución</option>}
                 </select>
               </label>
 
@@ -2639,7 +2667,7 @@ export function RecursosAsistencialesPage() {
                       <span>{item.detalle}</span>
                     </div>
                     {item.meta && <small>{item.meta}</small>}
-                    {alertaActiva === "reorden" && item.recurso_id && (
+                    {puedeComprar && alertaActiva === "reorden" && item.recurso_id && (
                       <button
                         className="secondary-btn recursos-alert-action"
                         type="button"

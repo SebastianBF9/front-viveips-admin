@@ -361,6 +361,13 @@ export interface PermisosAcceso {
   permiso_crear_profesionales: boolean;
   permiso_ver_capacitaciones: boolean;
   permiso_tecnovigilancia: boolean;
+  permiso_recursos_comprar: boolean;
+  permiso_recursos_aprobar: boolean;
+  permiso_recursos_recibir: boolean;
+  permiso_recursos_ajustar: boolean;
+  permiso_recursos_dar_baja: boolean;
+  permiso_recursos_despachar: boolean;
+  permiso_recursos_auditoria: boolean;
 }
 
 export interface UsuarioPermisos {
@@ -378,6 +385,13 @@ export interface UsuarioPermisos {
   permiso_crear_profesionales: boolean;
   permiso_ver_capacitaciones: boolean;
   permiso_tecnovigilancia: boolean;
+  permiso_recursos_comprar: boolean;
+  permiso_recursos_aprobar: boolean;
+  permiso_recursos_recibir: boolean;
+  permiso_recursos_ajustar: boolean;
+  permiso_recursos_dar_baja: boolean;
+  permiso_recursos_despachar: boolean;
+  permiso_recursos_auditoria: boolean;
 }
 
 export type UsuarioPermisosPayload = Pick<
@@ -387,6 +401,13 @@ export type UsuarioPermisosPayload = Pick<
   | "permiso_crear_profesionales"
   | "permiso_ver_capacitaciones"
   | "permiso_tecnovigilancia"
+  | "permiso_recursos_comprar"
+  | "permiso_recursos_aprobar"
+  | "permiso_recursos_recibir"
+  | "permiso_recursos_ajustar"
+  | "permiso_recursos_dar_baja"
+  | "permiso_recursos_despachar"
+  | "permiso_recursos_auditoria"
 >;
 
 export interface CapacitacionAdmin {

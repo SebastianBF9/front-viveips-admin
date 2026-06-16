@@ -10,6 +10,13 @@ const permisos: Array<{ campo: keyof UsuarioPermisosPayload; label: string; ayud
   { campo: "permiso_crear_profesionales", label: "Crear profesionales", ayuda: "Crear usuarios profesionales desde Talento Humano" },
   { campo: "permiso_ver_capacitaciones", label: "Capacitaciones", ayuda: "Gestionar capacitaciones" },
   { campo: "permiso_tecnovigilancia", label: "Dotacion", ayuda: "Gestionar equipos y tecnovigilancia" },
+  { campo: "permiso_recursos_comprar", label: "Comprar", ayuda: "Crear, editar y cancelar órdenes de compra de recursos" },
+  { campo: "permiso_recursos_aprobar", label: "Aprobar OC", ayuda: "Aprobar órdenes de compra de recursos" },
+  { campo: "permiso_recursos_recibir", label: "Recibir", ayuda: "Registrar recepciones e ingresar a inventario" },
+  { campo: "permiso_recursos_ajustar", label: "Ajustar inv.", ayuda: "Ajustar, bloquear, trasladar y registrar devoluciones de lotes" },
+  { campo: "permiso_recursos_dar_baja", label: "Dar baja", ayuda: "Dar de baja recursos de inventario" },
+  { campo: "permiso_recursos_despachar", label: "Despachar", ayuda: "Crear despachos, salidas, reintentos y devoluciones de entrega" },
+  { campo: "permiso_recursos_auditoria", label: "Auditoría RA", ayuda: "Consultar auditoría de recursos asistenciales" },
 ];
 
 function iniciales(nombre?: string | null) {
@@ -29,6 +36,13 @@ function payloadDesdeUsuario(usuario: UsuarioPermisos): UsuarioPermisosPayload {
     permiso_crear_profesionales: usuario.permiso_crear_profesionales,
     permiso_ver_capacitaciones: usuario.permiso_ver_capacitaciones,
     permiso_tecnovigilancia: usuario.permiso_tecnovigilancia,
+    permiso_recursos_comprar: usuario.permiso_recursos_comprar,
+    permiso_recursos_aprobar: usuario.permiso_recursos_aprobar,
+    permiso_recursos_recibir: usuario.permiso_recursos_recibir,
+    permiso_recursos_ajustar: usuario.permiso_recursos_ajustar,
+    permiso_recursos_dar_baja: usuario.permiso_recursos_dar_baja,
+    permiso_recursos_despachar: usuario.permiso_recursos_despachar,
+    permiso_recursos_auditoria: usuario.permiso_recursos_auditoria,
   };
 }
 
