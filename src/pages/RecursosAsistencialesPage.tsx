@@ -1772,7 +1772,7 @@ export function RecursosAsistencialesPage() {
           <button className="secondary-btn" type="button" onClick={cargar} disabled={loading}>
             Actualizar
           </button>
-          {permisoTotal && <button className="brand-action-btn" type="button" onClick={() => setRecursoForm(inicialRecurso())}>
+          {puedeComprar && <button className="brand-action-btn" type="button" onClick={() => setRecursoForm(inicialRecurso())}>
             <Plus size={17} /> Nuevo recurso
           </button>}
         </div>
@@ -1885,7 +1885,7 @@ export function RecursosAsistencialesPage() {
                   <div><dt>Registro sanitario</dt><dd>{texto(recurso.registro_sanitario)}</dd></div>
                   <div><dt>Stock mín / máx</dt><dd>{texto(recurso.stock_minimo)} / {texto(recurso.stock_maximo)}</dd></div>
                 </dl>
-                {permisoTotal && (
+                {puedeComprar && (
                   <div className="recursos-actions">
                     <button type="button" onClick={() => abrirEditarRecurso(recurso)} disabled={accion === `editar-recurso-${recurso.id}`}>
                       <Pencil size={15} /> Editar
@@ -1909,7 +1909,7 @@ export function RecursosAsistencialesPage() {
               <h2>Proveedores</h2>
               <p>Aliados para compra y suministro de recursos asistenciales.</p>
             </div>
-            {permisoTotal && <button className="primary-btn" type="button" onClick={() => setProveedorForm(inicialProveedor())}>
+            {puedeComprar && <button className="primary-btn" type="button" onClick={() => setProveedorForm(inicialProveedor())}>
               <Plus size={16} /> Nuevo proveedor
             </button>}
           </div>
@@ -1927,7 +1927,7 @@ export function RecursosAsistencialesPage() {
                 <span>NIT: {texto(proveedor.nit)}</span>
                 <span>{texto(proveedor.telefono)} · {texto(proveedor.correo)}</span>
                 <span className={`pill ${proveedor.estado}`}>{proveedor.estado}</span>
-                {permisoTotal && (
+                {puedeComprar && (
                   <div className="recursos-actions">
                     <button type="button" onClick={() => setProveedorForm(proveedorAForm(proveedor))}>
                       <Pencil size={15} /> Editar
