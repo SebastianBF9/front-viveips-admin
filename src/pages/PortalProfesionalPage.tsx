@@ -888,16 +888,34 @@ export function PortalProfesionalPage() {
   const primerNombre = form.nombre.split(" ").filter(Boolean)[0] || "Profesional";
   const puedeEntrarAdmin = Boolean(acceso?.permiso_ver_todo);
   const puedeEntrarTalento = Boolean(acceso?.permiso_ver_todo || acceso?.permiso_ver_profesionales || acceso?.permiso_crear_profesionales);
+  const puedeEntrarInfraestructura = Boolean(acceso?.permiso_ver_todo || acceso?.permiso_tecnovigilancia);
+  const puedeEntrarRecursos = Boolean(
+    acceso?.permiso_ver_todo ||
+    acceso?.permiso_recursos_comprar ||
+    acceso?.permiso_recursos_aprobar ||
+    acceso?.permiso_recursos_recibir ||
+    acceso?.permiso_recursos_ajustar ||
+    acceso?.permiso_recursos_dar_baja ||
+    acceso?.permiso_recursos_despachar ||
+    acceso?.permiso_recursos_auditoria
+  );
+  const puedeEntrarPanel = puedeEntrarAdmin || puedeEntrarTalento || puedeEntrarInfraestructura || puedeEntrarRecursos;
   const serviciosVisibles = serviciosAsignados.filter((servicio) => servicio.estado !== "inactivo");
-  const adminTarget = puedeEntrarAdmin ? "/servicios" : "/talento-humano";
-  const adminLabel = puedeEntrarAdmin ? "Panel administrativo" : "Talento Humano";
+  const adminTarget = puedeEntrarAdmin
+    ? "/servicios"
+    : puedeEntrarTalento
+      ? "/talento-humano"
+      : puedeEntrarInfraestructura
+        ? "/infraestructura"
+        : "/recursos-asistenciales";
+  const adminLabel = puedeEntrarAdmin ? "Panel administrativo" : "Ir al admin";
 
   return (
     <main className="professional-portal-page">
       <header className="professional-topbar">
         <div className="professional-topbar-brand">
           <img src="/logo_carnet.png" alt="Vive IPS" />
-          {puedeEntrarTalento && (
+          {puedeEntrarPanel && (
             <button className="topbar-soft-btn topbar-admin-btn" type="button" onClick={() => navigate(adminTarget)}>
               <LayoutDashboard size={16} /> {adminLabel}
             </button>
