@@ -737,6 +737,7 @@ export function RecursosAsistencialesPage() {
     setError("");
     try {
       const accesoData = await obtenerMiAcceso();
+      setAcceso(accesoData);
       const puedeConsultarAuditoria = Boolean(accesoData.permiso_ver_todo || accesoData.permiso_recursos_auditoria);
       const [recursosData, proveedoresData, serviciosData, ordenesData, recepcionesData, lotesData, movimientosData, despachosData, profesionalesData, auditoriaData, reportesData] = await Promise.all([
         listarRecursosAsistenciales(),
@@ -751,7 +752,6 @@ export function RecursosAsistencialesPage() {
         puedeConsultarAuditoria ? listarAuditoriaRecursos({ limite: 500 }) : Promise.resolve({ eventos: [] }),
         puedeConsultarAuditoria ? obtenerReportesRecursos() : Promise.resolve({ reportes: REPORTES_VACIOS }),
       ]);
-      setAcceso(accesoData);
       setRecursos(recursosData.recursos || []);
       setProveedores(proveedoresData.proveedores || []);
       setOrdenes(ordenesData.ordenes || []);
