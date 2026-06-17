@@ -26,12 +26,36 @@ import type {
 import { Loading } from "../ui/Loading";
 
 type TabKey = "resumen" | "relaciones" | "estandares" | "cumplimiento";
+type EstandarPendienteKey = "procesos_prioritarios" | "historia_clinica_registros" | "interdependencia" | "gestion_documental";
 
 const tabs: Array<{ key: TabKey; label: string }> = [
   { key: "resumen", label: "Resumen" },
   { key: "relaciones", label: "Relaciones" },
   { key: "estandares", label: "Estandares" },
   { key: "cumplimiento", label: "Cumplimiento" },
+];
+
+const estandaresPendientes: Array<{ key: EstandarPendienteKey; label: string; description: string }> = [
+  {
+    key: "procesos_prioritarios",
+    label: "Procesos prioritarios",
+    description: "Protocolos, procedimientos, guias, responsables, socializacion y evidencias.",
+  },
+  {
+    key: "historia_clinica_registros",
+    label: "Historia clinica y registros",
+    description: "Formatos, ingreso, evolucion, plan de cuidado, egreso, auditoria y trazabilidad.",
+  },
+  {
+    key: "interdependencia",
+    label: "Interdependencia",
+    description: "Servicios propios o contratados, REPS, contratos, vigencias y tiempos de respuesta.",
+  },
+  {
+    key: "gestion_documental",
+    label: "Gestion documental",
+    description: "Soportes, versiones, vencimientos, responsables y evidencia documental del servicio.",
+  },
 ];
 
 const estados: EstadoRelacion[] = ["pendiente", "en_revision", "cumple", "no_cumple", "no_aplica"];
@@ -95,6 +119,7 @@ export function ServicioDetallePage() {
   const [servicios, setServicios] = useState<ServicioIps[]>([]);
   const [tabActiva, setTabActiva] = useState<TabKey>("resumen");
   const [estandarActivo, setEstandarActivo] = useState<string | null>(null);
+  const [estandarPendienteActivo, setEstandarPendienteActivo] = useState<EstandarPendienteKey>("procesos_prioritarios");
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [savingTalento, setSavingTalento] = useState(false);
@@ -283,6 +308,7 @@ export function ServicioDetallePage() {
             onClick={() => {
               setTabActiva(tab.key);
               setEstandarActivo(null);
+              setEstandarPendienteActivo("procesos_prioritarios");
             }}
           >
             {tab.label}
@@ -430,6 +456,27 @@ export function ServicioDetallePage() {
 
       {tabActiva === "estandares" && !estandarActivo && (
         <>
+          <nav className="tabs compact-tabs" aria-label="Estandares pendientes de desarrollo operativo">
+            {estandaresPendientes.map((estandar) => (
+              <button
+                key={estandar.key}
+                className={estandarPendienteActivo === estandar.key ? "active" : ""}
+                type="button"
+                onClick={() => setEstandarPendienteActivo(estandar.key)}
+              >
+                {estandar.label}
+              </button>
+            ))}
+          </nav>
+
+          <section className="table-card">
+            <div className="section-heading">
+              <h2>{estandaresPendientes.find((item) => item.key === estandarPendienteActivo)?.label}</h2>
+              <p>{estandaresPendientes.find((item) => item.key === estandarPendienteActivo)?.description}</p>
+            </div>
+            <div className="empty-state">Modulo visible para planeacion. Detalle operativo pendiente.</div>
+          </section>
+
           <section className="standards-grid">
             {detalle.estandares.map((estandar) => {
               const resumenEstandar = cumplimiento?.resumen.estandares.find((item) => item.codigo === estandar.codigo);

@@ -247,6 +247,13 @@ td small { display: block; color: var(--muted); margin-top: 4px; }
   border-bottom-color: var(--teal);
   color: var(--navy);
 }
+.compact-tabs {
+  margin-bottom: 14px;
+}
+.compact-tabs button {
+  font-size: 13px;
+  padding: 10px 12px;
+}
 
 .primary-btn, .secondary-btn, .brand-action-btn {
   border: 0;
