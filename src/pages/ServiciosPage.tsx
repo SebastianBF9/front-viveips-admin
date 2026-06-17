@@ -5,10 +5,34 @@ import { listarServiciosIps } from "../api";
 import type { ServicioIps } from "../types";
 import { Loading } from "../ui/Loading";
 
+const estandaresVisibles = [
+  {
+    key: "procesos_prioritarios",
+    label: "Procesos prioritarios",
+    description: "Protocolos, guias, responsables y evidencias de socializacion.",
+  },
+  {
+    key: "historia_clinica_registros",
+    label: "Historia clinica y registros",
+    description: "Formatos, plan de cuidado, evoluciones, egreso, auditoria y trazabilidad.",
+  },
+  {
+    key: "interdependencia",
+    label: "Interdependencia",
+    description: "Servicios propios o contratados, REPS, convenios, vigencias y tiempos de respuesta.",
+  },
+  {
+    key: "gestion_documental",
+    label: "Gestion documental",
+    description: "Soportes, versiones, vencimientos y responsables documentales del servicio.",
+  },
+];
+
 export function ServiciosPage() {
   const [servicios, setServicios] = useState<ServicioIps[]>([]);
   const [busqueda, setBusqueda] = useState("");
   const [estado, setEstado] = useState("");
+  const [estandarActivo, setEstandarActivo] = useState(estandaresVisibles[0].key);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
@@ -57,6 +81,28 @@ export function ServiciosPage() {
           <span>Próximos</span>
         </article>
       </div>
+
+      <section className="table-card">
+        <div className="section-heading">
+          <h2>Estándares en construcción</h2>
+          <p>Estos frentes quedan visibles para tenerlos presentes en la habilitación de cada servicio.</p>
+        </div>
+        <nav className="tabs compact-tabs" aria-label="Estándares en construcción">
+          {estandaresVisibles.map((estandar) => (
+            <button
+              key={estandar.key}
+              className={estandarActivo === estandar.key ? "active" : ""}
+              type="button"
+              onClick={() => setEstandarActivo(estandar.key)}
+            >
+              {estandar.label}
+            </button>
+          ))}
+        </nav>
+        <div className="empty-state">
+          {estandaresVisibles.find((estandar) => estandar.key === estandarActivo)?.description}
+        </div>
+      </section>
 
       <div className="toolbar">
         <div className="search-field">
