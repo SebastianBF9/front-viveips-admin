@@ -29,6 +29,8 @@ import type {
   EquipoMantenimiento,
   ExperienciaLaboral,
   FormacionPortal,
+  GestionDocumentalArchivo,
+  GestionDocumentalEstandar,
   InventarioLoteRecurso,
   MovimientoInventarioRecurso,
   AuditoriaRecurso,
@@ -939,4 +941,40 @@ export async function registrarCalibracionEquipo(
 
 export async function obtenerAlertasEquipos() {
   return apiCall<EquipoAlertaResumen>("GET", "/equipos/alertas/resumen");
+}
+
+export async function listarArchivosGestionDocumental(params: { estandar_codigo?: string; busqueda?: string } = {}) {
+  const query = new URLSearchParams();
+  Object.entries(params).forEach(([key, value]) => {
+    if (value !== undefined && value !== null && String(value).trim()) query.set(key, String(value));
+  });
+  const suffix = query.toString() ? `?${query.toString()}` : "";
+  return apiCall<{
+    success: boolean;
+    archivos: GestionDocumentalArchivo[];
+    estandares: GestionDocumentalEstandar[];
+    total: number;
+  }>("GET", `/gestion-documental/archivos${suffix}`);
+}
+
+export async function subirArchivoGestionDocumental(payload: {
+  estandar_codigo: string;
+  codigo: string;
+  version: string;
+  fecha_documento: string;
+  observaciones?: string;
+  archivo: File;
+}) {
+  const form = new FormData();
+  form.set("estandar_codigo", payload.estandar_codigo);
+  form.set("codigo", payload.codigo);
+  form.set("version", payload.version);
+  form.set("fecha_documento", payload.fecha_documento);
+  if (payload.observaciones) form.set("observaciones", payload.observaciones);
+  form.set("archivo", payload.archivo);
+  return apiFormCall<{ success: boolean; mensaje: string; archivo_id: number }>("POST", "/gestion-documental/archivos", form);
+}
+
+export async function eliminarArchivoGestionDocumental(id: number) {
+  return apiCall<{ success: boolean; mensaje: string }>("DELETE", `/gestion-documental/archivos/${id}`);
 }

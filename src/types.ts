@@ -1303,3 +1303,28 @@ export interface AdherenciaCapacitacionesResponse {
   capacitaciones: Array<{ id: number; nombre: string; rama: string }>;
   cargos: string[];
 }
+
+export interface GestionDocumentalEstandar {
+  codigo: string;
+  nombre: string;
+  orden: number;
+  total_archivos?: number;
+}
+
+export interface GestionDocumentalArchivo {
+  id: number;
+  estandar_codigo: string;
+  estandar_nombre?: string;
+  codigo: string;
+  version: string;
+  fecha_documento: string;
+  nombre_archivo: string;
+  ruta_archivo: string;
+  mime_type?: string | null;
+  tamano_bytes?: number | null;
+  observaciones?: string | null;
+  usuario_id?: number | null;
+  usuario_nombre?: string | null;
+  created_at?: string | null;
+  updated_at?: string | null;
+}

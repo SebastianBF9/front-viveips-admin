@@ -6,6 +6,7 @@ import { AccesosPage } from "./pages/AccesosPage";
 import { CapacitacionesProfesionalPage } from "./pages/CapacitacionesProfesionalPage";
 import { EntregasRecursosPage } from "./pages/EntregasRecursosPage";
 import { EstandarPendientePage } from "./pages/EstandarPendientePage";
+import { GestionDocumentalPage } from "./pages/GestionDocumentalPage";
 import { InfraestructuraPage } from "./pages/InfraestructuraPage";
 import { LoginPage } from "./pages/LoginPage";
 import { PortalProfesionalPage } from "./pages/PortalProfesionalPage";
@@ -41,15 +42,7 @@ const router = createBrowserRouter([
           />
         ),
       },
-      {
-        path: "gestion-documental",
-        element: (
-          <EstandarPendientePage
-            title="Gestión Documental"
-            description="Soportes, versiones, vencimientos, responsables y evidencia documental del servicio."
-          />
-        ),
-      },
+      { path: "gestion-documental", element: <GestionDocumentalPage /> },
       { path: "accesos", element: <AccesosPage /> },
     ],
   },

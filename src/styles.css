@@ -5568,10 +5568,112 @@ td small { display: block; color: var(--muted); margin-top: 4px; }
   padding: 16px;
 }
 
+.gestion-doc-layout {
+  display: grid;
+  grid-template-columns: minmax(280px, .8fr) minmax(0, 1.4fr);
+  gap: 16px;
+}
+
+.gestion-doc-standards,
+.gestion-doc-panel {
+  align-self: start;
+}
+
+.gestion-doc-standard-list {
+  display: grid;
+  gap: 8px;
+  padding: 14px;
+}
+
+.gestion-doc-standard-list button {
+  align-items: center;
+  background: #f8fafc;
+  border: 1px solid #dbe6f0;
+  border-radius: 8px;
+  color: var(--navy);
+  cursor: pointer;
+  display: flex;
+  gap: 12px;
+  padding: 12px;
+  text-align: left;
+}
+
+.gestion-doc-standard-list button.active {
+  background: #e8f7f8;
+  border-color: var(--teal);
+}
+
+.gestion-doc-standard-list button strong,
+.gestion-doc-standard-list button small {
+  display: block;
+}
+
+.gestion-doc-standard-list button small {
+  color: var(--muted);
+  font-size: 12px;
+  margin-top: 3px;
+}
+
+.gestion-doc-form {
+  display: grid;
+  gap: 14px;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  padding: 18px;
+}
+
+.gestion-doc-form label {
+  color: var(--navy);
+  display: grid;
+  font-size: 12px;
+  font-weight: 900;
+  gap: 6px;
+  text-transform: uppercase;
+}
+
+.gestion-doc-form input {
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  color: var(--text);
+  font: inherit;
+  min-width: 0;
+  padding: 11px 12px;
+  text-transform: none;
+}
+
+.gestion-doc-file,
+.gestion-doc-observaciones {
+  grid-column: span 2;
+}
+
+.gestion-doc-form .brand-action-btn {
+  align-self: end;
+  justify-content: center;
+}
+
+.gestion-doc-search {
+  max-width: 420px;
+}
+
+.gestion-documental-page td svg {
+  color: var(--teal);
+  margin-right: 6px;
+  vertical-align: middle;
+}
+
 @media (max-width: 1120px) {
   .procesos-layout,
-  .proceso-facts {
+  .proceso-facts,
+  .gestion-doc-layout {
     grid-template-columns: 1fr;
+  }
+
+  .gestion-doc-form {
+    grid-template-columns: 1fr;
+  }
+
+  .gestion-doc-file,
+  .gestion-doc-observaciones {
+    grid-column: auto;
   }
 }
 
