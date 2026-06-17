@@ -9,6 +9,7 @@ import { EstandarPendientePage } from "./pages/EstandarPendientePage";
 import { InfraestructuraPage } from "./pages/InfraestructuraPage";
 import { LoginPage } from "./pages/LoginPage";
 import { PortalProfesionalPage } from "./pages/PortalProfesionalPage";
+import { ProcesosPrioritariosPage } from "./pages/ProcesosPrioritariosPage";
 import { RecursosAsistencialesPage } from "./pages/RecursosAsistencialesPage";
 import { ServicioDetallePage } from "./pages/ServicioDetallePage";
 import { ServiciosPage } from "./pages/ServiciosPage";
@@ -30,15 +31,7 @@ const router = createBrowserRouter([
       { path: "talento-humano", element: <TalentoHumanoPage /> },
       { path: "infraestructura", element: <InfraestructuraPage /> },
       { path: "recursos-asistenciales", element: <RecursosAsistencialesPage /> },
-      {
-        path: "procesos-prioritarios",
-        element: (
-          <EstandarPendientePage
-            title="Procesos Prioritarios"
-            description="Protocolos, procedimientos, guías, responsables, socialización y evidencias del servicio."
-          />
-        ),
-      },
+      { path: "procesos-prioritarios", element: <ProcesosPrioritariosPage /> },
       {
         path: "historia-clinica-registros",
         element: (
