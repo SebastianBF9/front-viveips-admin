@@ -1,4 +1,4 @@
-import { Download, FileArchive, FileText, Search, Trash2, Upload } from "lucide-react";
+import { Download, FileText, Plus, RefreshCw, Search, Trash2, Upload, X } from "lucide-react";
 import { FormEvent, useEffect, useMemo, useState } from "react";
 import {
   downloadBlob,
@@ -39,6 +39,7 @@ export function GestionDocumentalPage() {
   const [estandarActivo, setEstandarActivo] = useState("talento_humano");
   const [busqueda, setBusqueda] = useState("");
   const [form, setForm] = useState<FormState>(formInicial);
+  const [modalOpen, setModalOpen] = useState(false);
   const [loading, setLoading] = useState(true);
   const [accion, setAccion] = useState("");
   const [error, setError] = useState("");
@@ -94,6 +95,7 @@ export function GestionDocumentalPage() {
         archivo: form.archivo,
       });
       setForm(formInicial);
+      setModalOpen(false);
       setSuccess("Archivo documental cargado correctamente.");
       await cargar();
     } catch (err) {
@@ -136,6 +138,14 @@ export function GestionDocumentalPage() {
           <h1>Gestión Documental</h1>
           <p>Repositorio de soportes por estándar: código, versión, fecha, archivo y consulta documental.</p>
         </div>
+        <div className="infra-header-actions recursos-header-actions">
+          <button className="secondary-btn" type="button" onClick={cargar} disabled={loading}>
+            <RefreshCw size={17} /> Actualizar
+          </button>
+          <button className="brand-action-btn" type="button" onClick={() => setModalOpen(true)}>
+            <Plus size={17} /> Nuevo documento
+          </button>
+        </div>
       </header>
 
       <div className="kpi-grid three">
@@ -147,62 +157,26 @@ export function GestionDocumentalPage() {
       {error && <div className="error-box">{error}</div>}
       {success && <div className="success-box">{success}</div>}
 
-      <section className="gestion-doc-layout">
-        <aside className="table-card gestion-doc-standards">
-          <div className="section-heading">
-            <h2>Estándares</h2>
-            <p>Selecciona dónde cargar o consultar archivos.</p>
-          </div>
-          <div className="gestion-doc-standard-list">
-            {estandares.map((estandar) => (
-              <button
-                className={estandarActivo === estandar.codigo ? "active" : ""}
-                key={estandar.codigo}
-                type="button"
-                onClick={() => setEstandarActivo(estandar.codigo)}
-              >
-                <FileArchive size={17} />
-                <span>
-                  <strong>{estandar.nombre}</strong>
-                  <small>{estandar.total_archivos || 0} archivo(s)</small>
-                </span>
-              </button>
-            ))}
-          </div>
-        </aside>
-
-        <section className="table-card gestion-doc-panel">
-          <div className="section-heading">
-            <h2>{estandarActual?.nombre || "Estándar"}</h2>
-            <p>Carga soportes con código, versión y fecha del documento.</p>
-          </div>
-
-          <form className="gestion-doc-form" onSubmit={guardar}>
-            <label>Código
-              <input value={form.codigo} onChange={(event) => actualizarForm("codigo", event.target.value)} required placeholder="Ej. PRO-ING-001" />
-            </label>
-            <label>Versión
-              <input value={form.version} onChange={(event) => actualizarForm("version", event.target.value)} required placeholder="Ej. 01" />
-            </label>
-            <label>Fecha
-              <input type="date" value={form.fecha_documento} onChange={(event) => actualizarForm("fecha_documento", event.target.value)} required />
-            </label>
-            <label className="gestion-doc-file">Archivo
-              <input
-                type="file"
-                required
-                accept=".pdf,.doc,.docx,.xls,.xlsx,.jpg,.jpeg,.png,.webp"
-                onChange={(event) => actualizarForm("archivo", event.target.files?.[0] || null)}
-              />
-            </label>
-            <label className="gestion-doc-observaciones">Observaciones
-              <input value={form.observaciones} onChange={(event) => actualizarForm("observaciones", event.target.value)} placeholder="Opcional" />
-            </label>
-            <button className="brand-action-btn" type="submit" disabled={accion === "subir"}>
-              <Upload size={17} /> Cargar archivo
+      <section className="table-card gestion-doc-dashboard">
+        <div className="section-heading">
+          <span className="eyebrow">Control documental</span>
+          <h2>Documentos por estándar</h2>
+          <p>Selecciona un estándar para consultar sus soportes cargados.</p>
+        </div>
+        <div className="gestion-doc-standard-cards">
+          {estandares.map((estandar) => (
+            <button
+              className={estandarActivo === estandar.codigo ? "active" : ""}
+              key={estandar.codigo}
+              type="button"
+              onClick={() => setEstandarActivo(estandar.codigo)}
+            >
+              <span>{estandar.nombre}</span>
+              <strong>{estandar.total_archivos || 0}</strong>
+              <small>documento(s)</small>
             </button>
-          </form>
-        </section>
+          ))}
+        </div>
       </section>
 
       <section className="table-card">
@@ -266,6 +240,54 @@ export function GestionDocumentalPage() {
           </>
         )}
       </section>
+
+      {modalOpen && (
+        <div className="modal-backdrop" onMouseDown={() => setModalOpen(false)}>
+          <form className="modal gestion-doc-modal" onSubmit={guardar} onMouseDown={(event) => event.stopPropagation()}>
+            <div className="modal-title-row">
+              <div>
+                <h2>Nuevo documento</h2>
+                <p>Carga el soporte en el estándar correspondiente.</p>
+              </div>
+              <button type="button" onClick={() => setModalOpen(false)} aria-label="Cerrar"><X size={20} /></button>
+            </div>
+
+            <label>Estándar
+              <select value={estandarActivo} onChange={(event) => setEstandarActivo(event.target.value)}>
+                {estandares.map((estandar) => (
+                  <option key={estandar.codigo} value={estandar.codigo}>{estandar.nombre}</option>
+                ))}
+              </select>
+            </label>
+            <label>Código
+              <input value={form.codigo} onChange={(event) => actualizarForm("codigo", event.target.value)} required placeholder="Ej. PRO-ING-001" />
+            </label>
+            <label>Versión
+              <input value={form.version} onChange={(event) => actualizarForm("version", event.target.value)} required placeholder="Ej. 01" />
+            </label>
+            <label>Fecha
+              <input type="date" value={form.fecha_documento} onChange={(event) => actualizarForm("fecha_documento", event.target.value)} required />
+            </label>
+            <label>Archivo
+              <input
+                type="file"
+                required
+                accept=".pdf,.doc,.docx,.xls,.xlsx,.jpg,.jpeg,.png,.webp"
+                onChange={(event) => actualizarForm("archivo", event.target.files?.[0] || null)}
+              />
+            </label>
+            <label>Observaciones
+              <input value={form.observaciones} onChange={(event) => actualizarForm("observaciones", event.target.value)} placeholder="Opcional" />
+            </label>
+            <div className="modal-actions">
+              <button className="secondary-btn" type="button" onClick={() => setModalOpen(false)}>Cancelar</button>
+              <button className="brand-action-btn" type="submit" disabled={accion === "subir"}>
+                <Upload size={17} /> Cargar documento
+              </button>
+            </div>
+          </form>
+        </div>
+      )}
     </section>
   );
 }
