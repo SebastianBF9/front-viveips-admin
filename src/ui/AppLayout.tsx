@@ -1,4 +1,4 @@
-import { Building2, LogOut, PackagePlus, ShieldCheck, Stethoscope, UsersRound } from "lucide-react";
+import { Building2, ClipboardList, FileText, FolderKanban, LogOut, PackagePlus, ShieldCheck, Stethoscope, UsersRound } from "lucide-react";
 import { useEffect, useState } from "react";
 import { Navigate, NavLink, Outlet, useNavigate } from "react-router-dom";
 import { clearSession, getToken, obtenerMiAcceso } from "../api";
@@ -81,6 +81,24 @@ export function AppLayout() {
             <NavLink to="/recursos-asistenciales" className={({ isActive }) => `nav-link ${isActive ? "active" : ""}`}>
               <PackagePlus size={18} />
               Recursos Asistenciales
+            </NavLink>
+          )}
+          {puedeVerServicios && (
+            <NavLink to="/procesos-prioritarios" className={({ isActive }) => `nav-link ${isActive ? "active" : ""}`}>
+              <ClipboardList size={18} />
+              Procesos Prioritarios
+            </NavLink>
+          )}
+          {puedeVerServicios && (
+            <NavLink to="/historia-clinica-registros" className={({ isActive }) => `nav-link ${isActive ? "active" : ""}`}>
+              <FileText size={18} />
+              Historia clínica y registros
+            </NavLink>
+          )}
+          {puedeVerServicios && (
+            <NavLink to="/gestion-documental" className={({ isActive }) => `nav-link ${isActive ? "active" : ""}`}>
+              <FolderKanban size={18} />
+              Gestión Documental
             </NavLink>
           )}
           {puedeVerAccesos && (
