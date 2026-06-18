@@ -51,6 +51,7 @@ import {
   obtenerReportesRecursos,
   listarDespachosRecursos,
   listarHistorialEntregasRecursos,
+  listarResultadosInvima,
   listarOrdenesCompraRecursos,
   listarProfesionales,
   listarProveedoresRecursos,
@@ -74,6 +75,8 @@ import type {
   OrdenCompraRecursoPayload,
   PermisosAcceso,
   InventarioLoteRecurso,
+  InvimaAlertasEstado,
+  InvimaAlertaResultado,
   MovimientoInventarioRecurso,
   AuditoriaRecurso,
   ReportesRecursosResumen,
@@ -105,7 +108,7 @@ const TIPOS_RECEPCION = ["tecnica", "administrativa", "tecnica_administrativa"];
 const ESTADOS_RECEPCION = ["pendiente", "aprobada", "rechazada", "parcial"];
 const ESTADOS_LOTE = ["disponible", "cuarentena", "bloqueado", "vencido", "agotado", "dado_de_baja"];
 const ESTADOS_DESPACHO = ["preparado", "en_camino", "entregado", "devuelto", "fallido", "cancelado"];
-const TABS = ["catalogo", "proveedores", "compras", "recepcion", "inventario", "distribucion", "auditoria", "reportes"] as const;
+const TABS = ["catalogo", "proveedores", "compras", "recepcion", "inventario", "distribucion", "auditoria", "reportes", "invima"] as const;
 
 type TabKey = (typeof TABS)[number];
 type AlertaKey = "proximos_vencer" | "vencidos" | "stock_minimo" | "reorden" | "recepciones" | "entregas";
@@ -126,6 +129,14 @@ const REPORTES_VACIOS: ReportesRecursosResumen = {
   compras_por_proveedor: [],
   cumplimiento_entregas: [],
   rotacion: [],
+};
+
+const INVIMA_ESTADO_VACIO: InvimaAlertasEstado = {
+  ultima_fecha_revisada: null,
+  ultima_ejecucion: null,
+  total_revisadas: 0,
+  total_coincidencias: 0,
+  error_ultima_ejecucion: null,
 };
 
 type RecursoForm = {
@@ -290,6 +301,21 @@ function numero(valor: string) {
 
 function labelTipo(tipo?: string | null) {
   return TIPOS_RECURSO.find((item) => item.value === tipo)?.label || texto(tipo);
+}
+
+function labelTabRecursos(tab: TabKey) {
+  const labels: Record<TabKey, string> = {
+    catalogo: "Catálogo",
+    proveedores: "Proveedores",
+    compras: "Compras",
+    recepcion: "Recepción",
+    inventario: "Inventario",
+    distribucion: "Distribución",
+    auditoria: "Auditoría",
+    reportes: "Reportes",
+    invima: "Alertas INVIMA",
+  };
+  return labels[tab];
 }
 
 function estadoNormalizado(valor?: string | null) {
@@ -680,6 +706,8 @@ export function RecursosAsistencialesPage() {
   const [movimientosInventario, setMovimientosInventario] = useState<MovimientoInventarioRecurso[]>([]);
   const [auditoria, setAuditoria] = useState<AuditoriaRecurso[]>([]);
   const [reportes, setReportes] = useState<ReportesRecursosResumen>(REPORTES_VACIOS);
+  const [alertasInvima, setAlertasInvima] = useState<InvimaAlertaResultado[]>([]);
+  const [estadoInvima, setEstadoInvima] = useState<InvimaAlertasEstado>(INVIMA_ESTADO_VACIO);
   const [despachos, setDespachos] = useState<DespachoRecurso[]>([]);
   const [historialEntregas, setHistorialEntregas] = useState<DespachoRecurso[]>([]);
   const [profesionales, setProfesionales] = useState<ProfesionalAdmin[]>([]);
@@ -714,6 +742,10 @@ export function RecursosAsistencialesPage() {
   const [reporteRecursoId, setReporteRecursoId] = useState("");
   const [reporteProveedorId, setReporteProveedorId] = useState("");
   const [reporteProfesionalId, setReporteProfesionalId] = useState("");
+  const [invimaQuery, setInvimaQuery] = useState("");
+  const [invimaTipo, setInvimaTipo] = useState("");
+  const [invimaDesde, setInvimaDesde] = useState("");
+  const [invimaHasta, setInvimaHasta] = useState("");
   const [recursoForm, setRecursoForm] = useState<RecursoForm | null>(null);
   const [proveedorForm, setProveedorForm] = useState<ProveedorForm | null>(null);
   const [ordenForm, setOrdenForm] = useState<OrdenCompraForm | null>(null);
@@ -739,7 +771,7 @@ export function RecursosAsistencialesPage() {
       const accesoData = await obtenerMiAcceso();
       setAcceso(accesoData);
       const puedeConsultarAuditoria = Boolean(accesoData.permiso_ver_todo || accesoData.permiso_recursos_auditoria);
-      const [recursosData, proveedoresData, serviciosData, ordenesData, recepcionesData, lotesData, movimientosData, despachosData, profesionalesData, auditoriaData, reportesData] = await Promise.all([
+      const [recursosData, proveedoresData, serviciosData, ordenesData, recepcionesData, lotesData, movimientosData, despachosData, profesionalesData, auditoriaData, reportesData, invimaData] = await Promise.all([
         listarRecursosAsistenciales(),
         listarProveedoresRecursos(),
         listarServiciosIps(),
@@ -751,6 +783,7 @@ export function RecursosAsistencialesPage() {
         listarProfesionales(),
         puedeConsultarAuditoria ? listarAuditoriaRecursos({ limite: 500 }) : Promise.resolve({ eventos: [] }),
         puedeConsultarAuditoria ? obtenerReportesRecursos() : Promise.resolve({ reportes: REPORTES_VACIOS }),
+        puedeConsultarAuditoria ? listarResultadosInvima({ limite: 100 }) : Promise.resolve({ alertas: [], estado: INVIMA_ESTADO_VACIO }),
       ]);
       setRecursos(recursosData.recursos || []);
       setProveedores(proveedoresData.proveedores || []);
@@ -762,6 +795,8 @@ export function RecursosAsistencialesPage() {
       setProfesionales((profesionalesData.profesionales || []).filter((profesional) => Number(profesional.activo) === 1));
       setAuditoria(auditoriaData.eventos || []);
       setReportes(reportesData.reportes || REPORTES_VACIOS);
+      setAlertasInvima(invimaData.alertas || []);
+      setEstadoInvima(invimaData.estado || INVIMA_ESTADO_VACIO);
       setServicios(
         (serviciosData.servicios || [])
           .filter((servicio) => servicio.estado === "habilitado" || servicio.estado === "proximo")
@@ -798,6 +833,27 @@ export function RecursosAsistencialesPage() {
     }
   }
 
+  async function cargarAlertasInvimaFiltradas() {
+    setAccion("cargar-invima");
+    setError("");
+    try {
+      const data = await listarResultadosInvima({
+        busqueda: invimaQuery,
+        tipo: invimaTipo,
+        fecha_desde: invimaDesde,
+        fecha_hasta: invimaHasta,
+        limite: 200,
+      });
+      setAlertasInvima(data.alertas || []);
+      setEstadoInvima(data.estado || INVIMA_ESTADO_VACIO);
+      setSuccess("Alertas INVIMA actualizadas");
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "No fue posible cargar las alertas INVIMA");
+    } finally {
+      setAccion("");
+    }
+  }
+
   function exportarAuditoria() {
     exportarCsv("auditoria_recursos.csv", auditoriaFiltrada.map((evento) => ({
       fecha: evento.created_at,
@@ -823,7 +879,7 @@ export function RecursosAsistencialesPage() {
   const puedeDarBajaInventario = permisoTotal || Boolean(acceso?.permiso_recursos_dar_baja);
   const puedeDespachar = permisoTotal || Boolean(acceso?.permiso_recursos_despachar);
   const puedeConsultarAuditoria = permisoTotal || Boolean(acceso?.permiso_recursos_auditoria);
-  const tabsVisibles = TABS.filter((item) => !["auditoria", "reportes"].includes(item) || puedeConsultarAuditoria);
+  const tabsVisibles = TABS.filter((item) => !["auditoria", "reportes", "invima"].includes(item) || puedeConsultarAuditoria);
 
   const recursosFiltrados = useMemo(() => {
     const q = query.trim().toLowerCase();
@@ -1931,7 +1987,7 @@ export function RecursosAsistencialesPage() {
       <div className="tabs recursos-tabs">
         {tabsVisibles.map((item) => (
           <button key={item} className={tab === item ? "active" : ""} type="button" onClick={() => setTab(item)}>
-            {item === "catalogo" ? "Catálogo" : item === "recepcion" ? "Recepción" : item[0].toUpperCase() + item.slice(1)}
+            {labelTabRecursos(item)}
           </button>
         ))}
       </div>
@@ -2724,11 +2780,86 @@ export function RecursosAsistencialesPage() {
         </section>
       )}
 
-      {!loading && !["catalogo", "proveedores", "compras", "recepcion", "inventario", "distribucion", "auditoria", "reportes"].includes(tab) && (
+      {!loading && tab === "invima" && puedeConsultarAuditoria && (
+        <section className="table-card compras-card invima-card">
+          <div className="section-heading inline-heading">
+            <div>
+              <h2>Alertas INVIMA</h2>
+              <p>Coincidencias detectadas contra medicamentos, registros sanitarios, marcas, principios activos o lotes creados en Recursos Asistenciales.</p>
+            </div>
+            <button className="secondary-btn" type="button" onClick={cargarAlertasInvimaFiltradas} disabled={accion === "cargar-invima"}>
+              Actualizar
+            </button>
+          </div>
+
+          <div className="auditoria-summary invima-summary">
+            <div><span>Alertas visibles</span><strong>{alertasInvima.length}</strong></div>
+            <div><span>Última revisión</span><strong>{texto(estadoInvima.ultima_fecha_revisada)}</strong></div>
+            <div><span>Revisadas en último monitoreo</span><strong>{texto(estadoInvima.total_revisadas)}</strong></div>
+            <div><span>Coincidencias último monitoreo</span><strong>{texto(estadoInvima.total_coincidencias)}</strong></div>
+          </div>
+
+          {estadoInvima.error_ultima_ejecucion && (
+            <div className="error-box">Último monitoreo INVIMA con error: {estadoInvima.error_ultima_ejecucion}</div>
+          )}
+
+          <div className="toolbar auditoria-toolbar">
+            <label className="search-field">
+              <Search size={18} />
+              <input
+                value={invimaQuery}
+                onChange={(event) => setInvimaQuery(event.target.value)}
+                placeholder="Buscar alerta, coincidencia, registro sanitario o fragmento"
+              />
+            </label>
+            <select value={invimaTipo} onChange={(event) => setInvimaTipo(event.target.value)}>
+              <option value="">Todos los tipos</option>
+              <option value="Alerta sanitaria">Alerta sanitaria</option>
+              <option value="Informe de seguridad">Informe de seguridad</option>
+              <option value="Alerta INVIMA">Alerta INVIMA</option>
+            </select>
+            <label className="auditoria-date-field">
+              <span>Desde</span>
+              <input type="date" value={invimaDesde} onChange={(event) => setInvimaDesde(event.target.value)} />
+            </label>
+            <label className="auditoria-date-field">
+              <span>Hasta</span>
+              <input type="date" value={invimaHasta} onChange={(event) => setInvimaHasta(event.target.value)} />
+            </label>
+          </div>
+
+          <div className="invima-alert-list">
+            {alertasInvima.map((alerta) => (
+              <article className="invima-alert-card" key={alerta.id || alerta.pdfUrl}>
+                <div className="invima-alert-main">
+                  <span className={`invima-type ${alerta.type === "Informe de seguridad" ? "security" : alerta.type === "Alerta sanitaria" ? "warning" : ""}`}>
+                    {texto(alerta.type)}
+                  </span>
+                  <h3>{texto(alerta.title)}</h3>
+                  <p>{texto(alerta.textSnippet)}</p>
+                  <div className="invima-match-list">
+                    {(alerta.matches || []).map((match) => <span key={`${alerta.id}-${match}`}>{match}</span>)}
+                  </div>
+                </div>
+                <div className="invima-alert-side">
+                  <span>{texto(alerta.date)}</span>
+                  <small>Guardada: {fechaHora(alerta.createdAt)}</small>
+                  <button className="secondary-btn" type="button" onClick={() => window.open(alerta.pdfUrl, "_blank", "noopener,noreferrer")}>
+                    <Eye size={15} /> Ver PDF
+                  </button>
+                </div>
+              </article>
+            ))}
+          </div>
+          {!alertasInvima.length && <div className="empty-state">No hay alertas INVIMA para los filtros seleccionados.</div>}
+        </section>
+      )}
+
+      {!loading && !["catalogo", "proveedores", "compras", "recepcion", "inventario", "distribucion", "auditoria", "reportes", "invima"].includes(tab) && (
         <div className="standard-card recursos-placeholder">
           <ClipboardList size={22} />
           <div>
-            <h2>{tab === "recepcion" ? "Recepción" : tab[0].toUpperCase() + tab.slice(1)}</h2>
+            <h2>{labelTabRecursos(tab)}</h2>
             <p>Esta pestaña queda preparada para fases posteriores del plan. La Fase 1 se concentra en catálogo, proveedores y relaciones.</p>
           </div>
         </div>

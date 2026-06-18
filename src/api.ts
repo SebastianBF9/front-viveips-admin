@@ -31,6 +31,8 @@ import type {
   FormacionPortal,
   GestionDocumentalArchivo,
   GestionDocumentalEstandar,
+  InvimaAlertasEstado,
+  InvimaAlertaResultado,
   InventarioLoteRecurso,
   MovimientoInventarioRecurso,
   AuditoriaRecurso,
@@ -772,6 +774,26 @@ export async function obtenerReportesRecursos(params: {
   });
   const suffix = query.toString() ? `?${query.toString()}` : "";
   return apiCall<{ success: boolean; reportes: ReportesRecursosResumen }>("GET", `/reportes-recursos/resumen${suffix}`);
+}
+
+export async function listarResultadosInvima(params: {
+  busqueda?: string;
+  tipo?: string;
+  fecha_desde?: string;
+  fecha_hasta?: string;
+  limite?: number;
+} = {}) {
+  const query = new URLSearchParams();
+  Object.entries(params).forEach(([key, value]) => {
+    if (value !== undefined && value !== null && String(value).trim()) query.set(key, String(value));
+  });
+  const suffix = query.toString() ? `?${query.toString()}` : "";
+  return apiCall<{
+    success: boolean;
+    alertas: InvimaAlertaResultado[];
+    total: number;
+    estado: InvimaAlertasEstado;
+  }>("GET", `/invima/alertas/resultados${suffix}`);
 }
 
 export async function listarDespachosRecursos(params: { estado?: string; responsable_entrega_id?: number | string; busqueda?: string } = {}) {

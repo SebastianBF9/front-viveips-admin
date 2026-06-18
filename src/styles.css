@@ -3698,6 +3698,107 @@ td small { display: block; color: var(--muted); margin-top: 4px; }
   white-space: nowrap;
 }
 
+.invima-card {
+  gap: 18px;
+}
+
+.invima-summary {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+.invima-alert-list {
+  display: grid;
+  gap: 12px;
+}
+
+.invima-alert-card {
+  min-width: 0;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: start;
+  gap: 18px;
+  border: 1px solid #dbe6f0;
+  border-radius: 8px;
+  background: #fff;
+  padding: 16px;
+}
+
+.invima-alert-main {
+  min-width: 0;
+  display: grid;
+  gap: 9px;
+}
+
+.invima-alert-main h3 {
+  margin: 0;
+  color: #1b3a6b;
+  font-size: 18px;
+  line-height: 1.25;
+  overflow-wrap: break-word;
+}
+
+.invima-alert-main p {
+  margin: 0;
+  color: #64748b;
+  font-size: 13px;
+  line-height: 1.45;
+  overflow-wrap: break-word;
+}
+
+.invima-type {
+  justify-self: start;
+  border: 1px solid #dbe6f0;
+  border-radius: 999px;
+  background: #f8fbfe;
+  color: #52677d;
+  padding: 4px 10px;
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.invima-type.warning {
+  border-color: #f5d58a;
+  background: #fffbeb;
+  color: #92400e;
+}
+
+.invima-type.security {
+  border-color: #bae6fd;
+  background: #f0f9ff;
+  color: #075985;
+}
+
+.invima-match-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 7px;
+}
+
+.invima-match-list span {
+  border-radius: 999px;
+  background: #eef7f9;
+  color: #128997;
+  padding: 5px 9px;
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.invima-alert-side {
+  min-width: 170px;
+  display: grid;
+  justify-items: end;
+  gap: 8px;
+  color: #64748b;
+  font-size: 12px;
+  text-align: right;
+}
+
+.invima-alert-side > span {
+  color: #1b3a6b;
+  font-size: 14px;
+  font-weight: 900;
+}
+
 .recursos-page .page-header > div:first-child {
   min-width: 0;
 }
@@ -4960,6 +5061,16 @@ td small { display: block; color: var(--muted); margin-top: 4px; }
     text-align: left;
   }
 
+  .invima-alert-card {
+    grid-template-columns: 1fr;
+  }
+
+  .invima-alert-side {
+    min-width: 0;
+    justify-items: stretch;
+    text-align: left;
+  }
+
   .movimientos-summary {
     grid-template-columns: repeat(2, minmax(0, 1fr));
     margin: 16px 18px 0;
@@ -5724,7 +5835,8 @@ td small { display: block; color: var(--muted); margin-top: 4px; }
 }
 
 @media (max-width: 1120px) and (min-width: 981px) {
-  .auditoria-summary {
+  .auditoria-summary,
+  .invima-summary {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
@@ -5735,6 +5847,7 @@ td small { display: block; color: var(--muted); margin-top: 4px; }
 
 @media (max-width: 720px) {
   .auditoria-summary,
+  .invima-summary,
   .auditoria-list,
   .auditoria-toolbar,
   .auditoria-detail-grid,

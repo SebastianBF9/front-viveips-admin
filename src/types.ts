@@ -1148,6 +1148,27 @@ export interface ReportesRecursosResumen {
   }>;
 }
 
+export interface InvimaAlertaResultado {
+  id: number;
+  source?: string | null;
+  title: string;
+  type: string;
+  date?: string | null;
+  pdfUrl: string;
+  matches: string[];
+  textSnippet?: string | null;
+  notified: boolean;
+  createdAt?: string | null;
+}
+
+export interface InvimaAlertasEstado {
+  ultima_fecha_revisada?: string | null;
+  ultima_ejecucion?: string | null;
+  total_revisadas: number;
+  total_coincidencias: number;
+  error_ultima_ejecucion?: string | null;
+}
+
 export interface DespachoRecursoDetalle {
   id?: number;
   despacho_id?: number;
