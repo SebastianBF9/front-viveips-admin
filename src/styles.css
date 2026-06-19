@@ -2592,6 +2592,11 @@ td small { display: block; color: var(--muted); margin-top: 4px; }
   margin-top: 18px;
 }
 
+.recursos-route-panel {
+  grid-template-columns: minmax(240px, 1fr) minmax(220px, .8fr) auto;
+  margin: 14px 0 18px;
+}
+
 .recursos-history-panel h3 {
   margin: 0 0 4px;
   color: #08243a;

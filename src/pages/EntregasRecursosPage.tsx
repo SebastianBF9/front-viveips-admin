@@ -105,7 +105,7 @@ export function EntregasRecursosPage() {
     try {
       await descargarMisDespachosAsignados();
     } catch (err) {
-      setError(err instanceof Error ? err.message : "No fue posible descargar el listado de despachos");
+      setError(err instanceof Error ? err.message : "No fue posible descargar el listado de entregas abiertas");
     } finally {
       setDownloading(false);
     }
@@ -272,7 +272,7 @@ export function EntregasRecursosPage() {
         </div>
         <div className="deliveries-header-actions">
           <button type="button" onClick={descargarListadoAsignado} disabled={downloading}>
-            <FileDown size={16} /> {downloading ? "Generando..." : "Descargar listado"}
+            <FileDown size={16} /> {downloading ? "Generando..." : "Descargar ruta"}
           </button>
           <button type="button" onClick={cerrarSesion}><LogOut size={16} /> Salir</button>
         </div>

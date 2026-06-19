@@ -847,11 +847,11 @@ export async function listarMisEntregasRecursos() {
 }
 
 export async function descargarMisDespachosAsignados() {
-  return downloadBlob("/despachos-recursos/mis-entregas/listado", "mis_despachos_asignados.html");
+  return downloadBlob("/despachos-recursos/mis-entregas/listado", "mis_entregas_abiertas.html");
 }
 
 export async function descargarDespachosProfesional(profesionalId: number | string) {
-  return downloadBlob(`/despachos-recursos/profesional/${profesionalId}/listado`, `despachos_profesional_${profesionalId}.html`);
+  return downloadBlob(`/despachos-recursos/profesional/${profesionalId}/listado`, `entregas_abiertas_profesional_${profesionalId}.html`);
 }
 
 export async function obtenerMiEntregaRecurso(id: number) {

@@ -755,6 +755,7 @@ export function RecursosAsistencialesPage() {
   const [despachoForm, setDespachoForm] = useState<DespachoForm | null>(null);
   const [reintentoForm, setReintentoForm] = useState<ReintentoForm | null>(null);
   const [devolucionDespachoForm, setDevolucionDespachoForm] = useState<DevolucionDespachoForm | null>(null);
+  const [listadoProfesional, setListadoProfesional] = useState("");
   const [historialPaciente, setHistorialPaciente] = useState("");
   const [historialProfesional, setHistorialProfesional] = useState("");
   const [loteDetalle, setLoteDetalle] = useState<InventarioLoteRecurso | null>(null);
@@ -1807,16 +1808,16 @@ export function RecursosAsistencialesPage() {
   }
 
   async function descargarListadoDespachosProfesional() {
-    if (!historialProfesional) {
-      setError("Selecciona un profesional para descargar sus despachos asignados.");
+    if (!listadoProfesional) {
+      setError("Selecciona un profesional para descargar sus entregas abiertas.");
       return;
     }
     setAccion("listado-despachos-profesional");
     setError("");
     try {
-      await descargarDespachosProfesional(historialProfesional);
+      await descargarDespachosProfesional(listadoProfesional);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "No fue posible descargar el listado de despachos");
+      setError(err instanceof Error ? err.message : "No fue posible descargar el listado de entregas abiertas");
     } finally {
       setAccion("");
     }
@@ -2408,6 +2409,20 @@ export function RecursosAsistencialesPage() {
             </select>
           </div>
 
+          <div className="recursos-history-panel recursos-route-panel">
+            <div>
+              <h3>Listado de ruta del profesional</h3>
+              <p>Descarga las entregas abiertas que el profesional todavía debe gestionar.</p>
+            </div>
+            <select value={listadoProfesional} onChange={(event) => setListadoProfesional(event.target.value)}>
+              <option value="">Seleccionar profesional</option>
+              {profesionales.map((profesional) => <option key={profesional.id} value={profesional.id}>{profesional.nombre}</option>)}
+            </select>
+            <button className="secondary-btn" type="button" onClick={descargarListadoDespachosProfesional} disabled={!listadoProfesional || accion === "listado-despachos-profesional"}>
+              <FileDown size={15} /> Descargar entregas abiertas
+            </button>
+          </div>
+
           <div className="recursos-list-head recursos-list-head-main" aria-hidden="true">
             <span>Despacho y destinatario</span>
             <span>Estado</span>
@@ -2478,9 +2493,6 @@ export function RecursosAsistencialesPage() {
             </select>
             <button className="secondary-btn" type="button" onClick={cargarHistorialEntregas} disabled={accion === "historial-entregas"}>
               <History size={15} /> Consultar historial
-            </button>
-            <button className="secondary-btn" type="button" onClick={descargarListadoDespachosProfesional} disabled={!historialProfesional || accion === "listado-despachos-profesional"}>
-              <FileDown size={15} /> Descargar despachos
             </button>
           </div>
           {historialEntregas.length > 0 && (
