@@ -2,6 +2,7 @@ import {
   AlertTriangle,
   Boxes,
   ClipboardList,
+  FileDown,
   Eye,
   FlaskConical,
   History,
@@ -37,6 +38,7 @@ import {
   darBajaInventarioLote,
   devolverDespachoInventarioRecurso,
   devolverInventarioLote,
+  descargarDespachosProfesional,
   downloadBlob,
   eliminarOrdenCompraRecurso,
   cancelarDespachoRecurso,
@@ -1804,6 +1806,22 @@ export function RecursosAsistencialesPage() {
     }
   }
 
+  async function descargarListadoDespachosProfesional() {
+    if (!historialProfesional) {
+      setError("Selecciona un profesional para descargar sus despachos asignados.");
+      return;
+    }
+    setAccion("listado-despachos-profesional");
+    setError("");
+    try {
+      await descargarDespachosProfesional(historialProfesional);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "No fue posible descargar el listado de despachos");
+    } finally {
+      setAccion("");
+    }
+  }
+
   async function guardarReintentoDespacho() {
     if (!reintentoForm) return;
     if (!reintentoForm.fecha_programada) {
@@ -2460,6 +2478,9 @@ export function RecursosAsistencialesPage() {
             </select>
             <button className="secondary-btn" type="button" onClick={cargarHistorialEntregas} disabled={accion === "historial-entregas"}>
               <History size={15} /> Consultar historial
+            </button>
+            <button className="secondary-btn" type="button" onClick={descargarListadoDespachosProfesional} disabled={!historialProfesional || accion === "listado-despachos-profesional"}>
+              <FileDown size={15} /> Descargar despachos
             </button>
           </div>
           {historialEntregas.length > 0 && (

@@ -846,6 +846,14 @@ export async function listarMisEntregasRecursos() {
   return apiCall<{ success: boolean; despachos: DespachoRecurso[]; total: number }>("GET", "/despachos-recursos/mis-entregas");
 }
 
+export async function descargarMisDespachosAsignados() {
+  return downloadBlob("/despachos-recursos/mis-entregas/listado", "mis_despachos_asignados.html");
+}
+
+export async function descargarDespachosProfesional(profesionalId: number | string) {
+  return downloadBlob(`/despachos-recursos/profesional/${profesionalId}/listado`, `despachos_profesional_${profesionalId}.html`);
+}
+
 export async function obtenerMiEntregaRecurso(id: number) {
   return apiCall<{ success: boolean; despacho: DespachoRecurso }>("GET", `/despachos-recursos/mis-entregas/${id}`);
 }

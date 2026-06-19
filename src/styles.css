@@ -1499,6 +1499,18 @@ td small { display: block; color: var(--muted); margin-top: 4px; }
   cursor: pointer;
 }
 
+.deliveries-header button:disabled {
+  opacity: .72;
+  cursor: progress;
+}
+
+.deliveries-header-actions {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+
 .deliveries-content {
   width: min(100% - 28px, 980px);
   margin: 0 auto;
@@ -5448,6 +5460,14 @@ td small { display: block; color: var(--muted); margin-top: 4px; }
     display: inline-flex;
     justify-content: center;
     min-height: 39px;
+  }
+  .deliveries-header,
+  .deliveries-header-actions {
+    display: grid;
+    justify-items: stretch;
+  }
+  .deliveries-header button {
+    justify-content: center;
   }
   .professional-welcome,
   .profile-photo-row {

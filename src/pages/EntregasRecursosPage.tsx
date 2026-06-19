@@ -1,9 +1,10 @@
-import { Camera, Eraser, LogOut, MapPin, PenLine, Truck, X } from "lucide-react";
+import { Camera, Eraser, FileDown, LogOut, MapPin, PenLine, Truck, X } from "lucide-react";
 import { PointerEvent, useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   clearSession,
   confirmarMiEntregaRecurso,
+  descargarMisDespachosAsignados,
   getToken,
   listarMisEntregasRecursos,
   obtenerMiEntregaRecurso,
@@ -42,6 +43,7 @@ export function EntregasRecursosPage() {
   const [form, setForm] = useState<EntregaForm>(ENTREGA_INICIAL);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [downloading, setDownloading] = useState(false);
   const [geoLoading, setGeoLoading] = useState(false);
   const [evidencia, setEvidencia] = useState<File | null>(null);
   const [error, setError] = useState("");
@@ -94,6 +96,19 @@ export function EntregasRecursosPage() {
   function cerrarSesion() {
     clearSession();
     navigate("/login", { replace: true });
+  }
+
+  async function descargarListadoAsignado() {
+    setDownloading(true);
+    setError("");
+    setSuccess("");
+    try {
+      await descargarMisDespachosAsignados();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "No fue posible descargar el listado de despachos");
+    } finally {
+      setDownloading(false);
+    }
   }
 
   function actualizar(campo: keyof EntregaForm, valor: string) {
@@ -255,7 +270,12 @@ export function EntregasRecursosPage() {
           <h1>Entregas de recursos</h1>
           <p>Despachos en camino asignados a tu ruta domiciliaria.</p>
         </div>
-        <button type="button" onClick={cerrarSesion}><LogOut size={16} /> Salir</button>
+        <div className="deliveries-header-actions">
+          <button type="button" onClick={descargarListadoAsignado} disabled={downloading}>
+            <FileDown size={16} /> {downloading ? "Generando..." : "Descargar listado"}
+          </button>
+          <button type="button" onClick={cerrarSesion}><LogOut size={16} /> Salir</button>
+        </div>
       </header>
 
       <section className="deliveries-content">
