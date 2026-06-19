@@ -17,6 +17,7 @@ import {
   Save,
   Syringe,
   Trash2,
+  Truck,
   Upload,
   UserRound,
   UsersRound,
@@ -40,6 +41,7 @@ import {
   listarMisExperiencias,
   listarMisFormaciones,
   listarMisReferencias,
+  listarMisEntregasRecursos,
   listarMisVacunas,
   listarMisDocumentosProfesional,
   listarMunicipios,
@@ -60,6 +62,7 @@ import type {
   ProfesionalPerfilPayload,
   ReferenciaPersonal,
   ServicioProfesionalAsignado,
+  DespachoRecurso,
   UbicacionDepartamento,
   UbicacionMunicipio,
   VacunaProfesional,
@@ -282,6 +285,7 @@ export function PortalProfesionalPage() {
   const [perfil, setPerfil] = useState<ProfesionalPerfil | null>(null);
   const [acceso, setAcceso] = useState<PermisosAcceso | null>(null);
   const [serviciosAsignados, setServiciosAsignados] = useState<ServicioProfesionalAsignado[]>([]);
+  const [entregasPendientes, setEntregasPendientes] = useState<DespachoRecurso[]>([]);
   const [form, setForm] = useState<ProfesionalPerfilPayload>(CAMPOS_INICIALES);
   const [documentos, setDocumentos] = useState<DocumentoPortalProfesional[]>([]);
   const [loading, setLoading] = useState(true);
@@ -355,6 +359,9 @@ export function PortalProfesionalPage() {
       obtenerMisServiciosProfesional()
         .then((data) => setServiciosAsignados(data.servicios || []))
         .catch(() => setServiciosAsignados([]));
+      listarMisEntregasRecursos()
+        .then((data) => setEntregasPendientes(data.despachos || []))
+        .catch(() => setEntregasPendientes([]));
       const departamentoActual = p.departamento || "";
       const tratamientoAceptado = Boolean(p.acepta_tratamiento_datos);
       setPerfil(p);
@@ -901,6 +908,8 @@ export function PortalProfesionalPage() {
   );
   const puedeEntrarPanel = puedeEntrarAdmin || puedeEntrarTalento || puedeEntrarInfraestructura || puedeEntrarRecursos;
   const serviciosVisibles = serviciosAsignados.filter((servicio) => servicio.estado !== "inactivo");
+  const totalEntregasPendientes = entregasPendientes.length;
+  const textoEntregasPendientes = totalEntregasPendientes === 1 ? "1 entrega pendiente" : `${totalEntregasPendientes} entregas pendientes`;
   const adminTarget = puedeEntrarAdmin
     ? "/servicios"
     : puedeEntrarTalento
@@ -927,6 +936,10 @@ export function PortalProfesionalPage() {
             <span>{form.especialidad || "Profesional"}</span>
           </div>
           <button className="topbar-soft-btn active" type="button" onClick={() => navigate("/portal-profesional")}>Mi portal</button>
+          <button className={`topbar-soft-btn topbar-delivery-btn ${totalEntregasPendientes ? "has-pending" : ""}`} type="button" onClick={() => navigate("/entregas-recursos")}>
+            <Truck size={15} /> Entregas
+            {totalEntregasPendientes > 0 && <span>{totalEntregasPendientes}</span>}
+          </button>
           <button className="topbar-soft-btn" type="button" onClick={() => navigate("/portal-profesional/capacitaciones")}>Capacitaciones</button>
           <button className="topbar-soft-btn navy" type="button" onClick={abrirMiCarnet}>Mi Carnet</button>
           <button className="topbar-logout" type="button" onClick={cerrarSesion}><LogOut size={16} /> Salir</button>
@@ -960,6 +973,22 @@ export function PortalProfesionalPage() {
             </button>
           </div>
         )}
+        <div className={`portal-delivery-alert ${totalEntregasPendientes ? "has-pending" : ""}`}>
+          <div className="portal-delivery-alert-icon">
+            <Truck size={24} />
+          </div>
+          <div>
+            <strong>{totalEntregasPendientes ? textoEntregasPendientes : "Entregas de recursos"}</strong>
+            <span>
+              {totalEntregasPendientes
+                ? "Tienes despachos en camino asignados para confirmar entrega, registrar firma o reportar novedades."
+                : "Desde aquí puedes revisar tus entregas asignadas cuando Recursos Asistenciales programe despachos para tu ruta."}
+            </span>
+          </div>
+          <button className={totalEntregasPendientes ? "primary-btn" : "secondary-btn"} type="button" onClick={() => navigate("/entregas-recursos")}>
+            <PenLine size={16} /> {totalEntregasPendientes ? "Gestionar entregas" : "Ver entregas"}
+          </button>
+        </div>
 
         <section className="professional-welcome">
           <div>
