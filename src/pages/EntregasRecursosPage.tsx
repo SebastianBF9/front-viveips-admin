@@ -1,4 +1,4 @@
-import { Eraser, LogOut, MapPin, PenLine, Truck } from "lucide-react";
+import { Camera, Eraser, LogOut, MapPin, PenLine, Truck, X } from "lucide-react";
 import { PointerEvent, useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import {
@@ -344,6 +344,8 @@ function DeliveryModal({
   onPointerMove: (event: PointerEvent<HTMLCanvasElement>) => void;
   onPointerUp: (event: PointerEvent<HTMLCanvasElement>) => void;
 }) {
+  const evidenceInputRef = useRef<HTMLInputElement | null>(null);
+
   return (
     <div className="portal-signature-modal" role="dialog" aria-modal="true" aria-labelledby="delivery-signature-title">
       <div className="portal-signature-card delivery-signature-card">
@@ -352,54 +354,90 @@ function DeliveryModal({
             <h2 id="delivery-signature-title"><Truck size={22} /> Confirmar entrega</h2>
             <p>{entrega.numero_despacho} · {entrega.paciente_nombre || "Paciente"}</p>
           </div>
-          <button type="button" onClick={onClose}>x</button>
+          <button type="button" onClick={onClose} aria-label="Cerrar"><X size={18} /></button>
         </div>
-        <div className="delivery-summary-box">
-          <div><strong>Dirección</strong><span>{entrega.direccion_entrega || "-"}</span></div>
-          <div><strong>Teléfono</strong><span>{entrega.paciente_telefono || "-"}</span></div>
-          <div><strong>Documento</strong><span>{entrega.paciente_documento || "-"}</span></div>
-        </div>
-        <div className="delivery-items-list">
-          {(entrega.detalles || []).map((detalle) => (
-            <article key={detalle.id || `${detalle.inventario_lote_id}-${detalle.recurso_id}`}>
-              <strong>{detalle.recurso_nombre || "Recurso"}</strong>
-              <span>Lote {detalle.lote || "-"} · Cantidad {detalle.cantidad}</span>
-              {detalle.recomendaciones_almacenamiento && <small>{detalle.recomendaciones_almacenamiento}</small>}
-            </article>
-          ))}
-        </div>
-        <div className="portal-form-grid compact-grid delivery-form-grid">
-          <label>Recibe *
-            <input value={form.recibido_por_nombre} onChange={(event) => onChange("recibido_por_nombre", event.target.value)} />
-          </label>
-          <label>Documento quien recibe *
-            <input value={form.recibido_por_documento} onChange={(event) => onChange("recibido_por_documento", event.target.value)} />
-          </label>
-          <label>Parentesco / relación
-            <input value={form.recibido_por_parentesco} onChange={(event) => onChange("recibido_por_parentesco", event.target.value)} />
-          </label>
-          <button className="secondary-btn delivery-location-btn" type="button" onClick={onCaptureLocation} disabled={geoLoading}>
-            <MapPin size={16} /> {geoLoading ? "Capturando..." : "Capturar ubicación"}
-          </button>
-          <label>Latitud
-            <input value={form.latitud_entrega} disabled />
-          </label>
-          <label>Longitud
-            <input value={form.longitud_entrega} disabled />
-          </label>
-          <label className="wide-field">Observaciones
-            <input value={form.observaciones} onChange={(event) => onChange("observaciones", event.target.value)} />
-          </label>
-          <label className="wide-field">Evidencia fotográfica opcional
-            <input type="file" accept="image/jpeg,image/png,image/webp" onChange={(event) => onEvidence(event.target.files?.[0] || null)} />
-            {evidencia && <small>{evidencia.name}</small>}
-          </label>
-        </div>
+
+        <div className="delivery-modal-body">
+          <section className="delivery-section">
+            <div className="delivery-summary-box">
+              <div><strong>Dirección</strong><span>{entrega.direccion_entrega || "-"}</span></div>
+              <div><strong>Teléfono</strong><span>{entrega.paciente_telefono || "-"}</span></div>
+              <div><strong>Documento</strong><span>{entrega.paciente_documento || "-"}</span></div>
+            </div>
+            <div className="delivery-items-list">
+              {(entrega.detalles || []).map((detalle) => (
+                <article key={detalle.id || `${detalle.inventario_lote_id}-${detalle.recurso_id}`}>
+                  <strong>{detalle.recurso_nombre || "Recurso"}</strong>
+                  <span>Lote {detalle.lote || "-"} · Cantidad {detalle.cantidad}</span>
+                  {detalle.recomendaciones_almacenamiento && <small>{detalle.recomendaciones_almacenamiento}</small>}
+                </article>
+              ))}
+            </div>
+          </section>
+
+          <section className="delivery-section">
+            <div className="delivery-section-title">
+              <strong>Datos de recibido</strong>
+              <span>Confirma quién recibe y registra la ubicación de la entrega.</span>
+            </div>
+            <div className="delivery-form-grid">
+              <label>Recibe *
+                <input value={form.recibido_por_nombre} onChange={(event) => onChange("recibido_por_nombre", event.target.value)} />
+              </label>
+              <label>Documento quien recibe *
+                <input value={form.recibido_por_documento} onChange={(event) => onChange("recibido_por_documento", event.target.value)} />
+              </label>
+              <label>Parentesco / relación
+                <input value={form.recibido_por_parentesco} onChange={(event) => onChange("recibido_por_parentesco", event.target.value)} />
+              </label>
+              <button className="secondary-btn delivery-location-btn" type="button" onClick={onCaptureLocation} disabled={geoLoading}>
+                <MapPin size={16} /> {geoLoading ? "Capturando..." : "Capturar ubicación"}
+              </button>
+              <label>Latitud
+                <input value={form.latitud_entrega} disabled />
+              </label>
+              <label>Longitud
+                <input value={form.longitud_entrega} disabled />
+              </label>
+              <label className="wide-field">Observaciones
+                <textarea value={form.observaciones} onChange={(event) => onChange("observaciones", event.target.value)} rows={3} />
+              </label>
+            </div>
+            <div className="delivery-evidence-box">
+              <input
+                ref={evidenceInputRef}
+                type="file"
+                accept="image/*"
+                capture="environment"
+                onChange={(event) => onEvidence(event.target.files?.[0] || null)}
+              />
+              <button className="secondary-btn" type="button" onClick={() => evidenceInputRef.current?.click()}>
+                <Camera size={16} /> Tomar evidencia fotográfica
+              </button>
+              <div>
+                <strong>{evidencia ? "Evidencia lista" : "Evidencia opcional"}</strong>
+                <span>{evidencia ? evidencia.name : "Se abrirá la cámara del dispositivo cuando esté disponible."}</span>
+              </div>
+              {evidencia && (
+                <button
+                  className="delivery-clear-evidence"
+                  type="button"
+                  onClick={() => {
+                    if (evidenceInputRef.current) evidenceInputRef.current.value = "";
+                    onEvidence(null);
+                  }}
+                >
+                  Quitar
+                </button>
+              )}
+            </div>
+          </section>
+
         <div className="delivery-failed-box">
           <strong>Registrar entrega fallida</strong>
           <span>Úsalo si no fue posible entregar. La devolución al inventario la confirma administración.</span>
           <label>Motivo de entrega fallida
-            <input value={form.motivo_fallida} onChange={(event) => onChange("motivo_fallida", event.target.value)} placeholder="Paciente ausente, dirección incorrecta, rechazo..." />
+            <textarea value={form.motivo_fallida} onChange={(event) => onChange("motivo_fallida", event.target.value)} placeholder="Paciente ausente, dirección incorrecta, rechazo..." rows={2} />
           </label>
           <label>Fecha sugerida de reintento
             <input type="datetime-local" value={form.fecha_reintento} onChange={(event) => onChange("fecha_reintento", event.target.value)} />
@@ -408,6 +446,7 @@ function DeliveryModal({
             Registrar fallida
           </button>
         </div>
+
         <div className="portal-signature-pad">
           <strong>Firma de recibido</strong>
           <span>El paciente o quien recibe debe firmar en el recuadro.</span>
@@ -426,6 +465,7 @@ function DeliveryModal({
             <button className="secondary-btn" type="button" onClick={onClose}>Cancelar</button>
             <button className="primary-btn" type="button" disabled={saving} onClick={onSave}>{saving ? "Guardando..." : "Confirmar entrega"}</button>
           </div>
+        </div>
         </div>
       </div>
     </div>

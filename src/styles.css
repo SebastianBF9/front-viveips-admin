@@ -2072,10 +2072,9 @@ td small { display: block; color: var(--muted); margin-top: 4px; }
   display: grid;
   gap: 10px;
   border: 1px solid #fed7aa;
-  border-radius: 14px;
+  border-radius: 18px;
   background: #fff7ed;
-  padding: 14px;
-  margin-top: 14px;
+  padding: 16px;
 }
 
 .delivery-failed-box strong {
@@ -2097,8 +2096,13 @@ td small { display: block; color: var(--muted); margin-top: 4px; }
   font-weight: 900;
 }
 
-.delivery-failed-box input {
+.delivery-failed-box input,
+.delivery-failed-box textarea {
   width: 100%;
+}
+.delivery-failed-box textarea {
+  min-height: 74px;
+  resize: vertical;
 }
 .portal-section-title {
   display: flex;
@@ -2774,11 +2778,40 @@ td small { display: block; color: var(--muted); margin-top: 4px; }
   width: min(860px, 100%);
 }
 
+.delivery-modal-body {
+  display: grid;
+  gap: 16px;
+  padding: 18px 22px 22px;
+}
+
+.delivery-section {
+  display: grid;
+  gap: 12px;
+}
+
+.delivery-section-title {
+  display: grid;
+  gap: 3px;
+}
+
+.delivery-section-title strong {
+  color: #08243a;
+  font-size: 15px;
+  font-weight: 950;
+}
+
+.delivery-section-title span {
+  color: #64748b;
+  font-size: 13px;
+  font-weight: 750;
+  line-height: 1.45;
+}
+
 .delivery-summary-box,
 .delivery-items-list {
   display: grid;
   gap: 10px;
-  margin: 16px 22px 0;
+  margin: 0;
 }
 
 .delivery-summary-box {
@@ -2794,9 +2827,112 @@ td small { display: block; color: var(--muted); margin-top: 4px; }
   padding: 12px;
 }
 
+.delivery-form-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.delivery-form-grid label {
+  min-width: 0;
+  display: grid;
+  gap: 7px;
+  color: #334155;
+  font-size: 13px;
+  font-weight: 900;
+}
+
+.delivery-form-grid input,
+.delivery-form-grid textarea,
+.delivery-failed-box input,
+.delivery-failed-box textarea {
+  width: 100%;
+  min-width: 0;
+  border: 1px solid #d8e4ef;
+  border-radius: 12px;
+  background: #fff;
+  color: #243b53;
+  font: inherit;
+  font-weight: 750;
+  padding: 11px 12px;
+  outline: none;
+}
+
+.delivery-form-grid input:focus,
+.delivery-form-grid textarea:focus,
+.delivery-failed-box input:focus,
+.delivery-failed-box textarea:focus {
+  border-color: var(--teal);
+  box-shadow: 0 0 0 3px rgba(27, 170, 181, .13);
+}
+
+.delivery-form-grid input:disabled {
+  background: #f1f5f9;
+  color: #475569;
+}
+
+.delivery-form-grid textarea {
+  min-height: 84px;
+  resize: vertical;
+}
+
+.delivery-form-grid .wide-field {
+  grid-column: 1 / -1;
+}
+
 .delivery-location-btn {
   align-self: end;
-  min-height: 44px;
+  min-height: 43px;
+  justify-content: center;
+}
+
+.delivery-evidence-box {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 12px;
+  padding: 13px;
+  border: 1px solid #dbe6f0;
+  border-radius: 16px;
+  background: #f8fbfe;
+}
+
+.delivery-evidence-box input {
+  display: none;
+}
+
+.delivery-evidence-box .secondary-btn {
+  justify-content: center;
+  white-space: nowrap;
+}
+
+.delivery-evidence-box strong,
+.delivery-evidence-box span {
+  display: block;
+  overflow-wrap: anywhere;
+}
+
+.delivery-evidence-box strong {
+  color: #08243a;
+  font-size: 13px;
+  font-weight: 950;
+}
+
+.delivery-evidence-box span {
+  margin-top: 2px;
+  color: #64748b;
+  font-size: 12px;
+  font-weight: 750;
+}
+
+.delivery-clear-evidence {
+  border: 0;
+  border-radius: 999px;
+  background: #fee2e2;
+  color: #991b1b;
+  padding: 8px 12px;
+  font-weight: 900;
+  cursor: pointer;
 }
 .portal-camera-header,
 .portal-signature-header {
@@ -2956,6 +3092,12 @@ td small { display: block; color: var(--muted); margin-top: 4px; }
   display: flex;
   gap: 10px;
   flex-wrap: wrap;
+}
+.delivery-modal-body .portal-signature-pad {
+  margin: 0;
+}
+.delivery-modal-body .portal-signature-actions {
+  padding: 0;
 }
 .portal-consent-modal {
   position: fixed;
@@ -5274,8 +5416,26 @@ td small { display: block; color: var(--muted); margin-top: 4px; }
   .portal-doc-grid,
   .portal-services-grid,
   .delivery-summary-box,
+  .delivery-form-grid,
+  .delivery-evidence-box,
   .professional-training-filters {
     grid-template-columns: 1fr;
+  }
+  .delivery-evidence-box {
+    justify-items: stretch;
+  }
+  .delivery-evidence-box .secondary-btn,
+  .delivery-clear-evidence {
+    width: 100%;
+    justify-content: center;
+  }
+  .portal-signature-actions,
+  .portal-signature-actions div {
+    width: 100%;
+  }
+  .portal-signature-actions button {
+    width: 100%;
+    justify-content: center;
   }
   .professional-training-grid {
     grid-template-columns: 1fr;
