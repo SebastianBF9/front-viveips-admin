@@ -13,7 +13,7 @@ import {
   registrarMiEntregaFallida,
   subirEvidenciaMiEntrega,
 } from "../api";
-import type { DespachoRecurso, ProfesionalPerfil } from "../types";
+import type { DespachoRecurso, DespachoRecursoDetalle, ProfesionalPerfil } from "../types";
 import { Loading } from "../ui/Loading";
 
 type EntregaForm = {
@@ -37,6 +37,17 @@ const ENTREGA_INICIAL: EntregaForm = {
   motivo_fallida: "",
   fecha_reintento: "",
 };
+
+function textoDescripcionItem(detalle: DespachoRecursoDetalle) {
+  return (
+    detalle.recurso_descripcion ||
+    detalle.observaciones ||
+    detalle.recomendaciones_almacenamiento ||
+    (detalle.recurso_codigo ? `Código ${detalle.recurso_codigo}` : "") ||
+    detalle.tipo_recurso ||
+    ""
+  );
+}
 
 export function EntregasRecursosPage() {
   const navigate = useNavigate();
@@ -69,7 +80,19 @@ export function EntregasRecursosPage() {
         listarMisEntregasRecursos(),
       ]);
       setPerfil(perfilData.perfil);
-      setEntregas(entregasData.despachos || []);
+      const despachos = entregasData.despachos || [];
+      const despachosConDetalles = await Promise.all(
+        despachos.map(async (despacho) => {
+          if (despacho.detalles?.length) return despacho;
+          try {
+            const detalleData = await obtenerMiEntregaRecurso(despacho.id);
+            return { ...despacho, detalles: detalleData.despacho.detalles || [] };
+          } catch {
+            return despacho;
+          }
+        }),
+      );
+      setEntregas(despachosConDetalles);
     } catch (err) {
       setError(err instanceof Error ? err.message : "No fue posible cargar tus entregas");
     } finally {
@@ -360,7 +383,7 @@ export function EntregasRecursosPage() {
                         {entrega.detalles?.slice(0, 3).map((detalle) => (
                           <div key={detalle.id || `${detalle.inventario_lote_id}-${detalle.recurso_id}`}>
                             <strong>{detalle.recurso_nombre || "Recurso"}</strong>
-                            {detalle.recurso_descripcion && <span>{detalle.recurso_descripcion}</span>}
+                            {textoDescripcionItem(detalle) && <span>{textoDescripcionItem(detalle)}</span>}
                             <small>Lote {detalle.lote || "-"} · Cantidad {detalle.cantidad}</small>
                           </div>
                         ))}
@@ -467,7 +490,7 @@ function DeliveryModal({
               {(entrega.detalles || []).map((detalle) => (
                 <article key={detalle.id || `${detalle.inventario_lote_id}-${detalle.recurso_id}`}>
                   <strong>{detalle.recurso_nombre || "Recurso"}</strong>
-                  {detalle.recurso_descripcion && <span>{detalle.recurso_descripcion}</span>}
+                  {textoDescripcionItem(detalle) && <span>{textoDescripcionItem(detalle)}</span>}
                   <span>Lote {detalle.lote || "-"} · Cantidad {detalle.cantidad}</span>
                   {detalle.recomendaciones_almacenamiento && <small>{detalle.recomendaciones_almacenamiento}</small>}
                 </article>
