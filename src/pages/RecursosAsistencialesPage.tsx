@@ -53,7 +53,6 @@ import {
   obtenerReportesRecursos,
   listarDespachosRecursos,
   listarHistorialEntregasRecursos,
-  listarProfesionalesConEntregasAbiertas,
   listarResultadosInvima,
   listarOrdenesCompraRecursos,
   listarProfesionales,
@@ -776,8 +775,7 @@ export function RecursosAsistencialesPage() {
       const accesoData = await obtenerMiAcceso();
       setAcceso(accesoData);
       const puedeConsultarAuditoria = Boolean(accesoData.permiso_ver_todo || accesoData.permiso_recursos_auditoria);
-      const puedeConsultarDespachosAbiertos = Boolean(accesoData.permiso_ver_todo || accesoData.permiso_recursos_despachar);
-      const [recursosData, proveedoresData, serviciosData, ordenesData, recepcionesData, lotesData, movimientosData, despachosData, profesionalesData, profesionalesAbiertosData, auditoriaData, reportesData, invimaData] = await Promise.all([
+      const [recursosData, proveedoresData, serviciosData, ordenesData, recepcionesData, lotesData, movimientosData, despachosData, profesionalesData, auditoriaData, reportesData, invimaData] = await Promise.all([
         listarRecursosAsistenciales(),
         listarProveedoresRecursos(),
         listarServiciosIps(),
@@ -787,7 +785,6 @@ export function RecursosAsistencialesPage() {
         listarMovimientosInventario(),
         listarDespachosRecursos(),
         listarProfesionales(),
-        puedeConsultarDespachosAbiertos ? listarProfesionalesConEntregasAbiertas() : Promise.resolve({ profesionales: [] }),
         puedeConsultarAuditoria ? listarAuditoriaRecursos({ limite: 500 }) : Promise.resolve({ eventos: [] }),
         puedeConsultarAuditoria ? obtenerReportesRecursos() : Promise.resolve({ reportes: REPORTES_VACIOS }),
         puedeConsultarAuditoria ? listarResultadosInvima({ limite: 100 }) : Promise.resolve({ alertas: [], estado: INVIMA_ESTADO_VACIO }),
@@ -799,9 +796,21 @@ export function RecursosAsistencialesPage() {
       setLotesInventario(lotesData.lotes || []);
       setMovimientosInventario(movimientosData.movimientos || []);
       setDespachos(despachosData.despachos || []);
-      setProfesionales((profesionalesData.profesionales || []).filter((profesional) => Number(profesional.activo) === 1));
-      setProfesionalesConEntregas(profesionalesAbiertosData.profesionales || []);
-      if (listadoProfesional && !(profesionalesAbiertosData.profesionales || []).some((profesional) => String(profesional.id) === String(listadoProfesional))) {
+      const profesionalesActivos = (profesionalesData.profesionales || []).filter((profesional) => Number(profesional.activo) === 1);
+      const conteoAbiertas = new Map<string, number>();
+      (despachosData.despachos || []).forEach((despacho) => {
+        const estado = estadoNormalizado(despacho.estado);
+        const responsableId = despacho.responsable_entrega_id;
+        if (!responsableId || !["en_camino", "fallido"].includes(estado)) return;
+        const key = String(responsableId);
+        conteoAbiertas.set(key, (conteoAbiertas.get(key) || 0) + 1);
+      });
+      const profesionalesAbiertos = profesionalesActivos
+        .filter((profesional) => conteoAbiertas.has(String(profesional.id)))
+        .map((profesional) => ({ ...profesional, entregas_abiertas: conteoAbiertas.get(String(profesional.id)) || 0 }));
+      setProfesionales(profesionalesActivos);
+      setProfesionalesConEntregas(profesionalesAbiertos);
+      if (listadoProfesional && !profesionalesAbiertos.some((profesional) => String(profesional.id) === String(listadoProfesional))) {
         setListadoProfesional("");
       }
       setAuditoria(auditoriaData.eventos || []);
