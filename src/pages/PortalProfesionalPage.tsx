@@ -12,6 +12,7 @@ import {
   IdCard,
   LayoutDashboard,
   LogOut,
+  Menu,
   PenLine,
   Plus,
   Save,
@@ -21,6 +22,7 @@ import {
   Upload,
   UserRound,
   UsersRound,
+  X,
   XCircle,
 } from "lucide-react";
 import { ChangeEvent, PointerEvent, ReactNode, useEffect, useMemo, useRef, useState } from "react";
@@ -313,6 +315,7 @@ export function PortalProfesionalPage() {
   const [cameraFront, setCameraFront] = useState("");
   const [cameraBack, setCameraBack] = useState("");
   const [cameraError, setCameraError] = useState("");
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const cameraStreamRef = useRef<MediaStream | null>(null);
   const signatureCanvasRef = useRef<HTMLCanvasElement | null>(null);
@@ -924,24 +927,33 @@ export function PortalProfesionalPage() {
       <header className="professional-topbar">
         <div className="professional-topbar-brand">
           <img src="/logo_carnet.png" alt="Vive IPS" />
+          <button className="topbar-menu-toggle" type="button" onClick={() => setMobileMenuOpen((open) => !open)} aria-expanded={mobileMenuOpen}>
+            {mobileMenuOpen ? <X size={18} /> : <Menu size={18} />}
+            Menú
+          </button>
           {puedeEntrarPanel && (
-            <button className="topbar-soft-btn topbar-admin-btn" type="button" onClick={() => navigate(adminTarget)}>
+            <button className="topbar-soft-btn topbar-admin-btn topbar-desktop-admin" type="button" onClick={() => navigate(adminTarget)}>
               <LayoutDashboard size={16} /> {adminLabel}
             </button>
           )}
         </div>
-        <div className="professional-topbar-user">
+        <div className={`professional-topbar-user ${mobileMenuOpen ? "open" : ""}`}>
           <div>
             <strong>{form.nombre || "Profesional"}</strong>
             <span>{form.especialidad || "Profesional"}</span>
           </div>
-          <button className="topbar-soft-btn active" type="button" onClick={() => navigate("/portal-profesional")}>Mi portal</button>
-          <button className={`topbar-soft-btn topbar-delivery-btn ${totalEntregasPendientes ? "has-pending" : ""}`} type="button" onClick={() => navigate("/entregas-recursos")}>
+          {puedeEntrarPanel && (
+            <button className="topbar-soft-btn topbar-admin-btn topbar-mobile-admin" type="button" onClick={() => { setMobileMenuOpen(false); navigate(adminTarget); }}>
+              <LayoutDashboard size={16} /> {adminLabel}
+            </button>
+          )}
+          <button className="topbar-soft-btn active" type="button" onClick={() => { setMobileMenuOpen(false); navigate("/portal-profesional"); }}>Mi portal</button>
+          <button className={`topbar-soft-btn topbar-delivery-btn ${totalEntregasPendientes ? "has-pending" : ""}`} type="button" onClick={() => { setMobileMenuOpen(false); navigate("/entregas-recursos"); }}>
             <Truck size={15} /> Entregas
             {totalEntregasPendientes > 0 && <span>{totalEntregasPendientes}</span>}
           </button>
-          <button className="topbar-soft-btn" type="button" onClick={() => navigate("/portal-profesional/capacitaciones")}>Capacitaciones</button>
-          <button className="topbar-soft-btn navy" type="button" onClick={abrirMiCarnet}>Mi Carnet</button>
+          <button className="topbar-soft-btn" type="button" onClick={() => { setMobileMenuOpen(false); navigate("/portal-profesional/capacitaciones"); }}>Capacitaciones</button>
+          <button className="topbar-soft-btn navy" type="button" onClick={() => { setMobileMenuOpen(false); abrirMiCarnet(); }}>Mi Carnet</button>
           <button className="topbar-logout" type="button" onClick={cerrarSesion}><LogOut size={16} /> Salir</button>
         </div>
       </header>

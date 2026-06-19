@@ -1579,6 +1579,10 @@ td small { display: block; color: var(--muted); margin-top: 4px; }
   color: var(--navy);
   border: 1px solid #dbe6f0;
 }
+.topbar-menu-toggle,
+.topbar-mobile-admin {
+  display: none;
+}
 .topbar-delivery-btn {
   position: relative;
   display: inline-flex;
@@ -5373,16 +5377,69 @@ td small { display: block; color: var(--muted); margin-top: 4px; }
   .professional-modal-actions .close-detail-btn { width: 100%; min-width: 0; }
   .table-card { overflow-x: auto; }
   table { min-width: 760px; }
-  .professional-topbar,
-  .professional-topbar-brand,
-  .professional-topbar-user,
+  .professional-topbar {
+    display: grid;
+    align-items: start;
+    gap: 12px;
+    padding: 12px 16px;
+  }
+  .professional-topbar-brand {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+  }
+  .professional-topbar img {
+    height: 48px;
+  }
+  .topbar-desktop-admin {
+    display: none;
+  }
+  .topbar-menu-toggle {
+    border: 1px solid #dbe6f0;
+    border-radius: 999px;
+    background: #eef4ff;
+    color: var(--navy);
+    min-height: 40px;
+    padding: 9px 13px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 7px;
+    font-weight: 950;
+    cursor: pointer;
+  }
+  .topbar-mobile-admin {
+    display: inline-flex;
+  }
+  .professional-topbar-user {
+    display: none;
+    width: 100%;
+    align-items: stretch;
+    justify-content: stretch;
+    gap: 10px;
+    padding-top: 8px;
+    border-top: 1px solid #e5eef6;
+  }
+  .professional-topbar-user.open {
+    display: grid;
+    justify-items: stretch;
+  }
+  .professional-topbar-user > div {
+    margin-right: 0;
+    text-align: left;
+    padding: 2px 0 4px;
+  }
+  .professional-topbar-user .topbar-soft-btn,
+  .professional-topbar-user .topbar-logout {
+    width: 100%;
+    justify-content: center;
+  }
   .professional-welcome,
   .profile-photo-row {
     display: grid;
     justify-items: start;
-  }
-  .professional-topbar-user div {
-    text-align: left;
   }
   .professional-portal-content {
     width: min(100% - 24px, 900px);
