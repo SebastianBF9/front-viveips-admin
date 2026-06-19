@@ -3076,7 +3076,7 @@ td small { display: block; color: var(--muted); margin-top: 4px; }
   justify-content: space-between;
   gap: 16px;
   padding: 20px 22px;
-  background: linear-gradient(135deg, var(--navy), var(--teal));
+  background: linear-gradient(135deg, #1BAAB5, #1B3A6B);
   color: #fff;
 }
 .portal-camera-header h2,
@@ -3086,12 +3086,18 @@ td small { display: block; color: var(--muted); margin-top: 4px; }
   gap: 8px;
   margin: 0;
   font-size: 21px;
+  color: #fff;
+}
+.portal-camera-header h2 svg,
+.portal-signature-header h2 svg {
+  color: #fff;
 }
 .portal-camera-header p,
 .portal-signature-header p {
   margin: 5px 0 0;
   opacity: .9;
   font-size: 13px;
+  color: rgba(255,255,255,.92);
 }
 .portal-camera-header button,
 .portal-signature-header button {
