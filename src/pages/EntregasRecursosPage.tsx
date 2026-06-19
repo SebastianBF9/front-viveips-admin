@@ -355,6 +355,20 @@ export function EntregasRecursosPage() {
                       <small>{entrega.estado ? entrega.estado.replace("_", " ") : "en camino"}</small>
                     </div>
                     <p>{entrega.direccion_entrega || "Sin dirección"}{entrega.ciudad_entrega ? ` · ${entrega.ciudad_entrega}` : ""}</p>
+                    {Boolean(entrega.detalles?.length) && (
+                      <div className="portal-delivery-items-preview">
+                        {entrega.detalles?.slice(0, 3).map((detalle) => (
+                          <div key={detalle.id || `${detalle.inventario_lote_id}-${detalle.recurso_id}`}>
+                            <strong>{detalle.recurso_nombre || "Recurso"}</strong>
+                            {detalle.recurso_descripcion && <span>{detalle.recurso_descripcion}</span>}
+                            <small>Lote {detalle.lote || "-"} · Cantidad {detalle.cantidad}</small>
+                          </div>
+                        ))}
+                        {entrega.detalles && entrega.detalles.length > 3 && (
+                          <em>+{entrega.detalles.length - 3} {entrega.detalles.length - 3 === 1 ? "ítem adicional" : "ítems adicionales"}</em>
+                        )}
+                      </div>
+                    )}
                     <div className="portal-delivery-meta">
                       <span>{entrega.items || entrega.detalles?.length || 0} ítems</span>
                       <span>{entrega.fecha_salida ? `Salida: ${String(entrega.fecha_salida).slice(0, 16)}` : "En camino"}</span>
@@ -453,6 +467,7 @@ function DeliveryModal({
               {(entrega.detalles || []).map((detalle) => (
                 <article key={detalle.id || `${detalle.inventario_lote_id}-${detalle.recurso_id}`}>
                   <strong>{detalle.recurso_nombre || "Recurso"}</strong>
+                  {detalle.recurso_descripcion && <span>{detalle.recurso_descripcion}</span>}
                   <span>Lote {detalle.lote || "-"} · Cantidad {detalle.cantidad}</span>
                   {detalle.recomendaciones_almacenamiento && <small>{detalle.recomendaciones_almacenamiento}</small>}
                 </article>

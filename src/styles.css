@@ -2147,6 +2147,42 @@ td small { display: block; color: var(--muted); margin-top: 4px; }
   line-height: 1.45;
 }
 
+.portal-delivery-items-preview {
+  display: grid;
+  gap: 8px;
+  padding: 10px;
+  border: 1px solid #e5eef6;
+  border-radius: 14px;
+  background: #ffffff;
+}
+
+.portal-delivery-items-preview div {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+}
+
+.portal-delivery-items-preview strong {
+  color: var(--navy);
+  font-size: 13px;
+  font-weight: 950;
+}
+
+.portal-delivery-items-preview span {
+  color: #475569;
+  font-size: 12px;
+  font-weight: 750;
+  line-height: 1.35;
+}
+
+.portal-delivery-items-preview small,
+.portal-delivery-items-preview em {
+  color: #64748b;
+  font-size: 12px;
+  font-weight: 850;
+  font-style: normal;
+}
+
 .portal-delivery-meta {
   display: flex;
   gap: 8px;

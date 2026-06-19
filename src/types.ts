@@ -1182,6 +1182,7 @@ export interface DespachoRecursoDetalle {
   observaciones?: string | null;
   recurso_codigo?: string | null;
   recurso_nombre?: string | null;
+  recurso_descripcion?: string | null;
   tipo_recurso?: string | null;
   lote?: string | null;
   fecha_vencimiento?: string | null;
