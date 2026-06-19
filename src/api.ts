@@ -847,11 +847,15 @@ export async function listarMisEntregasRecursos() {
 }
 
 export async function descargarMisDespachosAsignados() {
-  return downloadBlob("/despachos-recursos/mis-entregas/listado", "mis_entregas_abiertas.html");
+  return downloadBlob("/despachos-recursos/mis-entregas/listado", "mis_entregas_abiertas.pdf");
 }
 
 export async function descargarDespachosProfesional(profesionalId: number | string) {
-  return downloadBlob(`/despachos-recursos/profesional/${profesionalId}/listado`, `entregas_abiertas_profesional_${profesionalId}.html`);
+  return downloadBlob(`/despachos-recursos/profesional/${profesionalId}/listado`, `entregas_abiertas_profesional_${profesionalId}.pdf`);
+}
+
+export async function listarProfesionalesConEntregasAbiertas() {
+  return apiCall<{ success: boolean; profesionales: any[]; total: number }>("GET", "/despachos-recursos/profesionales-con-entregas-abiertas");
 }
 
 export async function obtenerMiEntregaRecurso(id: number) {

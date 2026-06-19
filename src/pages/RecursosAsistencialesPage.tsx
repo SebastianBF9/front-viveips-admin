@@ -53,6 +53,7 @@ import {
   obtenerReportesRecursos,
   listarDespachosRecursos,
   listarHistorialEntregasRecursos,
+  listarProfesionalesConEntregasAbiertas,
   listarResultadosInvima,
   listarOrdenesCompraRecursos,
   listarProfesionales,
@@ -713,6 +714,7 @@ export function RecursosAsistencialesPage() {
   const [despachos, setDespachos] = useState<DespachoRecurso[]>([]);
   const [historialEntregas, setHistorialEntregas] = useState<DespachoRecurso[]>([]);
   const [profesionales, setProfesionales] = useState<ProfesionalAdmin[]>([]);
+  const [profesionalesConEntregas, setProfesionalesConEntregas] = useState<ProfesionalAdmin[]>([]);
   const [servicios, setServicios] = useState<ServicioIps[]>([]);
   const [acceso, setAcceso] = useState<PermisosAcceso | null>(null);
   const [loading, setLoading] = useState(true);
@@ -774,7 +776,8 @@ export function RecursosAsistencialesPage() {
       const accesoData = await obtenerMiAcceso();
       setAcceso(accesoData);
       const puedeConsultarAuditoria = Boolean(accesoData.permiso_ver_todo || accesoData.permiso_recursos_auditoria);
-      const [recursosData, proveedoresData, serviciosData, ordenesData, recepcionesData, lotesData, movimientosData, despachosData, profesionalesData, auditoriaData, reportesData, invimaData] = await Promise.all([
+      const puedeConsultarDespachosAbiertos = Boolean(accesoData.permiso_ver_todo || accesoData.permiso_recursos_despachar);
+      const [recursosData, proveedoresData, serviciosData, ordenesData, recepcionesData, lotesData, movimientosData, despachosData, profesionalesData, profesionalesAbiertosData, auditoriaData, reportesData, invimaData] = await Promise.all([
         listarRecursosAsistenciales(),
         listarProveedoresRecursos(),
         listarServiciosIps(),
@@ -784,6 +787,7 @@ export function RecursosAsistencialesPage() {
         listarMovimientosInventario(),
         listarDespachosRecursos(),
         listarProfesionales(),
+        puedeConsultarDespachosAbiertos ? listarProfesionalesConEntregasAbiertas() : Promise.resolve({ profesionales: [] }),
         puedeConsultarAuditoria ? listarAuditoriaRecursos({ limite: 500 }) : Promise.resolve({ eventos: [] }),
         puedeConsultarAuditoria ? obtenerReportesRecursos() : Promise.resolve({ reportes: REPORTES_VACIOS }),
         puedeConsultarAuditoria ? listarResultadosInvima({ limite: 100 }) : Promise.resolve({ alertas: [], estado: INVIMA_ESTADO_VACIO }),
@@ -796,6 +800,10 @@ export function RecursosAsistencialesPage() {
       setMovimientosInventario(movimientosData.movimientos || []);
       setDespachos(despachosData.despachos || []);
       setProfesionales((profesionalesData.profesionales || []).filter((profesional) => Number(profesional.activo) === 1));
+      setProfesionalesConEntregas(profesionalesAbiertosData.profesionales || []);
+      if (listadoProfesional && !(profesionalesAbiertosData.profesionales || []).some((profesional) => String(profesional.id) === String(listadoProfesional))) {
+        setListadoProfesional("");
+      }
       setAuditoria(auditoriaData.eventos || []);
       setReportes(reportesData.reportes || REPORTES_VACIOS);
       setAlertasInvima(invimaData.alertas || []);
@@ -2416,7 +2424,11 @@ export function RecursosAsistencialesPage() {
             </div>
             <select value={listadoProfesional} onChange={(event) => setListadoProfesional(event.target.value)}>
               <option value="">Seleccionar profesional</option>
-              {profesionales.map((profesional) => <option key={profesional.id} value={profesional.id}>{profesional.nombre}</option>)}
+              {profesionalesConEntregas.map((profesional) => (
+                <option key={profesional.id} value={profesional.id}>
+                  {profesional.nombre} · {profesional.entregas_abiertas || 0} abiertas
+                </option>
+              ))}
             </select>
             <button className="secondary-btn" type="button" onClick={descargarListadoDespachosProfesional} disabled={!listadoProfesional || accion === "listado-despachos-profesional"}>
               <FileDown size={15} /> Descargar entregas abiertas

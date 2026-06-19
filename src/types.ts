@@ -223,6 +223,7 @@ export interface ProfesionalAdmin {
   estado_contrato?: string | null;
   fecha_contrato?: string | null;
   fecha_firma_contrato?: string | null;
+  entregas_abiertas?: number;
   documentos?: DocumentoProfesional[];
   formaciones?: FormacionAcademica[];
   servicios?: ServicioProfesionalAsignado[];
