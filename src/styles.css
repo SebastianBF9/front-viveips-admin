@@ -5379,7 +5379,9 @@ td small { display: block; color: var(--muted); margin-top: 4px; }
   table { min-width: 760px; }
   .professional-topbar {
     display: grid;
+    grid-template-columns: minmax(0, 1fr);
     align-items: start;
+    justify-items: stretch;
     gap: 12px;
     width: 100vw;
     margin-left: calc(50% - 50vw);
@@ -5388,6 +5390,7 @@ td small { display: block; color: var(--muted); margin-top: 4px; }
   }
   .professional-topbar-brand {
     width: 100%;
+    min-width: 0;
     display: flex;
     align-items: center;
     justify-content: space-between;
@@ -5419,6 +5422,7 @@ td small { display: block; color: var(--muted); margin-top: 4px; }
   .professional-topbar-user {
     display: none;
     width: 100%;
+    min-width: 0;
     align-items: stretch;
     justify-content: stretch;
     gap: 10px;
@@ -5431,6 +5435,8 @@ td small { display: block; color: var(--muted); margin-top: 4px; }
     justify-items: stretch;
   }
   .professional-topbar-user > div {
+    width: 100%;
+    min-width: 0;
     margin-right: 0;
     text-align: left;
     padding: 2px 0 4px;
@@ -5439,6 +5445,7 @@ td small { display: block; color: var(--muted); margin-top: 4px; }
   .professional-topbar-user .topbar-logout {
     width: 100%;
     max-width: none;
+    display: inline-flex;
     justify-content: center;
     min-height: 39px;
   }
