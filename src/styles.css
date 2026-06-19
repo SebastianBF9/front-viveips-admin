@@ -2041,6 +2041,58 @@ td small { display: block; color: var(--muted); margin-top: 4px; }
   gap: 14px;
 }
 
+.professional-deliveries-content {
+  width: min(1000px, 100%);
+  gap: 0;
+}
+
+.professional-deliveries-welcome h1 {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.professional-deliveries-panel {
+  display: grid;
+  gap: 20px;
+}
+
+.professional-deliveries-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 18px;
+}
+
+.professional-deliveries-head span {
+  display: block;
+  margin-bottom: 4px;
+  color: var(--teal);
+  font-size: 13px;
+  font-weight: 950;
+  text-transform: uppercase;
+}
+
+.professional-deliveries-head h2 {
+  margin: 0;
+  color: var(--navy);
+  font-size: 24px;
+}
+
+.professional-deliveries-head p {
+  margin: 5px 0 0;
+  max-width: 560px;
+  color: #64748b;
+  font-size: 14px;
+  font-weight: 750;
+  line-height: 1.45;
+}
+
+.professional-deliveries-head .secondary-btn {
+  min-width: 166px;
+  justify-content: center;
+}
+
 .portal-delivery-card {
   display: grid;
   gap: 12px;
@@ -2048,6 +2100,24 @@ td small { display: block; color: var(--muted); margin-top: 4px; }
   border-radius: 16px;
   background: #f8fbfe;
   padding: 16px;
+}
+
+.portal-delivery-card-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.portal-delivery-card-head small {
+  border-radius: 999px;
+  background: #fff7ed;
+  color: #9a3412;
+  padding: 6px 10px;
+  font-size: 12px;
+  font-weight: 950;
+  text-transform: capitalize;
+  white-space: nowrap;
 }
 
 .portal-delivery-card strong,
@@ -2067,6 +2137,14 @@ td small { display: block; color: var(--muted); margin-top: 4px; }
   font-size: 13px;
   font-weight: 750;
   overflow-wrap: anywhere;
+}
+
+.portal-delivery-card p {
+  margin: 0;
+  color: #475569;
+  font-size: 13px;
+  font-weight: 750;
+  line-height: 1.45;
 }
 
 .portal-delivery-meta {
@@ -5523,6 +5601,21 @@ td small { display: block; color: var(--muted); margin-top: 4px; }
   .delivery-clear-evidence {
     width: 100%;
     justify-content: center;
+  }
+  .professional-deliveries-head {
+    display: grid;
+    gap: 14px;
+  }
+  .professional-deliveries-head .secondary-btn {
+    width: 100%;
+  }
+  .portal-delivery-card-head {
+    display: grid;
+    gap: 8px;
+  }
+  .portal-delivery-card-head small {
+    width: max-content;
+    max-width: 100%;
   }
   .portal-signature-actions,
   .portal-signature-actions div {

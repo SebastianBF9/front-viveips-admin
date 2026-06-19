@@ -1,17 +1,19 @@
-import { Camera, Eraser, FileDown, LogOut, MapPin, PenLine, Truck, X } from "lucide-react";
-import { PointerEvent, useEffect, useRef, useState } from "react";
+import { Camera, Eraser, FileDown, GraduationCap, IdCard, LogOut, MapPin, Menu, PenLine, Truck, X } from "lucide-react";
+import { PointerEvent, useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   clearSession,
   confirmarMiEntregaRecurso,
   descargarMisDespachosAsignados,
+  downloadUrl,
   getToken,
   listarMisEntregasRecursos,
   obtenerMiEntregaRecurso,
+  obtenerMiPerfilProfesional,
   registrarMiEntregaFallida,
   subirEvidenciaMiEntrega,
 } from "../api";
-import type { DespachoRecurso } from "../types";
+import type { DespachoRecurso, ProfesionalPerfil } from "../types";
 import { Loading } from "../ui/Loading";
 
 type EntregaForm = {
@@ -38,6 +40,7 @@ const ENTREGA_INICIAL: EntregaForm = {
 
 export function EntregasRecursosPage() {
   const navigate = useNavigate();
+  const [perfil, setPerfil] = useState<ProfesionalPerfil | null>(null);
   const [entregas, setEntregas] = useState<DespachoRecurso[]>([]);
   const [entregaActiva, setEntregaActiva] = useState<DespachoRecurso | null>(null);
   const [form, setForm] = useState<EntregaForm>(ENTREGA_INICIAL);
@@ -49,6 +52,7 @@ export function EntregasRecursosPage() {
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
   const [hasStroke, setHasStroke] = useState(false);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const drawingRef = useRef(false);
 
@@ -60,8 +64,12 @@ export function EntregasRecursosPage() {
     setLoading(true);
     setError("");
     try {
-      const data = await listarMisEntregasRecursos();
-      setEntregas(data.despachos || []);
+      const [perfilData, entregasData] = await Promise.all([
+        obtenerMiPerfilProfesional(),
+        listarMisEntregasRecursos(),
+      ]);
+      setPerfil(perfilData.perfil);
+      setEntregas(entregasData.despachos || []);
     } catch (err) {
       setError(err instanceof Error ? err.message : "No fue posible cargar tus entregas");
     } finally {
@@ -96,6 +104,10 @@ export function EntregasRecursosPage() {
   function cerrarSesion() {
     clearSession();
     navigate("/login", { replace: true });
+  }
+
+  function abrirMiCarnet() {
+    window.open(downloadUrl("/carnet/mi-carnet"), "_blank", "noopener,noreferrer");
   }
 
   async function descargarListadoAsignado() {
@@ -262,46 +274,99 @@ export function EntregasRecursosPage() {
     }
   }
 
+  const totalItems = useMemo(() => {
+    return entregas.reduce((total, entrega) => total + Number(entrega.items || entrega.detalles?.length || 0), 0);
+  }, [entregas]);
+
+  const entregasFallidas = useMemo(() => {
+    return entregas.filter((entrega) => entrega.estado === "fallido").length;
+  }, [entregas]);
+
+  const primerNombre = (perfil?.nombre || "Profesional").split(" ")[0] || "Profesional";
+  const textoEntregas = entregas.length === 1 ? "1 entrega pendiente" : `${entregas.length} entregas pendientes`;
+
   return (
-    <main className="deliveries-page">
-      <header className="deliveries-header">
-        <div>
-          <span>VIVE IPS</span>
-          <h1>Entregas de recursos</h1>
-          <p>Despachos en camino asignados a tu ruta domiciliaria.</p>
-        </div>
-        <div className="deliveries-header-actions">
-          <button type="button" onClick={descargarListadoAsignado} disabled={downloading}>
-            <FileDown size={16} /> {downloading ? "Generando..." : "Descargar ruta"}
+    <main className="professional-portal-page">
+      <header className="professional-topbar">
+        <div className="professional-topbar-brand">
+          <img src="/logo_carnet.png" alt="Vive IPS" />
+          <button className="topbar-menu-toggle" type="button" onClick={() => setMobileMenuOpen((open) => !open)} aria-expanded={mobileMenuOpen}>
+            {mobileMenuOpen ? <X size={18} /> : <Menu size={18} />}
+            Menú
           </button>
-          <button type="button" onClick={cerrarSesion}><LogOut size={16} /> Salir</button>
+        </div>
+        <div className={`professional-topbar-user ${mobileMenuOpen ? "open" : ""}`}>
+          <div>
+            <strong>{perfil?.nombre || "Profesional"}</strong>
+            <span>{perfil?.especialidad || "Profesional"}</span>
+          </div>
+          <button className="topbar-soft-btn" type="button" onClick={() => { setMobileMenuOpen(false); navigate("/portal-profesional"); }}>Mi portal</button>
+          <button className={`topbar-soft-btn topbar-delivery-btn active ${entregas.length ? "has-pending" : ""}`} type="button" onClick={() => setMobileMenuOpen(false)}>
+            <Truck size={15} /> Entregas
+            {entregas.length > 0 && <span>{entregas.length}</span>}
+          </button>
+          <button className="topbar-soft-btn" type="button" onClick={() => { setMobileMenuOpen(false); navigate("/portal-profesional/capacitaciones"); }}>
+            <GraduationCap size={15} /> Capacitaciones
+          </button>
+          <button className="topbar-soft-btn navy" type="button" onClick={() => { setMobileMenuOpen(false); abrirMiCarnet(); }}>
+            <IdCard size={15} /> Mi Carnet
+          </button>
+          <button className="topbar-logout" type="button" onClick={cerrarSesion}><LogOut size={16} /> Salir</button>
         </div>
       </header>
 
-      <section className="deliveries-content">
+      <section className="professional-portal-content professional-deliveries-content">
         {error && <div className="error-box">{error}</div>}
         {success && <div className="success-box">{success}</div>}
+        <section className="professional-welcome professional-deliveries-welcome">
+          <div>
+            <h1><Truck size={28} /> Entregas de recursos</h1>
+            <p>Hola, {primerNombre}. Aquí gestionas los despachos asignados a tu ruta domiciliaria.</p>
+          </div>
+          <div className="welcome-stats">
+            <article><strong>{entregas.length}</strong><span>Pendientes</span></article>
+            <article><strong>{totalItems}</strong><span>Ítems</span></article>
+            <article><strong>{entregasFallidas}</strong><span>Fallidas</span></article>
+          </div>
+        </section>
+
         {loading ? <Loading text="Cargando entregas..." /> : (
-          entregas.length ? (
-            <div className="portal-deliveries-grid">
-              {entregas.map((entrega) => (
-                <article className="portal-delivery-card" key={entrega.id}>
-                  <div>
-                    <strong>{entrega.numero_despacho}</strong>
-                    <span>{entrega.paciente_nombre || "Paciente sin nombre"}</span>
-                    <small>{entrega.direccion_entrega || "Sin dirección"}{entrega.ciudad_entrega ? ` · ${entrega.ciudad_entrega}` : ""}</small>
-                  </div>
-                  <div className="portal-delivery-meta">
-                    <span>{entrega.items || 0} ítems</span>
-                    <span>{entrega.fecha_salida ? `Salida: ${String(entrega.fecha_salida).slice(0, 16)}` : "En camino"}</span>
-                  </div>
-                  <button className="primary-btn" type="button" onClick={() => abrirEntrega(entrega)}>
-                    <PenLine size={16} /> Entregar
-                  </button>
-                </article>
-              ))}
+          <section className="portal-section-card professional-deliveries-panel">
+            <div className="professional-deliveries-head">
+              <div>
+                <span>{textoEntregas}</span>
+                <h2>Ruta asignada</h2>
+                <p>Revisa cada despacho, confirma la entrega con firma o registra una novedad si no fue posible entregar.</p>
+              </div>
+              <button className="secondary-btn" type="button" onClick={descargarListadoAsignado} disabled={downloading || entregas.length === 0}>
+                <FileDown size={16} /> {downloading ? "Generando..." : "Descargar ruta"}
+              </button>
             </div>
-          ) : <div className="empty-state compact-empty">No tienes entregas pendientes.</div>
+
+            {entregas.length ? (
+              <div className="portal-deliveries-grid">
+                {entregas.map((entrega) => (
+                  <article className="portal-delivery-card" key={entrega.id}>
+                    <div className="portal-delivery-card-head">
+                      <div>
+                        <strong>{entrega.numero_despacho}</strong>
+                        <span>{entrega.paciente_nombre || "Paciente sin nombre"}</span>
+                      </div>
+                      <small>{entrega.estado ? entrega.estado.replace("_", " ") : "en camino"}</small>
+                    </div>
+                    <p>{entrega.direccion_entrega || "Sin dirección"}{entrega.ciudad_entrega ? ` · ${entrega.ciudad_entrega}` : ""}</p>
+                    <div className="portal-delivery-meta">
+                      <span>{entrega.items || entrega.detalles?.length || 0} ítems</span>
+                      <span>{entrega.fecha_salida ? `Salida: ${String(entrega.fecha_salida).slice(0, 16)}` : "En camino"}</span>
+                    </div>
+                    <button className="primary-btn" type="button" onClick={() => abrirEntrega(entrega)}>
+                      <PenLine size={16} /> Gestionar entrega
+                    </button>
+                  </article>
+                ))}
+              </div>
+            ) : <div className="empty-state compact-empty">No tienes entregas pendientes.</div>}
+          </section>
         )}
       </section>
 
