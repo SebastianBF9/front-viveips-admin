@@ -4522,6 +4522,51 @@ td small { display: block; color: var(--muted); margin-top: 4px; }
   border-color: #cfddea;
 }
 
+.patient-selector {
+  display: grid;
+  gap: 10px;
+}
+
+.patient-search-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 10px;
+}
+
+.patient-search-row .secondary-btn {
+  min-height: 44px;
+  justify-content: center;
+  white-space: nowrap;
+}
+
+.selected-patient-box {
+  display: grid;
+  gap: 3px;
+  border: 1px solid #b7e4df;
+  border-radius: 10px;
+  background: #f0fdfa;
+  padding: 12px;
+}
+
+.selected-patient-box strong,
+.selected-patient-box span,
+.selected-patient-box small {
+  display: block;
+  overflow-wrap: anywhere;
+}
+
+.selected-patient-box strong {
+  color: #0f766e;
+  font-weight: 950;
+}
+
+.selected-patient-box span,
+.selected-patient-box small {
+  color: #52677d;
+  font-size: 12px;
+  font-weight: 800;
+}
+
 .recursos-check-list {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -5957,6 +6002,12 @@ td small { display: block; color: var(--muted); margin-top: 4px; }
 
   .infra-form-grid {
     grid-template-columns: 1fr;
+  }
+  .patient-search-row {
+    grid-template-columns: 1fr;
+  }
+  .patient-search-row .secondary-btn {
+    width: 100%;
   }
 
   .infra-modal .modal-actions {

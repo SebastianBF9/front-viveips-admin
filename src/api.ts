@@ -47,6 +47,7 @@ import type {
   RelacionPayload,
   OrdenCompraRecurso,
   OrdenCompraRecursoPayload,
+  PacienteIpsHealthcare,
   RecursoAsistencial,
   RecursoAsistencialPayload,
   RecursoProveedorRelacion,
@@ -1007,4 +1008,21 @@ export async function subirArchivoGestionDocumental(payload: {
 
 export async function eliminarArchivoGestionDocumental(id: number) {
   return apiCall<{ success: boolean; mensaje: string }>("DELETE", `/gestion-documental/archivos/${id}`);
+}
+
+export async function buscarPacientesIpsHealthcare(params: {
+  busqueda?: string;
+  documento?: string;
+  estado?: string;
+  limit?: number;
+} = {}) {
+  const query = new URLSearchParams();
+  Object.entries(params).forEach(([key, value]) => {
+    if (value !== undefined && value !== null && String(value).trim()) query.set(key, String(value));
+  });
+  const suffix = query.toString() ? `?${query.toString()}` : "";
+  return apiCall<{ success: boolean; pacientes: PacienteIpsHealthcare[]; total: number }>(
+    "GET",
+    `/integraciones/ips-healthcare/pacientes${suffix}`,
+  );
 }

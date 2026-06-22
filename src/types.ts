@@ -56,6 +56,52 @@ export interface ServicioDetalle {
   };
 }
 
+export interface PacienteIpsHealthcare {
+  id_externo: string;
+  user_id?: string | null;
+  tipo_documento: string;
+  documento: string;
+  nombre: string;
+  fecha_nacimiento?: string | null;
+  genero?: string | null;
+  estado?: string | null;
+  motivo_estado?: string | null;
+  estado_clinico?: string | null;
+  departamento?: string | null;
+  ciudad?: string | null;
+  sede?: string | null;
+  barrio?: string | null;
+  direccion?: string | null;
+  latitud?: number | null;
+  longitud?: number | null;
+  regimen?: string | null;
+  aseguradora?: string | null;
+  poliza?: string | null;
+  telefono?: string | null;
+  telefono_2?: string | null;
+  whatsapp?: string | null;
+  email?: string | null;
+  contacto_familiar?: string | null;
+  telefono_familiar?: string | null;
+  documento_familiar?: string | null;
+  parentesco_familiar?: string | null;
+  telefono_emergencia?: string | null;
+  historia_clinica?: string | null;
+  grupo_sanguineo?: string | null;
+  alertas_medicas?: string | null;
+  kenko_id?: string | null;
+  frecuencia_visita?: string | null;
+  profesional_principal_id?: string | null;
+  fecha_ultimo_contacto?: string | null;
+  fecha_proximo_seguimiento?: string | null;
+  grupo_etareo?: string | null;
+  traqueostomia?: boolean;
+  gastrostomia?: boolean;
+  oxigeno?: boolean;
+  created_at?: string | null;
+  updated_at?: string | null;
+}
+
 export interface RelacionPayload {
   servicio_soporte_ips_id?: number | null;
   servicio_soporte_codigo?: string | null;

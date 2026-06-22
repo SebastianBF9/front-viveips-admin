@@ -28,6 +28,7 @@ import {
   aprobarOrdenCompraRecurso,
   asociarProveedorRecurso,
   asociarServicioRecurso,
+  buscarPacientesIpsHealthcare,
   cambiarEstadoInventarioLote,
   crearOrdenCompraRecurso,
   crearDespachoRecurso,
@@ -75,6 +76,7 @@ import type {
   OrdenCompraRecurso,
   OrdenCompraRecursoDetalle,
   OrdenCompraRecursoPayload,
+  PacienteIpsHealthcare,
   PermisosAcceso,
   InventarioLoteRecurso,
   InvimaAlertasEstado,
@@ -754,6 +756,10 @@ export function RecursosAsistencialesPage() {
   const [ordenForm, setOrdenForm] = useState<OrdenCompraForm | null>(null);
   const [recepcionForm, setRecepcionForm] = useState<RecepcionForm | null>(null);
   const [despachoForm, setDespachoForm] = useState<DespachoForm | null>(null);
+  const [pacienteBusqueda, setPacienteBusqueda] = useState("");
+  const [pacientesExternos, setPacientesExternos] = useState<PacienteIpsHealthcare[]>([]);
+  const [pacienteSeleccionado, setPacienteSeleccionado] = useState("");
+  const [buscandoPacientes, setBuscandoPacientes] = useState(false);
   const [reintentoForm, setReintentoForm] = useState<ReintentoForm | null>(null);
   const [devolucionDespachoForm, setDevolucionDespachoForm] = useState<DevolucionDespachoForm | null>(null);
   const [listadoProfesional, setListadoProfesional] = useState("");
@@ -1722,6 +1728,48 @@ export function RecursosAsistencialesPage() {
     }
   }
 
+  async function buscarPacientesExternos() {
+    const termino = pacienteBusqueda.trim();
+    setBuscandoPacientes(true);
+    setError("");
+    try {
+      const data = await buscarPacientesIpsHealthcare({ busqueda: termino || undefined, limit: 50 });
+      setPacientesExternos(data.pacientes || []);
+      if (!(data.pacientes || []).length) setError("No se encontraron pacientes en ips_healthcare con esa búsqueda.");
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "No fue posible consultar pacientes externos");
+    } finally {
+      setBuscandoPacientes(false);
+    }
+  }
+
+  function seleccionarPacienteExterno(idExterno: string) {
+    setPacienteSeleccionado(idExterno);
+    const paciente = pacientesExternos.find((item) => item.id_externo === idExterno);
+    if (!paciente) return;
+    setDespachoForm((actual) => actual ? {
+      ...actual,
+      paciente_nombre: paciente.nombre || "",
+      paciente_documento: paciente.documento || "",
+      paciente_telefono: paciente.telefono || paciente.whatsapp || paciente.telefono_2 || paciente.telefono_emergencia || "",
+      ciudad_entrega: paciente.ciudad || "",
+      direccion_entrega: paciente.direccion || "",
+      observaciones: [
+        actual.observaciones,
+        paciente.aseguradora ? `Aseguradora: ${paciente.aseguradora}` : "",
+        paciente.estado_clinico ? `Estado clínico: ${paciente.estado_clinico}` : "",
+        paciente.alertas_medicas ? `Alertas médicas: ${paciente.alertas_medicas}` : "",
+      ].filter(Boolean).join("\n"),
+    } : actual);
+  }
+
+  function cerrarDespachoForm() {
+    setDespachoForm(null);
+    setPacienteBusqueda("");
+    setPacientesExternos([]);
+    setPacienteSeleccionado("");
+  }
+
   async function guardarDespacho() {
     if (!despachoForm) return;
     if (!despachoForm.responsable_entrega_id) {
@@ -1746,7 +1794,7 @@ export function RecursosAsistencialesPage() {
     try {
       if (despachoForm.id) await actualizarDespachoRecurso(despachoForm.id, payloadDespacho(despachoForm));
       else await crearDespachoRecurso(payloadDespacho(despachoForm));
-      setDespachoForm(null);
+      cerrarDespachoForm();
       setSuccess("Despacho guardado correctamente.");
       await cargar();
     } catch (err) {
@@ -3622,14 +3670,14 @@ export function RecursosAsistencialesPage() {
       )}
 
       {despachoForm && (
-        <div className="modal-backdrop" onMouseDown={() => setDespachoForm(null)}>
+        <div className="modal-backdrop" onMouseDown={cerrarDespachoForm}>
           <div className="modal wide-modal recursos-modal" onMouseDown={(event) => event.stopPropagation()}>
             <div className="infra-modal-header">
               <div>
                 <h2>{despachoForm.id ? "Editar despacho" : "Nuevo despacho"}</h2>
                 <p>Entrega interna al responsable de ruta. La entrega final con firma y ubicación será la siguiente subfase.</p>
               </div>
-              <button type="button" onClick={() => setDespachoForm(null)} aria-label="Cerrar"><X size={20} /></button>
+              <button type="button" onClick={cerrarDespachoForm} aria-label="Cerrar"><X size={20} /></button>
             </div>
             <div className="infra-form-body">
               <Section title="Destino y responsable">
@@ -3652,9 +3700,41 @@ export function RecursosAsistencialesPage() {
                     {ESTADOS_DESPACHO.map((item) => <option key={item} value={item}>{item}</option>)}
                   </select>
                 </label>
-                <label>Paciente *
-                  <input value={despachoForm.paciente_nombre} onChange={(event) => actualizarDespacho("paciente_nombre", event.target.value)} />
-                </label>
+                <div className="patient-selector wide-field">
+                  <label>Paciente *
+                    <div className="patient-search-row">
+                      <input
+                        value={pacienteBusqueda}
+                        onChange={(event) => setPacienteBusqueda(event.target.value)}
+                        onKeyDown={(event) => {
+                          if (event.key === "Enter") {
+                            event.preventDefault();
+                            buscarPacientesExternos();
+                          }
+                        }}
+                        placeholder="Buscar por nombre, documento o teléfono"
+                      />
+                      <button className="secondary-btn" type="button" onClick={buscarPacientesExternos} disabled={buscandoPacientes}>
+                        <Search size={15} /> {buscandoPacientes ? "Buscando..." : "Buscar / cargar"}
+                      </button>
+                    </div>
+                  </label>
+                  <select value={pacienteSeleccionado} onChange={(event) => seleccionarPacienteExterno(event.target.value)} disabled={!pacientesExternos.length}>
+                    <option value="">{pacientesExternos.length ? "Seleccionar paciente" : "Carga pacientes para seleccionar"}</option>
+                    {pacientesExternos.map((paciente) => (
+                      <option key={paciente.id_externo} value={paciente.id_externo}>
+                        {paciente.nombre} · {paciente.documento}{paciente.ciudad ? ` · ${paciente.ciudad}` : ""}
+                      </option>
+                    ))}
+                  </select>
+                  {despachoForm.paciente_nombre && (
+                    <div className="selected-patient-box">
+                      <strong>{despachoForm.paciente_nombre}</strong>
+                      <span>{despachoForm.paciente_documento || "Sin documento"} · {despachoForm.paciente_telefono || "Sin teléfono"}</span>
+                      <small>{despachoForm.direccion_entrega || "Sin dirección registrada"}{despachoForm.ciudad_entrega ? ` · ${despachoForm.ciudad_entrega}` : ""}</small>
+                    </div>
+                  )}
+                </div>
                 <label>Documento paciente
                   <input value={despachoForm.paciente_documento} onChange={(event) => actualizarDespacho("paciente_documento", event.target.value)} />
                 </label>
@@ -3774,7 +3854,7 @@ export function RecursosAsistencialesPage() {
               </section>
             </div>
             <div className="modal-actions">
-              <button className="secondary-btn" type="button" onClick={() => setDespachoForm(null)}>Cancelar</button>
+              <button className="secondary-btn" type="button" onClick={cerrarDespachoForm}>Cancelar</button>
               <button className="primary-btn infra-save-btn" type="button" onClick={guardarDespacho} disabled={accion === "guardar-despacho"}><Save size={16} /> Guardar despacho</button>
             </div>
           </div>
