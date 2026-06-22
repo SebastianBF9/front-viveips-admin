@@ -43,9 +43,12 @@
   </main>
 
   <script>
-    const API_URL = window.location.hostname.includes("localhost")
-      ? "https://api-pruebas.viveips.com.co"
-      : `${window.location.protocol}//api-pruebas.viveips.com.co`;
+    function apiBase(){
+      const host = window.location.hostname;
+      const esPruebas = host.includes("localhost") || host.includes("127.0.0.1") || host.includes("admin-pruebas");
+      return esPruebas ? "https://api-pruebas.viveips.com.co" : "https://api.viveips.com.co";
+    }
+    const API_URL = apiBase();
     const params = new URLSearchParams(window.location.search);
     const codigo = params.get("codigo");
 

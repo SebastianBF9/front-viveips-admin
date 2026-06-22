@@ -30,7 +30,7 @@ export function LoginPage() {
       <form className="login-card" onSubmit={onSubmit}>
         <img src="/logo_carnet.png" alt="Vive IPS" />
         <h1>Admin Vive IPS</h1>
-        <p>Panel administrativo nuevo en pruebas</p>
+        <p>Panel administrativo</p>
 
         <label>
           Usuario

@@ -70,7 +70,7 @@ import type {
   ReportesRecursosResumen,
 } from "./types";
 
-const API_URL = import.meta.env.VITE_API_URL || "https://api-pruebas.viveips.com.co";
+const API_URL = import.meta.env.VITE_API_URL || "https://api.viveips.com.co";
 const TOKEN_KEY = "viveips_token";
 const ROL_KEY = "viveips_rol";
 const CEDULA_KEY = "viveips_cedula";
