@@ -415,30 +415,14 @@ export function TalentoHumanoPage() {
     setLoading(true);
     setError("");
     try {
-      const data = await listarProfesionales();
-      const base = (data.profesionales || []) as ProfesionalAdmin[];
-      const enriquecidos = await Promise.all(
-        base.map(async (profesional) => {
-          try {
-            const [detalle, formacion, servicios] = await Promise.all([
-              obtenerProfesional(profesional.id),
-              obtenerFormacionProfesional(profesional.id),
-              obtenerServiciosProfesional(profesional.id),
-            ]);
-            return {
-              ...profesional,
-              ...detalle.perfil,
-              documentos: (detalle.documentos || []) as DocumentoProfesional[],
-              formaciones: (formacion.formaciones || []) as FormacionAcademica[],
-              servicios: (servicios.servicios || []) as ServicioProfesionalAsignado[],
-            };
-          } catch {
-            return { ...profesional, documentos: [], formaciones: [], servicios: [] };
-          }
-        }),
-      );
-      setProfesionales(enriquecidos);
-      const permisos = await obtenerMiAcceso();
+      const [data, permisos] = await Promise.all([listarProfesionales(), obtenerMiAcceso()]);
+      const base = ((data.profesionales || []) as ProfesionalAdmin[]).map((profesional) => ({
+        ...profesional,
+        documentos: profesional.documentos || [],
+        formaciones: profesional.formaciones || [],
+        servicios: profesional.servicios || [],
+      }));
+      setProfesionales(base);
       setAcceso(permisos);
     } catch (err) {
       setError(err instanceof Error ? err.message : "No fue posible cargar talento humano");
@@ -545,8 +529,21 @@ export function TalentoHumanoPage() {
     setServiciosSeleccionado([]);
     setServiciosLoading(true);
     try {
-      const data = await obtenerServiciosProfesional(profesional.id);
-      setServiciosSeleccionado(data.servicios || []);
+      const [detalle, formacion, servicios] = await Promise.all([
+        obtenerProfesional(profesional.id),
+        obtenerFormacionProfesional(profesional.id),
+        obtenerServiciosProfesional(profesional.id),
+      ]);
+      const enriquecido = {
+        ...profesional,
+        ...detalle.perfil,
+        documentos: (detalle.documentos || []) as DocumentoProfesional[],
+        formaciones: (formacion.formaciones || []) as FormacionAcademica[],
+        servicios: (servicios.servicios || []) as ServicioProfesionalAsignado[],
+      };
+      setSeleccionado(enriquecido);
+      setProfesionales((actuales) => actuales.map((item) => (item.id === profesional.id ? enriquecido : item)));
+      setServiciosSeleccionado(enriquecido.servicios || []);
     } catch {
       setServiciosSeleccionado([]);
     } finally {
