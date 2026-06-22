@@ -270,6 +270,10 @@ export interface ProfesionalAdmin {
   fecha_contrato?: string | null;
   fecha_firma_contrato?: string | null;
   entregas_abiertas?: number;
+  total_docs?: number | null;
+  docs_vigentes?: number | null;
+  docs_por_vencer?: number | null;
+  docs_vencidos?: number | null;
   documentos?: DocumentoProfesional[];
   formaciones?: FormacionAcademica[];
   servicios?: ServicioProfesionalAsignado[];

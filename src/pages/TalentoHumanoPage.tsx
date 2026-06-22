@@ -299,6 +299,35 @@ function resumenDocumental(profesional: ProfesionalAdmin) {
   return { total: items.length, cumplidos, porVencer, vencidos, pendientes, faltantes, items };
 }
 
+function numeroResumen(valor: unknown) {
+  const numero = Number(valor || 0);
+  return Number.isFinite(numero) ? numero : 0;
+}
+
+function resumenDocumentalListado(profesional: ProfesionalAdmin) {
+  if ((profesional.documentos || []).length || (profesional.formaciones || []).length) {
+    return resumenDocumental(profesional);
+  }
+
+  const totalEsperado = codigosEsperados(profesional.especialidad).length;
+  const totalDocs = numeroResumen(profesional.total_docs);
+  const vencidos = numeroResumen(profesional.docs_vencidos);
+  const porVencer = numeroResumen(profesional.docs_por_vencer);
+  const vigentesDeclarados = numeroResumen(profesional.docs_vigentes);
+  const cumplidos = Math.max(vigentesDeclarados, Math.max(totalDocs - vencidos - porVencer, 0));
+  const faltantes = Math.max(totalEsperado - totalDocs, 0);
+
+  return {
+    total: totalEsperado,
+    cumplidos,
+    porVencer,
+    vencidos,
+    pendientes: faltantes,
+    faltantes,
+    items: checklistProfesional(profesional),
+  };
+}
+
 function nombreArchivoSeguro(valor: string) {
   return normalizar(valor).replace(/[^a-z0-9]+/g, "_").replace(/^_+|_+$/g, "") || "profesional";
 }
@@ -441,7 +470,7 @@ export function TalentoHumanoPage() {
   const filtrados = useMemo(() => {
     const texto = normalizar(query);
     return profesionales.filter((profesional) => {
-      const resumen = resumenDocumental(profesional);
+      const resumen = resumenDocumentalListado(profesional);
       const matchTexto =
         !texto ||
         normalizar(profesional.nombre).includes(texto) ||
@@ -465,7 +494,7 @@ export function TalentoHumanoPage() {
     const activos = profesionales.filter((profesional) => Boolean(profesional.activo)).length;
     const documentos = profesionales.reduce(
       (acumulado, profesional) => {
-        const resumen = resumenDocumental(profesional);
+        const resumen = resumenDocumentalListado(profesional);
         acumulado.vigentes += resumen.cumplidos;
         acumulado.porVencerIncompletos += resumen.porVencer;
         acumulado.vencidos += resumen.vencidos;
