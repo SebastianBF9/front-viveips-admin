@@ -855,6 +855,10 @@ export async function descargarDespachosProfesional(profesionalId: number | stri
   return downloadBlob(`/despachos-recursos/profesional/${profesionalId}/listado`, `entregas_abiertas_profesional_${profesionalId}.pdf`);
 }
 
+export async function listarEnfermerasConfirmacionRecursos() {
+  return apiCall<{ success: boolean; profesionales: any[]; total: number }>("GET", "/despachos-recursos/enfermeras-confirmacion");
+}
+
 export async function obtenerMiEntregaRecurso(id: number) {
   return apiCall<{ success: boolean; despacho: DespachoRecurso }>("GET", `/despachos-recursos/mis-entregas/${id}`);
 }

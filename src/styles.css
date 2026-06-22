@@ -2978,6 +2978,7 @@ td small { display: block; color: var(--muted); margin-top: 4px; }
 }
 
 .delivery-form-grid input,
+.delivery-form-grid select,
 .delivery-form-grid textarea,
 .delivery-failed-box input,
 .delivery-failed-box textarea {
@@ -2994,6 +2995,7 @@ td small { display: block; color: var(--muted); margin-top: 4px; }
 }
 
 .delivery-form-grid input:focus,
+.delivery-form-grid select:focus,
 .delivery-form-grid textarea:focus,
 .delivery-failed-box input:focus,
 .delivery-failed-box textarea:focus {
@@ -3001,7 +3003,8 @@ td small { display: block; color: var(--muted); margin-top: 4px; }
   box-shadow: 0 0 0 3px rgba(27, 170, 181, .13);
 }
 
-.delivery-form-grid input:disabled {
+.delivery-form-grid input:disabled,
+.delivery-form-grid select:disabled {
   background: #f1f5f9;
   color: #475569;
 }

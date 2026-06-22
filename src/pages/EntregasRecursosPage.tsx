@@ -7,19 +7,21 @@ import {
   descargarMisDespachosAsignados,
   downloadUrl,
   getToken,
+  listarEnfermerasConfirmacionRecursos,
   listarMisEntregasRecursos,
   obtenerMiEntregaRecurso,
   obtenerMiPerfilProfesional,
   registrarMiEntregaFallida,
   subirEvidenciaMiEntrega,
 } from "../api";
-import type { DespachoRecurso, DespachoRecursoDetalle, ProfesionalPerfil } from "../types";
+import type { DespachoRecurso, DespachoRecursoDetalle, ProfesionalAdmin, ProfesionalPerfil } from "../types";
 import { Loading } from "../ui/Loading";
 
 type EntregaForm = {
   recibido_por_nombre: string;
   recibido_por_documento: string;
   recibido_por_parentesco: string;
+  enfermera_id: string;
   enfermera_nombre: string;
   enfermera_documento: string;
   latitud_entrega: string;
@@ -33,6 +35,7 @@ const ENTREGA_INICIAL: EntregaForm = {
   recibido_por_nombre: "",
   recibido_por_documento: "",
   recibido_por_parentesco: "",
+  enfermera_id: "",
   enfermera_nombre: "",
   enfermera_documento: "",
   latitud_entrega: "",
@@ -60,6 +63,7 @@ function entregaRequiereConfirmacionEnfermeria(entrega: DespachoRecurso | null) 
 export function EntregasRecursosPage() {
   const navigate = useNavigate();
   const [perfil, setPerfil] = useState<ProfesionalPerfil | null>(null);
+  const [enfermeras, setEnfermeras] = useState<ProfesionalAdmin[]>([]);
   const [entregas, setEntregas] = useState<DespachoRecurso[]>([]);
   const [entregaActiva, setEntregaActiva] = useState<DespachoRecurso | null>(null);
   const [form, setForm] = useState<EntregaForm>(ENTREGA_INICIAL);
@@ -86,11 +90,13 @@ export function EntregasRecursosPage() {
     setLoading(true);
     setError("");
     try {
-      const [perfilData, entregasData] = await Promise.all([
+      const [perfilData, entregasData, enfermerasData] = await Promise.all([
         obtenerMiPerfilProfesional(),
         listarMisEntregasRecursos(),
+        listarEnfermerasConfirmacionRecursos(),
       ]);
       setPerfil(perfilData.perfil);
+      setEnfermeras((enfermerasData.profesionales || []) as ProfesionalAdmin[]);
       const despachos = entregasData.despachos || [];
       const despachosConDetalles = await Promise.all(
         despachos.map(async (despacho) => {
@@ -163,6 +169,16 @@ export function EntregasRecursosPage() {
 
   function actualizar(campo: keyof EntregaForm, valor: string) {
     setForm((actual) => ({ ...actual, [campo]: valor }));
+  }
+
+  function seleccionarEnfermera(enfermeraId: string) {
+    const enfermera = enfermeras.find((item) => String(item.id) === enfermeraId);
+    setForm((actual) => ({
+      ...actual,
+      enfermera_id: enfermeraId,
+      enfermera_nombre: enfermera?.nombre || "",
+      enfermera_documento: enfermera?.cedula || "",
+    }));
   }
 
   function puntoFirma(event: PointerEvent<HTMLCanvasElement>, canvas: HTMLCanvasElement | null) {
@@ -262,13 +278,15 @@ export function EntregasRecursosPage() {
     setSuccess("");
     try {
       const data = await obtenerMiEntregaRecurso(entrega.id);
+      const enfermeraActual = enfermeras.find((item) => String(item.id) === String(perfil?.id));
       setEntregaActiva(data.despacho);
       setForm({
         ...ENTREGA_INICIAL,
         recibido_por_nombre: data.despacho.paciente_nombre || "",
         recibido_por_documento: data.despacho.paciente_documento || "",
-        enfermera_nombre: perfil?.nombre || "",
-        enfermera_documento: perfil?.cedula || "",
+        enfermera_id: enfermeraActual ? String(enfermeraActual.id) : "",
+        enfermera_nombre: enfermeraActual?.nombre || "",
+        enfermera_documento: enfermeraActual?.cedula || "",
       });
       setEvidencia(null);
       setTimeout(() => capturarUbicacion(), 150);
@@ -288,8 +306,8 @@ export function EntregasRecursosPage() {
       return;
     }
     const requiereEnfermeria = entregaRequiereConfirmacionEnfermeria(entregaActiva);
-    if (requiereEnfermeria && (!form.enfermera_nombre.trim() || !form.enfermera_documento.trim())) {
-      setError("Completa nombre y documento de la enfermera para entregar insumos.");
+    if (requiereEnfermeria && (!form.enfermera_id || !form.enfermera_nombre.trim() || !form.enfermera_documento.trim())) {
+      setError("Selecciona la enfermera que confirma la entrega de insumos.");
       return;
     }
     if (requiereEnfermeria && (!hasEnfermeraStroke || !enfermeraCanvasRef.current)) {
@@ -467,7 +485,9 @@ export function EntregasRecursosPage() {
           geoLoading={geoLoading}
           canvasRef={canvasRef}
           enfermeraCanvasRef={enfermeraCanvasRef}
+          enfermeras={enfermeras}
           onChange={actualizar}
+          onSelectEnfermera={seleccionarEnfermera}
           onCaptureLocation={capturarUbicacion}
           onClose={() => setEntregaActiva(null)}
           onSave={confirmarEntrega}
@@ -495,8 +515,10 @@ function DeliveryModal({
   geoLoading,
   canvasRef,
   enfermeraCanvasRef,
+  enfermeras,
   evidencia,
   onChange,
+  onSelectEnfermera,
   onCaptureLocation,
   onClose,
   onSave,
@@ -517,8 +539,10 @@ function DeliveryModal({
   geoLoading: boolean;
   canvasRef: { current: HTMLCanvasElement | null };
   enfermeraCanvasRef: { current: HTMLCanvasElement | null };
+  enfermeras: ProfesionalAdmin[];
   evidencia: File | null;
   onChange: (campo: keyof EntregaForm, valor: string) => void;
+  onSelectEnfermera: (enfermeraId: string) => void;
   onCaptureLocation: () => void;
   onClose: () => void;
   onSave: () => void;
@@ -632,10 +656,17 @@ function DeliveryModal({
               </div>
               <div className="delivery-form-grid">
                 <label>Enfermera / profesional *
-                  <input value={form.enfermera_nombre} onChange={(event) => onChange("enfermera_nombre", event.target.value)} />
+                  <select value={form.enfermera_id} onChange={(event) => onSelectEnfermera(event.target.value)} disabled={!enfermeras.length}>
+                    <option value="">{enfermeras.length ? "Seleccionar enfermera" : "No hay enfermeras activas disponibles"}</option>
+                    {enfermeras.map((enfermera) => (
+                      <option key={enfermera.id} value={enfermera.id}>
+                        {enfermera.nombre}{enfermera.cedula ? ` · ${enfermera.cedula}` : ""}{enfermera.especialidad ? ` · ${enfermera.especialidad}` : ""}
+                      </option>
+                    ))}
+                  </select>
                 </label>
                 <label>Documento enfermera *
-                  <input value={form.enfermera_documento} onChange={(event) => onChange("enfermera_documento", event.target.value)} />
+                  <input value={form.enfermera_documento} disabled onChange={(event) => onChange("enfermera_documento", event.target.value)} />
                 </label>
               </div>
               <div className="portal-signature-pad nurse-signature-pad">
