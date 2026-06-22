@@ -307,11 +307,11 @@ export function EntregasRecursosPage() {
     }
     const requiereEnfermeria = entregaRequiereConfirmacionEnfermeria(entregaActiva);
     if (requiereEnfermeria && (!form.enfermera_id || !form.enfermera_nombre.trim() || !form.enfermera_documento.trim())) {
-      setError("Selecciona la enfermera que confirma la entrega de insumos.");
+      setError("Selecciona la enfermera o cuidador que confirma la entrega de insumos.");
       return;
     }
     if (requiereEnfermeria && (!hasEnfermeraStroke || !enfermeraCanvasRef.current)) {
-      setError("Dibuja la firma de la enfermera para confirmar la entrega de insumos.");
+      setError("Dibuja la firma de la enfermera o cuidador para confirmar la entrega de insumos.");
       return;
     }
     setSaving(true);
@@ -651,13 +651,13 @@ function DeliveryModal({
           {requiereEnfermeria && (
             <section className="delivery-section nurse-confirmation-box">
               <div className="delivery-section-title">
-                <strong>Confirmación de enfermería</strong>
+                <strong>Confirmación enfermería/cuidador</strong>
                 <span>Requerida porque esta entrega contiene insumos/EPP. Medicamentos no solicitan esta segunda confirmación.</span>
               </div>
               <div className="delivery-form-grid">
-                <label>Enfermera / profesional *
+                <label>Enfermera o cuidador *
                   <select value={form.enfermera_id} onChange={(event) => onSelectEnfermera(event.target.value)} disabled={!enfermeras.length}>
-                    <option value="">{enfermeras.length ? "Seleccionar enfermera" : "No hay enfermeras activas disponibles"}</option>
+                    <option value="">{enfermeras.length ? "Seleccionar enfermera o cuidador" : "No hay enfermeras o cuidadores activos disponibles"}</option>
                     {enfermeras.map((enfermera) => (
                       <option key={enfermera.id} value={enfermera.id}>
                         {enfermera.nombre}{enfermera.cedula ? ` · ${enfermera.cedula}` : ""}{enfermera.especialidad ? ` · ${enfermera.especialidad}` : ""}
@@ -665,13 +665,13 @@ function DeliveryModal({
                     ))}
                   </select>
                 </label>
-                <label>Documento enfermera *
+                <label>Documento *
                   <input value={form.enfermera_documento} disabled onChange={(event) => onChange("enfermera_documento", event.target.value)} />
                 </label>
               </div>
               <div className="portal-signature-pad nurse-signature-pad">
-                <strong>Firma de enfermería</strong>
-                <span>La enfermera o profesional confirma la entrega de los insumos al paciente.</span>
+                <strong>Firma enfermería/cuidador</strong>
+                <span>La enfermera o cuidador confirma la entrega de los insumos al paciente.</span>
                 <canvas
                   ref={enfermeraCanvasRef}
                   onPointerDown={onEnfermeraPointerDown}
@@ -682,7 +682,7 @@ function DeliveryModal({
                 />
               </div>
               <div className="nurse-signature-actions">
-                <button className="secondary-btn" type="button" onClick={onClearEnfermera}><Eraser size={16} /> Limpiar firma enfermería</button>
+                <button className="secondary-btn" type="button" onClick={onClearEnfermera}><Eraser size={16} /> Limpiar firma</button>
               </div>
             </section>
           )}
