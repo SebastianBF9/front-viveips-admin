@@ -20,6 +20,8 @@ type EntregaForm = {
   recibido_por_nombre: string;
   recibido_por_documento: string;
   recibido_por_parentesco: string;
+  enfermera_nombre: string;
+  enfermera_documento: string;
   latitud_entrega: string;
   longitud_entrega: string;
   observaciones: string;
@@ -31,6 +33,8 @@ const ENTREGA_INICIAL: EntregaForm = {
   recibido_por_nombre: "",
   recibido_por_documento: "",
   recibido_por_parentesco: "",
+  enfermera_nombre: "",
+  enfermera_documento: "",
   latitud_entrega: "",
   longitud_entrega: "",
   observaciones: "",
@@ -49,6 +53,10 @@ function textoDescripcionItem(detalle: DespachoRecursoDetalle) {
   );
 }
 
+function entregaRequiereConfirmacionEnfermeria(entrega: DespachoRecurso | null) {
+  return Boolean(entrega?.detalles?.some((detalle) => (detalle.tipo_recurso || "").toLowerCase() === "insumo"));
+}
+
 export function EntregasRecursosPage() {
   const navigate = useNavigate();
   const [perfil, setPerfil] = useState<ProfesionalPerfil | null>(null);
@@ -63,9 +71,12 @@ export function EntregasRecursosPage() {
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
   const [hasStroke, setHasStroke] = useState(false);
+  const [hasEnfermeraStroke, setHasEnfermeraStroke] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
+  const enfermeraCanvasRef = useRef<HTMLCanvasElement | null>(null);
   const drawingRef = useRef(false);
+  const enfermeraDrawingRef = useRef(false);
 
   async function cargar() {
     if (!getToken()) {
@@ -106,7 +117,11 @@ export function EntregasRecursosPage() {
 
   useEffect(() => {
     if (!entregaActiva) return;
-    const canvas = canvasRef.current;
+    prepararCanvasFirma(canvasRef.current, setHasStroke);
+    prepararCanvasFirma(enfermeraCanvasRef.current, setHasEnfermeraStroke);
+  }, [entregaActiva]);
+
+  function prepararCanvasFirma(canvas: HTMLCanvasElement | null, setStroke: (value: boolean) => void) {
     if (!canvas) return;
     const rect = canvas.getBoundingClientRect();
     const ratio = window.devicePixelRatio || 1;
@@ -121,8 +136,8 @@ export function EntregasRecursosPage() {
     ctx.strokeStyle = "#111827";
     ctx.fillStyle = "#ffffff";
     ctx.fillRect(0, 0, rect.width, rect.height);
-    setHasStroke(false);
-  }, [entregaActiva]);
+    setStroke(false);
+  }
 
   function cerrarSesion() {
     clearSession();
@@ -150,8 +165,7 @@ export function EntregasRecursosPage() {
     setForm((actual) => ({ ...actual, [campo]: valor }));
   }
 
-  function puntoFirma(event: PointerEvent<HTMLCanvasElement>) {
-    const canvas = canvasRef.current;
+  function puntoFirma(event: PointerEvent<HTMLCanvasElement>, canvas: HTMLCanvasElement | null) {
     if (!canvas) return { x: 0, y: 0 };
     const rect = canvas.getBoundingClientRect();
     return { x: event.clientX - rect.left, y: event.clientY - rect.top };
@@ -163,7 +177,7 @@ export function EntregasRecursosPage() {
     event.currentTarget.setPointerCapture(event.pointerId);
     drawingRef.current = true;
     setHasStroke(true);
-    const punto = puntoFirma(event);
+    const punto = puntoFirma(event, canvasRef.current);
     ctx.beginPath();
     ctx.moveTo(punto.x, punto.y);
   }
@@ -172,7 +186,7 @@ export function EntregasRecursosPage() {
     if (!drawingRef.current) return;
     const ctx = canvasRef.current?.getContext("2d");
     if (!ctx) return;
-    const punto = puntoFirma(event);
+    const punto = puntoFirma(event, canvasRef.current);
     ctx.lineTo(punto.x, punto.y);
     ctx.stroke();
   }
@@ -185,14 +199,38 @@ export function EntregasRecursosPage() {
   }
 
   function limpiarFirma() {
-    const canvas = canvasRef.current;
-    const ctx = canvas?.getContext("2d");
-    if (!canvas || !ctx) return;
-    const rect = canvas.getBoundingClientRect();
-    ctx.clearRect(0, 0, rect.width, rect.height);
-    ctx.fillStyle = "#ffffff";
-    ctx.fillRect(0, 0, rect.width, rect.height);
-    setHasStroke(false);
+    prepararCanvasFirma(canvasRef.current, setHasStroke);
+  }
+
+  function iniciarFirmaEnfermera(event: PointerEvent<HTMLCanvasElement>) {
+    const ctx = enfermeraCanvasRef.current?.getContext("2d");
+    if (!ctx) return;
+    event.currentTarget.setPointerCapture(event.pointerId);
+    enfermeraDrawingRef.current = true;
+    setHasEnfermeraStroke(true);
+    const punto = puntoFirma(event, enfermeraCanvasRef.current);
+    ctx.beginPath();
+    ctx.moveTo(punto.x, punto.y);
+  }
+
+  function dibujarFirmaEnfermera(event: PointerEvent<HTMLCanvasElement>) {
+    if (!enfermeraDrawingRef.current) return;
+    const ctx = enfermeraCanvasRef.current?.getContext("2d");
+    if (!ctx) return;
+    const punto = puntoFirma(event, enfermeraCanvasRef.current);
+    ctx.lineTo(punto.x, punto.y);
+    ctx.stroke();
+  }
+
+  function terminarFirmaEnfermera(event: PointerEvent<HTMLCanvasElement>) {
+    enfermeraDrawingRef.current = false;
+    if (event.currentTarget.hasPointerCapture(event.pointerId)) {
+      event.currentTarget.releasePointerCapture(event.pointerId);
+    }
+  }
+
+  function limpiarFirmaEnfermera() {
+    prepararCanvasFirma(enfermeraCanvasRef.current, setHasEnfermeraStroke);
   }
 
   function capturarUbicacion() {
@@ -229,6 +267,8 @@ export function EntregasRecursosPage() {
         ...ENTREGA_INICIAL,
         recibido_por_nombre: data.despacho.paciente_nombre || "",
         recibido_por_documento: data.despacho.paciente_documento || "",
+        enfermera_nombre: perfil?.nombre || "",
+        enfermera_documento: perfil?.cedula || "",
       });
       setEvidencia(null);
       setTimeout(() => capturarUbicacion(), 150);
@@ -247,6 +287,15 @@ export function EntregasRecursosPage() {
       setError("Dibuja la firma de recibido antes de guardar.");
       return;
     }
+    const requiereEnfermeria = entregaRequiereConfirmacionEnfermeria(entregaActiva);
+    if (requiereEnfermeria && (!form.enfermera_nombre.trim() || !form.enfermera_documento.trim())) {
+      setError("Completa nombre y documento de la enfermera para entregar insumos.");
+      return;
+    }
+    if (requiereEnfermeria && (!hasEnfermeraStroke || !enfermeraCanvasRef.current)) {
+      setError("Dibuja la firma de la enfermera para confirmar la entrega de insumos.");
+      return;
+    }
     setSaving(true);
     setError("");
     setSuccess("");
@@ -256,9 +305,12 @@ export function EntregasRecursosPage() {
         recibido_por_nombre: form.recibido_por_nombre.trim(),
         recibido_por_documento: form.recibido_por_documento.trim(),
         recibido_por_parentesco: form.recibido_por_parentesco || null,
+        enfermera_nombre: requiereEnfermeria ? form.enfermera_nombre.trim() : null,
+        enfermera_documento: requiereEnfermeria ? form.enfermera_documento.trim() : null,
         latitud_entrega: form.latitud_entrega ? Number(form.latitud_entrega) : null,
         longitud_entrega: form.longitud_entrega ? Number(form.longitud_entrega) : null,
         firma_base64: canvasRef.current.toDataURL("image/png"),
+        firma_enfermera_base64: requiereEnfermeria && enfermeraCanvasRef.current ? enfermeraCanvasRef.current.toDataURL("image/png") : null,
         observaciones: form.observaciones || null,
       });
       setSuccess(data.mensaje);
@@ -414,17 +466,22 @@ export function EntregasRecursosPage() {
           saving={saving}
           geoLoading={geoLoading}
           canvasRef={canvasRef}
+          enfermeraCanvasRef={enfermeraCanvasRef}
           onChange={actualizar}
           onCaptureLocation={capturarUbicacion}
           onClose={() => setEntregaActiva(null)}
           onSave={confirmarEntrega}
           onFail={registrarFallida}
           onClear={limpiarFirma}
+          onClearEnfermera={limpiarFirmaEnfermera}
           evidencia={evidencia}
           onEvidence={setEvidencia}
           onPointerDown={iniciarFirma}
           onPointerMove={dibujarFirma}
           onPointerUp={terminarFirma}
+          onEnfermeraPointerDown={iniciarFirmaEnfermera}
+          onEnfermeraPointerMove={dibujarFirmaEnfermera}
+          onEnfermeraPointerUp={terminarFirmaEnfermera}
         />
       )}
     </main>
@@ -437,6 +494,7 @@ function DeliveryModal({
   saving,
   geoLoading,
   canvasRef,
+  enfermeraCanvasRef,
   evidencia,
   onChange,
   onCaptureLocation,
@@ -444,16 +502,21 @@ function DeliveryModal({
   onSave,
   onFail,
   onClear,
+  onClearEnfermera,
   onEvidence,
   onPointerDown,
   onPointerMove,
   onPointerUp,
+  onEnfermeraPointerDown,
+  onEnfermeraPointerMove,
+  onEnfermeraPointerUp,
 }: {
   entrega: DespachoRecurso;
   form: EntregaForm;
   saving: boolean;
   geoLoading: boolean;
   canvasRef: { current: HTMLCanvasElement | null };
+  enfermeraCanvasRef: { current: HTMLCanvasElement | null };
   evidencia: File | null;
   onChange: (campo: keyof EntregaForm, valor: string) => void;
   onCaptureLocation: () => void;
@@ -461,12 +524,17 @@ function DeliveryModal({
   onSave: () => void;
   onFail: () => void;
   onClear: () => void;
+  onClearEnfermera: () => void;
   onEvidence: (archivo: File | null) => void;
   onPointerDown: (event: PointerEvent<HTMLCanvasElement>) => void;
   onPointerMove: (event: PointerEvent<HTMLCanvasElement>) => void;
   onPointerUp: (event: PointerEvent<HTMLCanvasElement>) => void;
+  onEnfermeraPointerDown: (event: PointerEvent<HTMLCanvasElement>) => void;
+  onEnfermeraPointerMove: (event: PointerEvent<HTMLCanvasElement>) => void;
+  onEnfermeraPointerUp: (event: PointerEvent<HTMLCanvasElement>) => void;
 }) {
   const evidenceInputRef = useRef<HTMLInputElement | null>(null);
+  const requiereEnfermeria = entregaRequiereConfirmacionEnfermeria(entrega);
 
   return (
     <div className="portal-signature-modal" role="dialog" aria-modal="true" aria-labelledby="delivery-signature-title">
@@ -555,6 +623,38 @@ function DeliveryModal({
               )}
             </div>
           </section>
+
+          {requiereEnfermeria && (
+            <section className="delivery-section nurse-confirmation-box">
+              <div className="delivery-section-title">
+                <strong>Confirmación de enfermería</strong>
+                <span>Requerida porque esta entrega contiene insumos/EPP. Medicamentos no solicitan esta segunda confirmación.</span>
+              </div>
+              <div className="delivery-form-grid">
+                <label>Enfermera / profesional *
+                  <input value={form.enfermera_nombre} onChange={(event) => onChange("enfermera_nombre", event.target.value)} />
+                </label>
+                <label>Documento enfermera *
+                  <input value={form.enfermera_documento} onChange={(event) => onChange("enfermera_documento", event.target.value)} />
+                </label>
+              </div>
+              <div className="portal-signature-pad nurse-signature-pad">
+                <strong>Firma de enfermería</strong>
+                <span>La enfermera o profesional confirma la entrega de los insumos al paciente.</span>
+                <canvas
+                  ref={enfermeraCanvasRef}
+                  onPointerDown={onEnfermeraPointerDown}
+                  onPointerMove={onEnfermeraPointerMove}
+                  onPointerUp={onEnfermeraPointerUp}
+                  onPointerCancel={onEnfermeraPointerUp}
+                  onPointerLeave={onEnfermeraPointerUp}
+                />
+              </div>
+              <div className="nurse-signature-actions">
+                <button className="secondary-btn" type="button" onClick={onClearEnfermera}><Eraser size={16} /> Limpiar firma enfermería</button>
+              </div>
+            </section>
+          )}
 
         <div className="delivery-failed-box">
           <strong>Registrar entrega fallida</strong>

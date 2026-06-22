@@ -3041,6 +3041,22 @@ td small { display: block; color: var(--muted); margin-top: 4px; }
   white-space: nowrap;
 }
 
+.nurse-confirmation-box {
+  padding: 14px;
+  border: 1px solid #99f6e4;
+  border-radius: 16px;
+  background: #f0fdfa;
+}
+
+.nurse-signature-pad {
+  margin: 0;
+}
+
+.nurse-signature-actions {
+  display: flex;
+  justify-content: flex-end;
+}
+
 .delivery-evidence-box strong,
 .delivery-evidence-box span {
   display: block;
@@ -5685,7 +5701,8 @@ td small { display: block; color: var(--muted); margin-top: 4px; }
     justify-items: stretch;
   }
   .delivery-evidence-box .secondary-btn,
-  .delivery-clear-evidence {
+  .delivery-clear-evidence,
+  .nurse-signature-actions .secondary-btn {
     width: 100%;
     justify-content: center;
   }

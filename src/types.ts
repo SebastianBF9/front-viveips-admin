@@ -1254,10 +1254,13 @@ export interface DespachoRecurso {
   recibido_por_nombre?: string | null;
   recibido_por_documento?: string | null;
   recibido_por_parentesco?: string | null;
+  enfermera_nombre?: string | null;
+  enfermera_documento?: string | null;
   latitud_entrega?: number | null;
   longitud_entrega?: number | null;
   ip_entrega?: string | null;
   firma_archivo?: string | null;
+  firma_enfermera_archivo?: string | null;
   acta_archivo?: string | null;
   motivo_entrega_fallida?: string | null;
   fecha_fallida?: string | null;
@@ -1320,6 +1323,9 @@ export interface ConfirmarEntregaDespachoPayload {
   recibido_por_nombre: string;
   recibido_por_documento: string;
   recibido_por_parentesco?: string | null;
+  enfermera_nombre?: string | null;
+  enfermera_documento?: string | null;
+  firma_enfermera_base64?: string | null;
   latitud_entrega?: number | null;
   longitud_entrega?: number | null;
   firma_base64: string;
