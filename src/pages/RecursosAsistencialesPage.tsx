@@ -248,6 +248,7 @@ type DespachoForm = {
   paciente_nombre: string;
   paciente_documento: string;
   paciente_telefono: string;
+  paciente_email: string;
   direccion_entrega: string;
   ciudad_entrega: string;
   fecha_programada: string;
@@ -657,6 +658,7 @@ function inicialDespacho(): DespachoForm {
     paciente_nombre: "",
     paciente_documento: "",
     paciente_telefono: "",
+    paciente_email: "",
     direccion_entrega: "",
     ciudad_entrega: "",
     fecha_programada: "",
@@ -674,6 +676,7 @@ function despachoAForm(despacho: DespachoRecurso): DespachoForm {
     paciente_nombre: despacho.paciente_nombre || "",
     paciente_documento: despacho.paciente_documento || "",
     paciente_telefono: despacho.paciente_telefono || "",
+    paciente_email: despacho.paciente_email || "",
     direccion_entrega: despacho.direccion_entrega || "",
     ciudad_entrega: despacho.ciudad_entrega || "",
     fecha_programada: despacho.fecha_programada ? String(despacho.fecha_programada).slice(0, 16) : "",
@@ -1488,6 +1491,7 @@ export function RecursosAsistencialesPage() {
       paciente_nombre: form.paciente_nombre || null,
       paciente_documento: form.paciente_documento || null,
       paciente_telefono: form.paciente_telefono || null,
+      paciente_email: form.paciente_email || null,
       direccion_entrega: form.direccion_entrega || null,
       ciudad_entrega: form.ciudad_entrega || null,
       fecha_programada: form.fecha_programada || null,
@@ -1752,6 +1756,7 @@ export function RecursosAsistencialesPage() {
       paciente_nombre: paciente.nombre || "",
       paciente_documento: paciente.documento || "",
       paciente_telefono: paciente.telefono || paciente.whatsapp || paciente.telefono_2 || paciente.telefono_emergencia || "",
+      paciente_email: paciente.email || "",
       ciudad_entrega: paciente.ciudad || "",
       direccion_entrega: paciente.direccion || "",
       observaciones: [
@@ -3732,6 +3737,7 @@ export function RecursosAsistencialesPage() {
                       <strong>{despachoForm.paciente_nombre}</strong>
                       <span>{despachoForm.paciente_documento || "Sin documento"} · {despachoForm.paciente_telefono || "Sin teléfono"}</span>
                       <small>{despachoForm.direccion_entrega || "Sin dirección registrada"}{despachoForm.ciudad_entrega ? ` · ${despachoForm.ciudad_entrega}` : ""}</small>
+                      <small>{despachoForm.paciente_email || "Sin correo registrado"}</small>
                     </div>
                   )}
                 </div>
@@ -3740,6 +3746,9 @@ export function RecursosAsistencialesPage() {
                 </label>
                 <label>Teléfono paciente
                   <input value={despachoForm.paciente_telefono} onChange={(event) => actualizarDespacho("paciente_telefono", event.target.value)} />
+                </label>
+                <label>Correo paciente
+                  <input type="email" value={despachoForm.paciente_email} onChange={(event) => actualizarDespacho("paciente_email", event.target.value)} />
                 </label>
                 <label>Ciudad
                   <input value={despachoForm.ciudad_entrega} onChange={(event) => actualizarDespacho("ciudad_entrega", event.target.value)} />

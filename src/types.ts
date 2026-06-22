@@ -1245,6 +1245,7 @@ export interface DespachoRecurso {
   paciente_nombre?: string | null;
   paciente_documento?: string | null;
   paciente_telefono?: string | null;
+  paciente_email?: string | null;
   direccion_entrega?: string | null;
   ciudad_entrega?: string | null;
   fecha_programada?: string | null;
@@ -1281,6 +1282,7 @@ export interface DespachoRecursoPayload {
   paciente_nombre?: string | null;
   paciente_documento?: string | null;
   paciente_telefono?: string | null;
+  paciente_email?: string | null;
   direccion_entrega?: string | null;
   ciudad_entrega?: string | null;
   fecha_programada?: string | null;
