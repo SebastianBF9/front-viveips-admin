@@ -1800,7 +1800,7 @@ export function RecursosAsistencialesPage() {
     setAccion(`acta-despacho-${despacho.id}`);
     setError("");
     try {
-      await downloadBlob(`/despachos-recursos/${despacho.id}/acta`, `acta_${despacho.numero_despacho}.html`);
+      await downloadBlob(`/despachos-recursos/${despacho.id}/acta`, `acta_${despacho.numero_despacho}.pdf`);
     } catch (err) {
       setError(err instanceof Error ? err.message : "No fue posible descargar el acta");
     } finally {
