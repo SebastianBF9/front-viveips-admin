@@ -21,6 +21,7 @@ type EntregaForm = {
   recibido_por_nombre: string;
   recibido_por_documento: string;
   recibido_por_parentesco: string;
+  paciente_email: string;
   enfermera_id: string;
   enfermera_nombre: string;
   enfermera_documento: string;
@@ -35,6 +36,7 @@ const ENTREGA_INICIAL: EntregaForm = {
   recibido_por_nombre: "",
   recibido_por_documento: "",
   recibido_por_parentesco: "",
+  paciente_email: "",
   enfermera_id: "",
   enfermera_nombre: "",
   enfermera_documento: "",
@@ -284,6 +286,7 @@ export function EntregasRecursosPage() {
         ...ENTREGA_INICIAL,
         recibido_por_nombre: data.despacho.paciente_nombre || "",
         recibido_por_documento: data.despacho.paciente_documento || "",
+        paciente_email: data.despacho.paciente_email || "",
         enfermera_id: enfermeraActual ? String(enfermeraActual.id) : "",
         enfermera_nombre: enfermeraActual?.nombre || "",
         enfermera_documento: enfermeraActual?.cedula || "",
@@ -323,6 +326,7 @@ export function EntregasRecursosPage() {
         recibido_por_nombre: form.recibido_por_nombre.trim(),
         recibido_por_documento: form.recibido_por_documento.trim(),
         recibido_por_parentesco: form.recibido_por_parentesco || null,
+        paciente_email: form.paciente_email || null,
         enfermera_nombre: requiereEnfermeria ? form.enfermera_nombre.trim() : null,
         enfermera_documento: requiereEnfermeria ? form.enfermera_documento.trim() : null,
         latitud_entrega: form.latitud_entrega ? Number(form.latitud_entrega) : null,
@@ -604,6 +608,9 @@ function DeliveryModal({
               </label>
               <label>Parentesco / relación
                 <input value={form.recibido_por_parentesco} onChange={(event) => onChange("recibido_por_parentesco", event.target.value)} />
+              </label>
+              <label>Correo paciente para acta
+                <input type="email" value={form.paciente_email} onChange={(event) => onChange("paciente_email", event.target.value)} placeholder="correo@ejemplo.com" />
               </label>
               <button className="secondary-btn delivery-location-btn" type="button" onClick={onCaptureLocation} disabled={geoLoading}>
                 <MapPin size={16} /> {geoLoading ? "Capturando..." : "Capturar ubicación"}

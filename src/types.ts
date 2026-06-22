@@ -1325,6 +1325,7 @@ export interface ConfirmarEntregaDespachoPayload {
   recibido_por_nombre: string;
   recibido_por_documento: string;
   recibido_por_parentesco?: string | null;
+  paciente_email?: string | null;
   enfermera_nombre?: string | null;
   enfermera_documento?: string | null;
   firma_enfermera_base64?: string | null;
