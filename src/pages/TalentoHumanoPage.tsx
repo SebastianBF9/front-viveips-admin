@@ -242,6 +242,22 @@ function etiquetaEstadoDoc(estado: EstadoDoc) {
   return labels[estado];
 }
 
+function estadoResumenDocumento(resumen?: ProfesionalAdmin["documentos_resumen"][number]): EstadoDoc {
+  if (!resumen || Number(resumen.cantidad || 0) <= 0) return "sin-cargar";
+  if (Number(resumen.vencidos || 0) > 0) return "vencido";
+  if (Number(resumen.por_vencer || 0) > 0) return "por-vencer";
+  if (Number(resumen.vigentes || 0) > 0 || Number(resumen.cantidad || 0) > 0) return "vigente";
+  return "sin-cargar";
+}
+
+function detalleResumenDocumento(resumen?: ProfesionalAdmin["documentos_resumen"][number]) {
+  if (!resumen || Number(resumen.cantidad || 0) <= 0) return "No cargado";
+  const estado = estadoResumenDocumento(resumen);
+  if (estado === "vencido") return "Documento vencido";
+  if (estado === "por-vencer") return "Por vencer";
+  return "Cargado";
+}
+
 function checklistProfesional(profesional: ProfesionalAdmin): ChecklistItem[] {
   const docs = new Map<string, DocumentoProfesional[]>();
   (profesional.documentos || []).forEach((doc) => {
@@ -249,9 +265,22 @@ function checklistProfesional(profesional: ProfesionalAdmin): ChecklistItem[] {
     actuales.push(doc);
     docs.set(doc.tipo_codigo, actuales);
   });
+  const resumenDocs = new Map((profesional.documentos_resumen || []).map((item) => [item.tipo_codigo, item]));
 
   return codigosEsperados(profesional.especialidad).map((codigo) => {
     if (codigo === "formacion_academica") {
+      if (!(profesional.formaciones || []).length) {
+        const resumen = resumenDocs.get(codigo);
+        if (resumen) {
+          const estado = estadoResumenDocumento(resumen);
+          return {
+            codigo,
+            nombre: nombresDocumentos[codigo],
+            estado: estado === "por-vencer" ? "incompleto" : estado,
+            detalle: estado === "vigente" ? "Cargada" : estado === "sin-cargar" ? "No cargada" : "Incompleta",
+          };
+        }
+      }
       const estado = estadoFormacion(profesional.formaciones || []);
       return {
         codigo,
@@ -264,17 +293,28 @@ function checklistProfesional(profesional: ProfesionalAdmin): ChecklistItem[] {
 
     const documentos = docs.get(codigo) || [];
     if (codigo === "cert_experiencia") {
+      const resumen = resumenDocs.get(codigo);
+      const cantidad = documentos.length || Number(resumen?.cantidad || 0);
       return {
         codigo,
         nombre: nombresDocumentos[codigo],
-        estado: documentos.length ? "vigente" : "sin-cargar",
-        detalle: `${documentos.length} archivo(s)`,
+        estado: cantidad ? "vigente" : "sin-cargar",
+        detalle: `${cantidad} archivo(s)`,
         documentos,
       };
     }
 
     const doc = documentos[0];
     if (!doc) {
+      const resumen = resumenDocs.get(codigo);
+      if (resumen) {
+        return {
+          codigo,
+          nombre: nombresDocumentos[codigo] || resumen.tipo_nombre || codigo,
+          estado: estadoResumenDocumento(resumen),
+          detalle: detalleResumenDocumento(resumen),
+        };
+      }
       return { codigo, nombre: nombresDocumentos[codigo] || codigo, estado: "sin-cargar", detalle: "No cargado" };
     }
 
