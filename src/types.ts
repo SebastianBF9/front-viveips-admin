@@ -234,15 +234,6 @@ export interface DocumentoProfesional {
   aprobado: number;
 }
 
-export interface DocumentoResumenProfesional {
-  tipo_codigo: string;
-  tipo_nombre?: string | null;
-  cantidad: number;
-  vigentes?: number;
-  por_vencer?: number;
-  vencidos?: number;
-}
-
 export interface FormacionAcademica {
   id: number;
   profesional_id: number;
@@ -279,11 +270,6 @@ export interface ProfesionalAdmin {
   fecha_contrato?: string | null;
   fecha_firma_contrato?: string | null;
   entregas_abiertas?: number;
-  total_docs?: number | null;
-  docs_vigentes?: number | null;
-  docs_por_vencer?: number | null;
-  docs_vencidos?: number | null;
-  documentos_resumen?: DocumentoResumenProfesional[];
   documentos?: DocumentoProfesional[];
   formaciones?: FormacionAcademica[];
   servicios?: ServicioProfesionalAsignado[];

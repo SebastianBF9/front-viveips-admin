@@ -242,22 +242,6 @@ function etiquetaEstadoDoc(estado: EstadoDoc) {
   return labels[estado];
 }
 
-function estadoResumenDocumento(resumen?: ProfesionalAdmin["documentos_resumen"][number]): EstadoDoc {
-  if (!resumen || Number(resumen.cantidad || 0) <= 0) return "sin-cargar";
-  if (Number(resumen.vencidos || 0) > 0) return "vencido";
-  if (Number(resumen.por_vencer || 0) > 0) return "por-vencer";
-  if (Number(resumen.vigentes || 0) > 0 || Number(resumen.cantidad || 0) > 0) return "vigente";
-  return "sin-cargar";
-}
-
-function detalleResumenDocumento(resumen?: ProfesionalAdmin["documentos_resumen"][number]) {
-  if (!resumen || Number(resumen.cantidad || 0) <= 0) return "No cargado";
-  const estado = estadoResumenDocumento(resumen);
-  if (estado === "vencido") return "Documento vencido";
-  if (estado === "por-vencer") return "Por vencer";
-  return "Cargado";
-}
-
 function checklistProfesional(profesional: ProfesionalAdmin): ChecklistItem[] {
   const docs = new Map<string, DocumentoProfesional[]>();
   (profesional.documentos || []).forEach((doc) => {
@@ -265,22 +249,9 @@ function checklistProfesional(profesional: ProfesionalAdmin): ChecklistItem[] {
     actuales.push(doc);
     docs.set(doc.tipo_codigo, actuales);
   });
-  const resumenDocs = new Map((profesional.documentos_resumen || []).map((item) => [item.tipo_codigo, item]));
 
   return codigosEsperados(profesional.especialidad).map((codigo) => {
     if (codigo === "formacion_academica") {
-      if (!(profesional.formaciones || []).length) {
-        const resumen = resumenDocs.get(codigo);
-        if (resumen) {
-          const estado = estadoResumenDocumento(resumen);
-          return {
-            codigo,
-            nombre: nombresDocumentos[codigo],
-            estado: estado === "por-vencer" ? "incompleto" : estado,
-            detalle: estado === "vigente" ? "Cargada" : estado === "sin-cargar" ? "No cargada" : "Incompleta",
-          };
-        }
-      }
       const estado = estadoFormacion(profesional.formaciones || []);
       return {
         codigo,
@@ -293,28 +264,17 @@ function checklistProfesional(profesional: ProfesionalAdmin): ChecklistItem[] {
 
     const documentos = docs.get(codigo) || [];
     if (codigo === "cert_experiencia") {
-      const resumen = resumenDocs.get(codigo);
-      const cantidad = documentos.length || Number(resumen?.cantidad || 0);
       return {
         codigo,
         nombre: nombresDocumentos[codigo],
-        estado: cantidad ? "vigente" : "sin-cargar",
-        detalle: `${cantidad} archivo(s)`,
+        estado: documentos.length ? "vigente" : "sin-cargar",
+        detalle: `${documentos.length} archivo(s)`,
         documentos,
       };
     }
 
     const doc = documentos[0];
     if (!doc) {
-      const resumen = resumenDocs.get(codigo);
-      if (resumen) {
-        return {
-          codigo,
-          nombre: nombresDocumentos[codigo] || resumen.tipo_nombre || codigo,
-          estado: estadoResumenDocumento(resumen),
-          detalle: detalleResumenDocumento(resumen),
-        };
-      }
       return { codigo, nombre: nombresDocumentos[codigo] || codigo, estado: "sin-cargar", detalle: "No cargado" };
     }
 
@@ -337,35 +297,6 @@ function resumenDocumental(profesional: ProfesionalAdmin) {
   const pendientes = items.filter((item) => item.estado === "sin-cargar" || item.estado === "incompleto").length;
   const faltantes = items.filter((item) => item.estado === "sin-cargar").length;
   return { total: items.length, cumplidos, porVencer, vencidos, pendientes, faltantes, items };
-}
-
-function numeroResumen(valor: unknown) {
-  const numero = Number(valor || 0);
-  return Number.isFinite(numero) ? numero : 0;
-}
-
-function resumenDocumentalListado(profesional: ProfesionalAdmin) {
-  if ((profesional.documentos || []).length || (profesional.formaciones || []).length) {
-    return resumenDocumental(profesional);
-  }
-
-  const totalEsperado = codigosEsperados(profesional.especialidad).length;
-  const totalDocs = numeroResumen(profesional.total_docs);
-  const vencidos = numeroResumen(profesional.docs_vencidos);
-  const porVencer = numeroResumen(profesional.docs_por_vencer);
-  const vigentesDeclarados = numeroResumen(profesional.docs_vigentes);
-  const cumplidos = Math.max(vigentesDeclarados, Math.max(totalDocs - vencidos - porVencer, 0));
-  const faltantes = Math.max(totalEsperado - totalDocs, 0);
-
-  return {
-    total: totalEsperado,
-    cumplidos,
-    porVencer,
-    vencidos,
-    pendientes: faltantes,
-    faltantes,
-    items: checklistProfesional(profesional),
-  };
 }
 
 function nombreArchivoSeguro(valor: string) {
@@ -484,14 +415,30 @@ export function TalentoHumanoPage() {
     setLoading(true);
     setError("");
     try {
-      const [data, permisos] = await Promise.all([listarProfesionales(), obtenerMiAcceso()]);
-      const base = ((data.profesionales || []) as ProfesionalAdmin[]).map((profesional) => ({
-        ...profesional,
-        documentos: profesional.documentos || [],
-        formaciones: profesional.formaciones || [],
-        servicios: profesional.servicios || [],
-      }));
-      setProfesionales(base);
+      const data = await listarProfesionales();
+      const base = (data.profesionales || []) as ProfesionalAdmin[];
+      const enriquecidos = await Promise.all(
+        base.map(async (profesional) => {
+          try {
+            const [detalle, formacion, servicios] = await Promise.all([
+              obtenerProfesional(profesional.id),
+              obtenerFormacionProfesional(profesional.id),
+              obtenerServiciosProfesional(profesional.id),
+            ]);
+            return {
+              ...profesional,
+              ...detalle.perfil,
+              documentos: (detalle.documentos || []) as DocumentoProfesional[],
+              formaciones: (formacion.formaciones || []) as FormacionAcademica[],
+              servicios: (servicios.servicios || []) as ServicioProfesionalAsignado[],
+            };
+          } catch {
+            return { ...profesional, documentos: [], formaciones: [], servicios: [] };
+          }
+        }),
+      );
+      setProfesionales(enriquecidos);
+      const permisos = await obtenerMiAcceso();
       setAcceso(permisos);
     } catch (err) {
       setError(err instanceof Error ? err.message : "No fue posible cargar talento humano");
@@ -510,7 +457,7 @@ export function TalentoHumanoPage() {
   const filtrados = useMemo(() => {
     const texto = normalizar(query);
     return profesionales.filter((profesional) => {
-      const resumen = resumenDocumentalListado(profesional);
+      const resumen = resumenDocumental(profesional);
       const matchTexto =
         !texto ||
         normalizar(profesional.nombre).includes(texto) ||
@@ -534,7 +481,7 @@ export function TalentoHumanoPage() {
     const activos = profesionales.filter((profesional) => Boolean(profesional.activo)).length;
     const documentos = profesionales.reduce(
       (acumulado, profesional) => {
-        const resumen = resumenDocumentalListado(profesional);
+        const resumen = resumenDocumental(profesional);
         acumulado.vigentes += resumen.cumplidos;
         acumulado.porVencerIncompletos += resumen.porVencer;
         acumulado.vencidos += resumen.vencidos;
@@ -598,21 +545,8 @@ export function TalentoHumanoPage() {
     setServiciosSeleccionado([]);
     setServiciosLoading(true);
     try {
-      const [detalle, formacion, servicios] = await Promise.all([
-        obtenerProfesional(profesional.id),
-        obtenerFormacionProfesional(profesional.id),
-        obtenerServiciosProfesional(profesional.id),
-      ]);
-      const enriquecido = {
-        ...profesional,
-        ...detalle.perfil,
-        documentos: (detalle.documentos || []) as DocumentoProfesional[],
-        formaciones: (formacion.formaciones || []) as FormacionAcademica[],
-        servicios: (servicios.servicios || []) as ServicioProfesionalAsignado[],
-      };
-      setSeleccionado(enriquecido);
-      setProfesionales((actuales) => actuales.map((item) => (item.id === profesional.id ? enriquecido : item)));
-      setServiciosSeleccionado(enriquecido.servicios || []);
+      const data = await obtenerServiciosProfesional(profesional.id);
+      setServiciosSeleccionado(data.servicios || []);
     } catch {
       setServiciosSeleccionado([]);
     } finally {
