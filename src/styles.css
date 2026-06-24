@@ -4268,6 +4268,11 @@ td small { display: block; color: var(--muted); margin-top: 4px; }
   color: #1d4ed8;
 }
 
+.tag.warning {
+  background: #fef3c7;
+  color: #92400e;
+}
+
 .tag.fefo {
   background: #ecfdf5;
   color: #047857;
@@ -4621,6 +4626,17 @@ td small { display: block; color: var(--muted); margin-top: 4px; }
   border-radius: 8px;
   padding: 12px;
   font-weight: 850;
+}
+
+.recursos-inline-note {
+  border: 1px solid #dbe6f0;
+  background: #f8fbfe;
+  color: #475569;
+  border-radius: 8px;
+  padding: 10px 12px;
+  font-size: 12px;
+  font-weight: 850;
+  line-height: 1.45;
 }
 
 .compras-card {

@@ -103,6 +103,7 @@ const TIPOS_RECURSO = [
   { value: "medicamento", label: "Medicamento" },
   { value: "dispositivo_medico", label: "Dispositivo medico" },
   { value: "insumo", label: "Insumo" },
+  { value: "reactivo", label: "Reactivo" },
 ];
 
 const ESTADOS_RECURSO = ["activo", "inactivo", "en_revision", "rechazado"];
@@ -308,6 +309,28 @@ function labelTipo(tipo?: string | null) {
   return TIPOS_RECURSO.find((item) => item.value === tipo)?.label || texto(tipo);
 }
 
+function reglasTipoRecurso(tipo?: string | null) {
+  return {
+    requiereRegistroSanitario: true,
+    requiereFormula: tipo !== "insumo",
+    esMedicamento: tipo === "medicamento",
+    requiereVencimientoLote: tipo === "medicamento",
+  };
+}
+
+function normalizarFormPorTipo(form: RecursoForm): RecursoForm {
+  const reglas = reglasTipoRecurso(form.tipo_recurso);
+  return {
+    ...form,
+    requiere_registro_sanitario: reglas.requiereRegistroSanitario,
+    requiere_formula: reglas.requiereFormula,
+    concentracion: reglas.esMedicamento ? form.concentracion : "",
+    principio_activo: reglas.esMedicamento ? form.principio_activo : "",
+    es_lasa: reglas.esMedicamento ? form.es_lasa : false,
+    alto_riesgo: reglas.esMedicamento ? form.alto_riesgo : false,
+  };
+}
+
 function labelTabRecursos(tab: TabKey) {
   const labels: Record<TabKey, string> = {
     catalogo: "Catálogo",
@@ -416,7 +439,7 @@ function despachoPreparado(despacho: DespachoRecurso) {
 }
 
 function inicialRecurso(): RecursoForm {
-  return {
+  return normalizarFormPorTipo({
     codigo: "",
     nombre: "",
     tipo_recurso: "medicamento",
@@ -427,7 +450,7 @@ function inicialRecurso(): RecursoForm {
     principio_activo: "",
     registro_sanitario: "",
     fecha_vencimiento_registro_sanitario: "",
-    requiere_registro_sanitario: false,
+    requiere_registro_sanitario: true,
     requiere_cadena_frio: false,
     temperatura_min: "",
     temperatura_max: "",
@@ -435,7 +458,7 @@ function inicialRecurso(): RecursoForm {
     humedad_max: "",
     es_lasa: false,
     alto_riesgo: false,
-    requiere_formula: false,
+    requiere_formula: true,
     requiere_ficha_tecnica: false,
     stock_minimo: "0",
     stock_maximo: "0",
@@ -449,11 +472,11 @@ function inicialRecurso(): RecursoForm {
     ficha_version: "",
     ficha_fecha: "",
     ficha_observaciones: "",
-  };
+  });
 }
 
 function recursoAForm(recurso: RecursoAsistencial): RecursoForm {
-  return {
+  return normalizarFormPorTipo({
     ...inicialRecurso(),
     id: recurso.id,
     codigo: recurso.codigo || "",
@@ -484,7 +507,7 @@ function recursoAForm(recurso: RecursoAsistencial): RecursoForm {
     observaciones: recurso.observaciones || "",
     servicios: (recurso.servicios || []).map((item) => item.servicio_ips_id),
     proveedores: (recurso.proveedores || []).map((item) => item.proveedor_id),
-  };
+  });
 }
 
 function inicialProveedor(): ProveedorForm {
@@ -1268,11 +1291,14 @@ export function RecursosAsistencialesPage() {
     setRecursoForm((actual) => {
       if (!actual) return actual;
       const siguiente = { ...actual, [campo]: valor };
+      if (campo === "tipo_recurso") {
+        return normalizarFormPorTipo(siguiente);
+      }
       if (campo === "requiere_cadena_frio" && valor === false) {
         siguiente.temperatura_min = "";
         siguiente.temperatura_max = "";
       }
-      return siguiente;
+      return normalizarFormPorTipo(siguiente);
     });
   }
 
@@ -1403,33 +1429,34 @@ export function RecursosAsistencialesPage() {
   }
 
   function payloadRecurso(form: RecursoForm): RecursoAsistencialPayload {
+    const normalizado = normalizarFormPorTipo(form);
     return {
-      codigo: form.codigo.trim() || null,
-      nombre: form.nombre.trim(),
-      tipo_recurso: form.tipo_recurso,
-      descripcion: form.descripcion || null,
-      presentacion: form.presentacion || null,
-      unidad_medida: form.unidad_medida || null,
-      concentracion: form.concentracion || null,
-      principio_activo: form.principio_activo || null,
-      registro_sanitario: form.registro_sanitario || null,
-      fecha_vencimiento_registro_sanitario: form.fecha_vencimiento_registro_sanitario || null,
-      requiere_registro_sanitario: form.requiere_registro_sanitario,
-      requiere_cadena_frio: form.requiere_cadena_frio,
-      temperatura_min: form.requiere_cadena_frio ? numero(form.temperatura_min) : null,
-      temperatura_max: form.requiere_cadena_frio ? numero(form.temperatura_max) : null,
-      humedad_min: numero(form.humedad_min),
-      humedad_max: numero(form.humedad_max),
-      es_lasa: form.es_lasa,
-      alto_riesgo: form.alto_riesgo,
-      requiere_formula: form.requiere_formula,
-      requiere_ficha_tecnica: form.requiere_ficha_tecnica,
-      stock_minimo: numero(form.stock_minimo) || 0,
-      stock_maximo: numero(form.stock_maximo) || 0,
-      punto_reorden: numero(form.punto_reorden) || 0,
-      tiempo_reposicion_dias: form.tiempo_reposicion_dias ? Number(form.tiempo_reposicion_dias) : null,
-      estado: form.estado,
-      observaciones: form.observaciones || null,
+      codigo: normalizado.codigo.trim() || null,
+      nombre: normalizado.nombre.trim(),
+      tipo_recurso: normalizado.tipo_recurso,
+      descripcion: normalizado.descripcion || null,
+      presentacion: normalizado.presentacion || null,
+      unidad_medida: normalizado.unidad_medida || null,
+      concentracion: normalizado.concentracion || null,
+      principio_activo: normalizado.principio_activo || null,
+      registro_sanitario: normalizado.registro_sanitario || null,
+      fecha_vencimiento_registro_sanitario: normalizado.fecha_vencimiento_registro_sanitario || null,
+      requiere_registro_sanitario: normalizado.requiere_registro_sanitario,
+      requiere_cadena_frio: normalizado.requiere_cadena_frio,
+      temperatura_min: normalizado.requiere_cadena_frio ? numero(normalizado.temperatura_min) : null,
+      temperatura_max: normalizado.requiere_cadena_frio ? numero(normalizado.temperatura_max) : null,
+      humedad_min: numero(normalizado.humedad_min),
+      humedad_max: numero(normalizado.humedad_max),
+      es_lasa: normalizado.es_lasa,
+      alto_riesgo: normalizado.alto_riesgo,
+      requiere_formula: normalizado.requiere_formula,
+      requiere_ficha_tecnica: normalizado.requiere_ficha_tecnica,
+      stock_minimo: numero(normalizado.stock_minimo) || 0,
+      stock_maximo: numero(normalizado.stock_maximo) || 0,
+      punto_reorden: numero(normalizado.punto_reorden) || 0,
+      tiempo_reposicion_dias: normalizado.tiempo_reposicion_dias ? Number(normalizado.tiempo_reposicion_dias) : null,
+      estado: normalizado.estado,
+      observaciones: normalizado.observaciones || null,
     };
   }
 
@@ -1527,6 +1554,10 @@ export function RecursosAsistencialesPage() {
     if (!recursoForm) return;
     if (!recursoForm.nombre.trim()) {
       setError("El nombre del recurso es obligatorio.");
+      return;
+    }
+    if (!recursoForm.registro_sanitario.trim()) {
+      setError("El registro sanitario es obligatorio para todos los recursos asistenciales.");
       return;
     }
     setAccion("guardar-recurso");
@@ -2025,9 +2056,9 @@ export function RecursosAsistencialesPage() {
     <section className="page recursos-page">
       <header className="page-header">
         <div>
-          <span className="eyebrow">Medicamentos e insumos</span>
+          <span className="eyebrow">Medicamentos, insumos y reactivos</span>
           <h1>Recursos Asistenciales</h1>
-          <p>Catálogo base de medicamentos, dispositivos médicos, insumos, proveedores y relación con servicios IPS.</p>
+          <p>Catálogo base de medicamentos, dispositivos médicos, insumos, reactivos, proveedores y relación con servicios IPS.</p>
         </div>
         <div className="infra-header-actions recursos-header-actions">
           <button className="secondary-btn" type="button" onClick={cargar} disabled={loading}>
@@ -2139,6 +2170,7 @@ export function RecursosAsistencialesPage() {
                   <span className={`pill ${recurso.estado}`}>{recurso.estado}</span>
                   {bool(recurso.requiere_cadena_frio) && <span className="tag cold">Cadena de frio</span>}
                   {bool(recurso.es_lasa) && <span className="tag lasa">LASA</span>}
+                  {bool(recurso.alto_riesgo) && <span className="tag warning">Medicamento controlado</span>}
                 </div>
                 <dl className="recurso-dl">
                   <div><dt>Servicios</dt><dd>{texto(recurso.servicios_resumen)}</dd></div>
@@ -2209,7 +2241,7 @@ export function RecursosAsistencialesPage() {
           <div className="section-heading inline-heading">
             <div>
               <h2>Órdenes de compra</h2>
-              <p>Adquisición de medicamentos, dispositivos médicos e insumos desde proveedores registrados.</p>
+              <p>Adquisición de medicamentos, dispositivos médicos, insumos y reactivos desde proveedores registrados.</p>
             </div>
             {puedeComprar && <button className="primary-btn" type="button" onClick={() => setOrdenForm(inicialOrdenCompra())}>
               <Plus size={16} /> Nueva orden
@@ -3296,10 +3328,10 @@ export function RecursosAsistencialesPage() {
                   <input value={recursoForm.unidad_medida} onChange={(event) => actualizarRecurso("unidad_medida", event.target.value)} />
                 </label>
                 <label>Concentración
-                  <input value={recursoForm.concentracion} onChange={(event) => actualizarRecurso("concentracion", event.target.value)} disabled={recursoForm.tipo_recurso !== "medicamento"} />
+                  <input value={recursoForm.concentracion} onChange={(event) => actualizarRecurso("concentracion", event.target.value)} disabled={!reglasTipoRecurso(recursoForm.tipo_recurso).esMedicamento} />
                 </label>
                 <label>Principio activo
-                  <input value={recursoForm.principio_activo} onChange={(event) => actualizarRecurso("principio_activo", event.target.value)} disabled={recursoForm.tipo_recurso !== "medicamento"} />
+                  <input value={recursoForm.principio_activo} onChange={(event) => actualizarRecurso("principio_activo", event.target.value)} disabled={!reglasTipoRecurso(recursoForm.tipo_recurso).esMedicamento} />
                 </label>
                 <label>Estado
                   <select value={recursoForm.estado} onChange={(event) => actualizarRecurso("estado", event.target.value)}>
@@ -3318,10 +3350,13 @@ export function RecursosAsistencialesPage() {
                 <label>Vencimiento registro sanitario
                   <input type="date" value={recursoForm.fecha_vencimiento_registro_sanitario} onChange={(event) => actualizarRecurso("fecha_vencimiento_registro_sanitario", event.target.value)} />
                 </label>
-                <label className="infra-check-field"><input type="checkbox" checked={recursoForm.requiere_registro_sanitario} onChange={(event) => actualizarRecurso("requiere_registro_sanitario", event.target.checked)} /> Requiere registro sanitario</label>
-                <label className="infra-check-field"><input type="checkbox" checked={recursoForm.es_lasa} onChange={(event) => actualizarRecurso("es_lasa", event.target.checked)} /> Es medicamento LASA</label>
-                <label className="infra-check-field"><input type="checkbox" checked={recursoForm.alto_riesgo} onChange={(event) => actualizarRecurso("alto_riesgo", event.target.checked)} /> Alto riesgo</label>
-                <label className="infra-check-field"><input type="checkbox" checked={recursoForm.requiere_formula} onChange={(event) => actualizarRecurso("requiere_formula", event.target.checked)} /> Requiere fórmula</label>
+                <label className="infra-check-field"><input type="checkbox" checked={recursoForm.requiere_registro_sanitario} disabled readOnly /> Requiere registro sanitario</label>
+                <label className="infra-check-field"><input type="checkbox" checked={recursoForm.es_lasa} onChange={(event) => actualizarRecurso("es_lasa", event.target.checked)} disabled={!reglasTipoRecurso(recursoForm.tipo_recurso).esMedicamento} /> Es medicamento LASA</label>
+                <label className="infra-check-field"><input type="checkbox" checked={recursoForm.alto_riesgo} onChange={(event) => actualizarRecurso("alto_riesgo", event.target.checked)} disabled={!reglasTipoRecurso(recursoForm.tipo_recurso).esMedicamento} /> Medicamento controlado</label>
+                <label className="infra-check-field"><input type="checkbox" checked={recursoForm.requiere_formula} disabled readOnly /> Requiere fórmula</label>
+                <div className="recursos-inline-note wide-field">
+                  Registro sanitario aplica para todos. Fórmula aplica para medicamentos, dispositivos médicos y reactivos; insumos no la requieren. Vencimiento de lote obligatorio solo para medicamentos.
+                </div>
                 {recursoForm.es_lasa && <div className="recursos-lasa-alert wide-field">LASA marcado: validar almacenamiento, rotulación y dispensación diferenciada.</div>}
               </Section>
 
@@ -3876,7 +3911,7 @@ export function RecursosAsistencialesPage() {
             <div className="infra-modal-header">
               <div>
                 <h2>{proveedorForm.id ? "Editar proveedor" : "Nuevo proveedor"}</h2>
-                <p>Proveedor disponible para compra de medicamentos, dispositivos e insumos.</p>
+                <p>Proveedor disponible para compra de medicamentos, dispositivos, insumos y reactivos.</p>
               </div>
               <button type="button" onClick={() => setProveedorForm(null)} aria-label="Cerrar"><X size={20} /></button>
             </div>
