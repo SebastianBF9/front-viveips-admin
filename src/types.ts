@@ -758,7 +758,7 @@ export interface EquipoAlertaResumen {
   total: number;
 }
 
-export type TipoRecursoAsistencial = "medicamento" | "dispositivo_medico" | "insumo";
+export type TipoRecursoAsistencial = "medicamento" | "dispositivo_medico" | "insumo" | "reactivo";
 export type EstadoRecursoAsistencial = "activo" | "inactivo" | "en_revision" | "rechazado";
 export type EstadoProveedorRecurso = "activo" | "inactivo" | "en_revision" | "bloqueado";
 export type EstadoOrdenCompraRecurso = "borrador" | "solicitada" | "aprobada" | "enviada_proveedor" | "parcialmente_recibida" | "recibida" | "cerrada" | "cancelada";
