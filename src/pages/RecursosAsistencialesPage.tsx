@@ -914,7 +914,7 @@ export function RecursosAsistencialesPage() {
       const accesoData = await obtenerMiAcceso();
       setAcceso(accesoData);
       const puedeConsultarAuditoria = Boolean(accesoData.permiso_ver_todo || accesoData.permiso_recursos_auditoria);
-      const [recursosData, proveedoresData, serviciosData, ordenesData, recepcionesData, lotesData, movimientosData, despachosData, profesionalesData, auditoriaData, reportesData, temperaturaData, invimaData] = await Promise.all([
+      const [recursosData, proveedoresData, serviciosData, ordenesData, recepcionesData, lotesData, movimientosData, despachosData, profesionalesData, auditoriaData, reportesData, invimaData] = await Promise.all([
         listarRecursosAsistenciales(),
         listarProveedoresRecursos(),
         listarServiciosIps(),
@@ -926,7 +926,6 @@ export function RecursosAsistencialesPage() {
         listarProfesionales(),
         puedeConsultarAuditoria ? listarAuditoriaRecursos({ limite: 500 }) : Promise.resolve({ eventos: [] }),
         puedeConsultarAuditoria ? obtenerReportesRecursos() : Promise.resolve({ reportes: REPORTES_VACIOS }),
-        listarTemperaturaHumedadRecursos({ anio: temperaturaAnio, mes: temperaturaMes, ubicacion: temperaturaUbicacion }),
         puedeConsultarAuditoria ? listarResultadosInvima({ limite: 100 }) : Promise.resolve({ alertas: [], estado: INVIMA_ESTADO_VACIO }),
       ]);
       setRecursos(recursosData.recursos || []);
@@ -955,8 +954,6 @@ export function RecursosAsistencialesPage() {
       }
       setAuditoria(auditoriaData.eventos || []);
       setReportes(reportesData.reportes || REPORTES_VACIOS);
-      setTemperaturaRegistros(temperaturaData.registros || []);
-      setTemperaturaResumen(temperaturaData.resumen || TEMPERATURA_RESUMEN_VACIO);
       setAlertasInvima(invimaData.alertas || []);
       setEstadoInvima(invimaData.estado || INVIMA_ESTADO_VACIO);
       setServicios(
@@ -974,6 +971,20 @@ export function RecursosAsistencialesPage() {
   useEffect(() => {
     cargar();
   }, []);
+
+  useEffect(() => {
+    if (tab !== "temperatura" || loading) return;
+    listarTemperaturaHumedadRecursos({ anio: temperaturaAnio, mes: temperaturaMes, ubicacion: temperaturaUbicacion })
+      .then((data) => {
+        setTemperaturaRegistros(data.registros || []);
+        setTemperaturaResumen(data.resumen || TEMPERATURA_RESUMEN_VACIO);
+      })
+      .catch((err) => {
+        setTemperaturaRegistros([]);
+        setTemperaturaResumen(TEMPERATURA_RESUMEN_VACIO);
+        setError(err instanceof Error ? err.message : "No fue posible cargar temperatura y humedad");
+      });
+  }, [tab, loading]);
 
   async function cargarReportesFiltrados() {
     setAccion("cargar-reportes");
