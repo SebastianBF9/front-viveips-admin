@@ -2014,6 +2014,17 @@ export function RecursosAsistencialesPage() {
     }
   }
 
+  async function descargarOrdenCompra(orden: OrdenCompraRecurso) {
+    setAccion(`pdf-orden-${orden.id}`);
+    try {
+      await downloadBlob(`/ordenes-compra-recursos/${orden.id}/pdf`, `orden_compra_${orden.numero_orden || orden.id}.pdf`, true);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "No fue posible descargar la orden de compra");
+    } finally {
+      setAccion("");
+    }
+  }
+
   async function aprobarOrden(orden: OrdenCompraRecurso) {
     if (!puedeAprobarOrden(orden)) return;
     setAccion(`aprobar-orden-${orden.id}`);
@@ -2292,6 +2303,9 @@ export function RecursosAsistencialesPage() {
                   <div><dt>Total</dt><dd>{dinero(orden.total)}</dd></div>
                 </dl>
                 <div className="recursos-actions">
+                  <button type="button" onClick={() => descargarOrdenCompra(orden)} disabled={accion === `pdf-orden-${orden.id}`}>
+                    <FileDown size={15} /> PDF
+                  </button>
                   {puedeAprobarCompras && puedeAprobarOrden(orden) && (
                     <button type="button" onClick={() => aprobarOrden(orden)} disabled={accion === `aprobar-orden-${orden.id}`}>
                       <Save size={15} /> Aprobar
