@@ -4656,6 +4656,121 @@ td small { display: block; color: var(--muted); margin-top: 4px; }
   margin-bottom: 0;
 }
 
+.temperatura-summary {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.temperatura-summary > div,
+.temperatura-panel,
+.temperatura-report-head {
+  border: 1px solid #dbe6f0;
+  border-radius: 8px;
+  background: #fff;
+}
+
+.temperatura-summary > div {
+  display: grid;
+  gap: 5px;
+  padding: 16px;
+  color: #1b3a6b;
+}
+
+.temperatura-summary span,
+.temperatura-report-head span,
+.temperatura-report-head small {
+  color: #64748b;
+  font-size: 12px;
+  font-weight: 850;
+}
+
+.temperatura-summary strong {
+  font-size: 24px;
+  color: #0f2338;
+}
+
+.temperatura-entry-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.4fr) minmax(280px, .7fr);
+  gap: 16px;
+}
+
+.temperatura-panel {
+  padding: 16px;
+  display: grid;
+  gap: 14px;
+}
+
+.temperatura-panel h3 {
+  margin: 0;
+  color: #0f2338;
+}
+
+.temperatura-report-head {
+  padding: 16px;
+}
+
+.temperatura-report-head > div {
+  display: grid;
+  gap: 4px;
+}
+
+.temperatura-report-head strong {
+  color: #0f2338;
+  font-size: 22px;
+}
+
+.temperatura-table-wrap {
+  overflow-x: auto;
+  border: 1px solid #dbe6f0;
+  border-radius: 8px;
+  background: #fff;
+}
+
+.temperatura-table {
+  min-width: 760px;
+}
+
+.temperatura-table th,
+.temperatura-table td {
+  vertical-align: top;
+}
+
+.temperatura-table tbody th {
+  width: 72px;
+  text-align: center;
+  color: #1b3a6b;
+}
+
+.temperatura-table td {
+  min-width: 210px;
+}
+
+.temperatura-table td > strong,
+.temperatura-table td > span,
+.temperatura-table td > small {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  line-height: 1.35;
+}
+
+.temperatura-table td.ok {
+  background: #f0fdf4;
+  color: #14532d;
+}
+
+.temperatura-table td.bad {
+  background: #fff1f2;
+  color: #991b1b;
+}
+
+.temperatura-table td.empty {
+  background: #f8fafc;
+  color: #64748b;
+}
+
 .orden-section-head {
   display: flex;
   justify-content: space-between;
@@ -4776,6 +4891,11 @@ td small { display: block; color: var(--muted); margin-top: 4px; }
 }
 
 @media (max-width: 900px) {
+  .temperatura-summary,
+  .temperatura-entry-grid {
+    grid-template-columns: 1fr;
+  }
+
   .fefo-assignment-box {
     grid-template-columns: 1fr;
   }

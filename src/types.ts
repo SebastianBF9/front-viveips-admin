@@ -1106,6 +1106,51 @@ export interface MovimientoInventarioRecurso {
   created_at?: string | null;
 }
 
+export interface TemperaturaHumedadRecurso {
+  id: number;
+  fecha: string;
+  turno: "manana" | "tarde" | "automatico" | string;
+  hora?: string | null;
+  ubicacion: string;
+  dispositivo_codigo?: string | null;
+  temperatura: number;
+  humedad: number;
+  temperatura_min: number;
+  temperatura_max: number;
+  humedad_min: number;
+  humedad_max: number;
+  cumple: number | boolean;
+  origen: string;
+  responsable_id?: number | null;
+  responsable_nombre?: string | null;
+  responsable_apellidos?: string | null;
+  observaciones?: string | null;
+  created_at?: string | null;
+  updated_at?: string | null;
+}
+
+export interface TemperaturaHumedadPayload {
+  fecha: string;
+  turno: "manana" | "tarde" | string;
+  hora?: string | null;
+  ubicacion?: string | null;
+  dispositivo_codigo?: string | null;
+  temperatura: number;
+  humedad: number;
+  temperatura_min?: number | null;
+  temperatura_max?: number | null;
+  humedad_min?: number | null;
+  humedad_max?: number | null;
+  observaciones?: string | null;
+}
+
+export interface TemperaturaHumedadResumen {
+  total: number;
+  cumplen: number;
+  fuera_rango: number;
+  ubicaciones: string[];
+}
+
 export interface AjusteInventarioPayload {
   tipo: "positivo" | "negativo";
   cantidad: number;
