@@ -33,12 +33,13 @@ export function AppLayout() {
 
   if (loading) return <Loading text="Validando accesos..." />;
 
-  const puedeVerServicios = Boolean(acceso?.permiso_ver_todo);
-  const puedeVerTalento = Boolean(acceso?.permiso_ver_todo || acceso?.permiso_ver_profesionales || acceso?.permiso_crear_profesionales);
+  const puedeVerServicios = Boolean(acceso?.permiso_ver_todo || acceso?.permiso_modulo_servicios);
+  const puedeVerTalento = Boolean(acceso?.permiso_ver_todo || acceso?.permiso_modulo_talento_humano || acceso?.permiso_ver_profesionales || acceso?.permiso_crear_profesionales || acceso?.permiso_ver_capacitaciones);
   const puedeVerAccesos = Boolean(acceso?.permiso_ver_todo);
-  const puedeVerInfraestructura = Boolean(acceso?.permiso_ver_todo || acceso?.permiso_tecnovigilancia);
+  const puedeVerInfraestructura = Boolean(acceso?.permiso_ver_todo || acceso?.permiso_modulo_infraestructura || acceso?.permiso_tecnovigilancia);
   const puedeVerRecursos = Boolean(
     acceso?.permiso_ver_todo ||
+    acceso?.permiso_modulo_recursos ||
     acceso?.permiso_recursos_comprar ||
     acceso?.permiso_recursos_aprobar ||
     acceso?.permiso_recursos_recibir ||
@@ -83,19 +84,19 @@ export function AppLayout() {
               Recursos Asistenciales
             </NavLink>
           )}
-          {puedeVerServicios && (
+          {Boolean(acceso?.permiso_ver_todo || acceso?.permiso_modulo_procesos_prioritarios) && (
             <NavLink to="/procesos-prioritarios" className={({ isActive }) => `nav-link ${isActive ? "active" : ""}`}>
               <ClipboardList size={18} />
               Procesos Prioritarios
             </NavLink>
           )}
-          {puedeVerServicios && (
+          {Boolean(acceso?.permiso_ver_todo || acceso?.permiso_modulo_historia_clinica) && (
             <NavLink to="/historia-clinica-registros" className={({ isActive }) => `nav-link ${isActive ? "active" : ""}`}>
               <FileText size={18} />
               Historia clínica y registros
             </NavLink>
           )}
-          {puedeVerServicios && (
+          {Boolean(acceso?.permiso_ver_todo || acceso?.permiso_modulo_gestion_documental) && (
             <NavLink to="/gestion-documental" className={({ isActive }) => `nav-link ${isActive ? "active" : ""}`}>
               <FolderKanban size={18} />
               Gestión Documental

@@ -897,10 +897,11 @@ export function PortalProfesionalPage() {
 
   const primerNombre = form.nombre.split(" ").filter(Boolean)[0] || "Profesional";
   const puedeEntrarAdmin = Boolean(acceso?.permiso_ver_todo);
-  const puedeEntrarTalento = Boolean(acceso?.permiso_ver_todo || acceso?.permiso_ver_profesionales || acceso?.permiso_crear_profesionales);
-  const puedeEntrarInfraestructura = Boolean(acceso?.permiso_ver_todo || acceso?.permiso_tecnovigilancia);
+  const puedeEntrarTalento = Boolean(acceso?.permiso_ver_todo || acceso?.permiso_modulo_talento_humano || acceso?.permiso_ver_profesionales || acceso?.permiso_crear_profesionales || acceso?.permiso_ver_capacitaciones);
+  const puedeEntrarInfraestructura = Boolean(acceso?.permiso_ver_todo || acceso?.permiso_modulo_infraestructura || acceso?.permiso_tecnovigilancia);
   const puedeEntrarRecursos = Boolean(
     acceso?.permiso_ver_todo ||
+    acceso?.permiso_modulo_recursos ||
     acceso?.permiso_recursos_comprar ||
     acceso?.permiso_recursos_aprobar ||
     acceso?.permiso_recursos_recibir ||
