@@ -96,6 +96,7 @@ import type {
   RecepcionRecursoDetalle,
   RecepcionRecursoPayload,
   RecursoAsistencial,
+  RecursoAsistencialMasivoPayload,
   RecursoAsistencialPayload,
   ServicioIps,
 } from "../types";
@@ -548,7 +549,7 @@ function inicialProveedor(): ProveedorForm {
 
 function inicialCargaMasiva(): CargaMasivaForm {
   return {
-    texto: "codigo,nombre,tipo_recurso,registro_sanitario,presentacion,unidad_medida,stock_minimo,punto_reorden\nRA-EJEMPLO,Recurso ejemplo,insumo,REG-001,Caja,unidad,0,0",
+    texto: "codigo,nombre,tipo_recurso,registro_sanitario,presentacion,unidad_medida,stock_minimo,punto_reorden,lote_inicial,cantidad_inicial,fecha_vencimiento_lote,ubicacion_inicial,motivo_inventario_inicial\nRA-EJEMPLO,Recurso ejemplo,insumo,REG-001,Caja,unidad,0,0,LOTE-001,100,,Almacén principal,Inventario inicial",
   };
 }
 
@@ -1504,7 +1505,7 @@ export function RecursosAsistencialesPage() {
     return linea.split(separador).map((valor) => valor.trim());
   }
 
-  function parsearCargaMasivaRecursos(textoCarga: string): RecursoAsistencialPayload[] {
+  function parsearCargaMasivaRecursos(textoCarga: string): RecursoAsistencialMasivoPayload[] {
     const lineas = textoCarga.split(/\r?\n/).map((linea) => linea.trim()).filter(Boolean);
     if (lineas.length < 2) throw new Error("La carga masiva requiere encabezados y al menos una fila.");
     const encabezados = separarFilaMasiva(lineas[0]).map((item) => item.toLowerCase());
@@ -1516,6 +1517,13 @@ export function RecursosAsistencialesPage() {
       const fila = Object.fromEntries(encabezados.map((campo, idx) => [campo, columnas[idx] || ""]));
       if (!fila.nombre || !fila.tipo_recurso || !fila.registro_sanitario) {
         throw new Error(`Fila ${index + 2}: nombre, tipo_recurso y registro_sanitario son obligatorios.`);
+      }
+      const cantidadInicial = numero(fila.cantidad_inicial || "") || 0;
+      if (cantidadInicial > 0 && !fila.lote_inicial) {
+        throw new Error(`Fila ${index + 2}: lote_inicial es obligatorio cuando cantidad_inicial es mayor a cero.`);
+      }
+      if (cantidadInicial > 0 && fila.tipo_recurso === "medicamento" && !fila.fecha_vencimiento_lote) {
+        throw new Error(`Fila ${index + 2}: fecha_vencimiento_lote es obligatoria para medicamentos con inventario inicial.`);
       }
       return {
         codigo: fila.codigo || null,
@@ -1544,6 +1552,11 @@ export function RecursosAsistencialesPage() {
         tiempo_reposicion_dias: fila.tiempo_reposicion_dias ? Number(fila.tiempo_reposicion_dias) : null,
         estado: fila.estado || "activo",
         observaciones: fila.observaciones || null,
+        lote_inicial: fila.lote_inicial || null,
+        cantidad_inicial: cantidadInicial,
+        fecha_vencimiento_lote: fila.fecha_vencimiento_lote || null,
+        ubicacion_inicial: fila.ubicacion_inicial || null,
+        motivo_inventario_inicial: fila.motivo_inventario_inicial || null,
       };
     });
   }
@@ -3482,7 +3495,7 @@ export function RecursosAsistencialesPage() {
                   />
                 </label>
                 <div className="recursos-inline-note wide-field">
-                  Tipos válidos: medicamento, dispositivo_medico, insumo, reactivo. Puedes separar columnas con coma, punto y coma o tabulación.
+                  Tipos válidos: medicamento, dispositivo_medico, insumo, reactivo. Para iniciar existencias usa lote_inicial y cantidad_inicial; en medicamentos también fecha_vencimiento_lote.
                 </div>
               </Section>
             </div>
