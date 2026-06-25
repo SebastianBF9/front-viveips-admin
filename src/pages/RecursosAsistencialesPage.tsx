@@ -2286,7 +2286,7 @@ export function RecursosAsistencialesPage() {
               {puedeComprar && <button className="secondary-btn" type="button" onClick={() => setCargaMasivaForm(inicialCargaMasiva())}>
                 <FileDown size={17} /> Carga masiva
               </button>}
-              {puedeComprar && <button className="primary-btn" type="button" onClick={() => setRecursoForm(inicialRecurso())}>
+              {puedeComprar && <button className="brand-action-btn" type="button" onClick={() => setRecursoForm(inicialRecurso())}>
                 <Plus size={17} /> Nuevo recurso
               </button>}
             </div>
@@ -2376,7 +2376,7 @@ export function RecursosAsistencialesPage() {
               <h2>Proveedores</h2>
               <p>Aliados para compra y suministro de recursos asistenciales.</p>
             </div>
-            {puedeComprar && <button className="primary-btn" type="button" onClick={() => setProveedorForm(inicialProveedor())}>
+            {puedeComprar && <button className="brand-action-btn" type="button" onClick={() => setProveedorForm(inicialProveedor())}>
               <Plus size={16} /> Nuevo proveedor
             </button>}
           </div>
@@ -2417,7 +2417,7 @@ export function RecursosAsistencialesPage() {
               <h2>Órdenes de compra</h2>
               <p>Adquisición de medicamentos, dispositivos médicos, insumos y reactivos desde proveedores registrados.</p>
             </div>
-            {puedeComprar && <button className="primary-btn" type="button" onClick={() => setOrdenForm(inicialOrdenCompra())}>
+            {puedeComprar && <button className="brand-action-btn" type="button" onClick={() => setOrdenForm(inicialOrdenCompra())}>
               <Plus size={16} /> Nueva orden
             </button>}
           </div>
@@ -2498,7 +2498,7 @@ export function RecursosAsistencialesPage() {
               <h2>Recepción técnica y administrativa</h2>
               <p>Valida cantidad, lote, vencimiento, empaque, registro sanitario y condiciones de transporte.</p>
             </div>
-            <button className="primary-btn" type="button" onClick={() => setTab("compras")}>
+            <button className="brand-action-btn" type="button" onClick={() => setTab("compras")}>
               <Truck size={16} /> Ir a compras
             </button>
           </div>
@@ -2567,7 +2567,7 @@ export function RecursosAsistencialesPage() {
             <button className="secondary-btn" type="button" onClick={cargar} disabled={loading}>
               Actualizar
             </button>
-            {puedeAjustarInventario && <button className="primary-btn" type="button" onClick={() => setInventarioInicialForm(inicialInventarioInicial())}>
+            {puedeAjustarInventario && <button className="brand-action-btn" type="button" onClick={() => setInventarioInicialForm(inicialInventarioInicial())}>
               <Plus size={16} /> Inventario inicial
             </button>}
           </div>
@@ -2675,7 +2675,7 @@ export function RecursosAsistencialesPage() {
               <h2>Distribución domiciliaria</h2>
               <p>Entrega interna al responsable de ruta y salida de inventario hacia domicilio del paciente.</p>
             </div>
-            {puedeDespachar && <button className="primary-btn" type="button" onClick={() => setDespachoForm(inicialDespacho())}>
+            {puedeDespachar && <button className="brand-action-btn" type="button" onClick={() => setDespachoForm(inicialDespacho())}>
               <Plus size={16} /> Nuevo despacho
             </button>}
           </div>
