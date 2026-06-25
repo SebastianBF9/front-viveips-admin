@@ -1,22 +1,87 @@
-import { Power, Search, ShieldCheck } from "lucide-react";
+import { Boxes, ClipboardList, FileText, FolderKanban, HeartPulse, Power, Search, ShieldCheck, Stethoscope, UsersRound } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { actualizarPermisosUsuario, alternarEstadoProfesional, listarUsuariosPermisos } from "../api";
 import type { UsuarioPermisos, UsuarioPermisosPayload } from "../types";
 import { Loading } from "../ui/Loading";
 
-const permisos: Array<{ campo: keyof UsuarioPermisosPayload; label: string; ayuda: string }> = [
-  { campo: "permiso_ver_todo", label: "Ver todo", ayuda: "Acceso total y administracion de permisos" },
-  { campo: "permiso_ver_profesionales", label: "Talento Humano", ayuda: "Consultar profesionales, documentos, PDF, contrato y carnet" },
-  { campo: "permiso_crear_profesionales", label: "Crear profesionales", ayuda: "Crear usuarios profesionales desde Talento Humano" },
-  { campo: "permiso_ver_capacitaciones", label: "Capacitaciones", ayuda: "Gestionar capacitaciones" },
-  { campo: "permiso_tecnovigilancia", label: "Dotacion", ayuda: "Gestionar equipos y tecnovigilancia" },
-  { campo: "permiso_recursos_comprar", label: "Comprar", ayuda: "Crear, editar y cancelar órdenes de compra de recursos" },
-  { campo: "permiso_recursos_aprobar", label: "Aprobar OC", ayuda: "Aprobar órdenes de compra de recursos" },
-  { campo: "permiso_recursos_recibir", label: "Recibir", ayuda: "Registrar recepciones e ingresar a inventario" },
-  { campo: "permiso_recursos_ajustar", label: "Ajustar inv.", ayuda: "Ajustar, bloquear, trasladar y registrar devoluciones de lotes" },
-  { campo: "permiso_recursos_dar_baja", label: "Dar baja", ayuda: "Dar de baja recursos de inventario" },
-  { campo: "permiso_recursos_despachar", label: "Despachar", ayuda: "Crear despachos, salidas, reintentos y devoluciones de entrega" },
-  { campo: "permiso_recursos_auditoria", label: "Auditoría RA", ayuda: "Consultar auditoría de recursos asistenciales" },
+type PermissionKey = keyof UsuarioPermisosPayload;
+
+interface PermissionItem {
+  campo: PermissionKey;
+  label: string;
+  ayuda: string;
+}
+
+interface PermissionGroup {
+  modulo: PermissionItem;
+  descripcion: string;
+  icon: typeof Stethoscope;
+  permisos: PermissionItem[];
+}
+
+const permisoTotal: PermissionItem = {
+  campo: "permiso_ver_todo",
+  label: "Acceso total",
+  ayuda: "Puede entrar a todos los módulos y administrar permisos",
+};
+
+const gruposPermisos: PermissionGroup[] = [
+  {
+    modulo: { campo: "permiso_modulo_servicios", label: "Servicios", ayuda: "Permite entrar al módulo de servicios habilitados" },
+    descripcion: "Servicios IPS, cumplimiento y relaciones por estándar.",
+    icon: Stethoscope,
+    permisos: [],
+  },
+  {
+    modulo: { campo: "permiso_modulo_talento_humano", label: "Talento Humano", ayuda: "Permite entrar al módulo de Talento Humano" },
+    descripcion: "Profesionales, documentos, contratos, carnet y capacitaciones.",
+    icon: UsersRound,
+    permisos: [
+      { campo: "permiso_ver_profesionales", label: "Consultar", ayuda: "Consultar profesionales, documentos, PDF, contrato y carnet" },
+      { campo: "permiso_crear_profesionales", label: "Crear profesionales", ayuda: "Crear usuarios profesionales desde Talento Humano" },
+      { campo: "permiso_ver_capacitaciones", label: "Capacitaciones", ayuda: "Gestionar capacitaciones" },
+    ],
+  },
+  {
+    modulo: { campo: "permiso_modulo_infraestructura", label: "Infraestructura", ayuda: "Permite entrar al módulo de Infraestructura" },
+    descripcion: "Dotación, equipos, hojas de vida y tecnovigilancia.",
+    icon: Boxes,
+    permisos: [
+      { campo: "permiso_tecnovigilancia", label: "Dotación", ayuda: "Gestionar equipos y tecnovigilancia" },
+    ],
+  },
+  {
+    modulo: { campo: "permiso_modulo_recursos", label: "Recursos Asistenciales", ayuda: "Permite entrar al módulo de Recursos Asistenciales" },
+    descripcion: "Catálogo, compras, inventario, distribución, temperatura, auditoría e INVIMA.",
+    icon: HeartPulse,
+    permisos: [
+      { campo: "permiso_recursos_comprar", label: "Comprar", ayuda: "Crear, editar y cancelar órdenes de compra de recursos" },
+      { campo: "permiso_recursos_aprobar", label: "Aprobar OC", ayuda: "Aprobar órdenes de compra de recursos" },
+      { campo: "permiso_recursos_recibir", label: "Recibir", ayuda: "Registrar recepciones e ingresar a inventario" },
+      { campo: "permiso_recursos_ajustar", label: "Ajustar inv.", ayuda: "Ajustar, bloquear, trasladar y registrar devoluciones de lotes" },
+      { campo: "permiso_recursos_dar_baja", label: "Dar baja", ayuda: "Dar de baja recursos de inventario" },
+      { campo: "permiso_recursos_despachar", label: "Despachar", ayuda: "Crear despachos, salidas, reintentos y devoluciones de entrega" },
+      { campo: "permiso_recursos_auditoria", label: "Auditoría", ayuda: "Consultar auditoría, reportes e INVIMA de recursos asistenciales" },
+    ],
+  },
+  {
+    modulo: { campo: "permiso_modulo_procesos_prioritarios", label: "Procesos Prioritarios", ayuda: "Permite entrar al módulo de Procesos Prioritarios" },
+    descripcion: "Modelo y seguimiento de procesos asistenciales prioritarios.",
+    icon: ClipboardList,
+    permisos: [],
+  },
+  {
+    modulo: { campo: "permiso_modulo_historia_clinica", label: "Historia Clínica", ayuda: "Permite entrar al módulo de Historia Clínica y registros" },
+    descripcion: "Historia clínica, registros asistenciales y trazabilidad documental.",
+    icon: FileText,
+    permisos: [],
+  },
+  {
+    modulo: { campo: "permiso_modulo_gestion_documental", label: "Gestión Documental", ayuda: "Permite entrar al módulo de Gestión Documental" },
+    descripcion: "Documentos internos por estándar, versiones y archivos de soporte.",
+    icon: FolderKanban,
+    permisos: [],
+  },
 ];
 
 function iniciales(nombre?: string | null) {
@@ -32,6 +97,13 @@ function iniciales(nombre?: string | null) {
 function payloadDesdeUsuario(usuario: UsuarioPermisos): UsuarioPermisosPayload {
   return {
     permiso_ver_todo: usuario.permiso_ver_todo,
+    permiso_modulo_servicios: usuario.permiso_modulo_servicios,
+    permiso_modulo_talento_humano: usuario.permiso_modulo_talento_humano,
+    permiso_modulo_infraestructura: usuario.permiso_modulo_infraestructura,
+    permiso_modulo_recursos: usuario.permiso_modulo_recursos,
+    permiso_modulo_procesos_prioritarios: usuario.permiso_modulo_procesos_prioritarios,
+    permiso_modulo_historia_clinica: usuario.permiso_modulo_historia_clinica,
+    permiso_modulo_gestion_documental: usuario.permiso_modulo_gestion_documental,
     permiso_ver_profesionales: usuario.permiso_ver_profesionales,
     permiso_crear_profesionales: usuario.permiso_crear_profesionales,
     permiso_ver_capacitaciones: usuario.permiso_ver_capacitaciones,
@@ -44,6 +116,30 @@ function payloadDesdeUsuario(usuario: UsuarioPermisos): UsuarioPermisosPayload {
     permiso_recursos_despachar: usuario.permiso_recursos_despachar,
     permiso_recursos_auditoria: usuario.permiso_recursos_auditoria,
   };
+}
+
+function PermisoToggle({
+  checked,
+  disabled,
+  onChange,
+  title,
+}: {
+  checked: boolean;
+  disabled: boolean;
+  onChange: (valor: boolean) => void;
+  title?: string;
+}) {
+  return (
+    <label className="toggle-permission" title={title}>
+      <input
+        type="checkbox"
+        checked={checked}
+        disabled={disabled}
+        onChange={(event) => onChange(event.target.checked)}
+      />
+      <span />
+    </label>
+  );
 }
 
 export function AccesosPage() {
@@ -127,7 +223,7 @@ export function AccesosPage() {
         <div>
           <span className="eyebrow">Configuracion</span>
           <h1>Accesos</h1>
-          <p>Administra permisos modulares. Solo usuarios con acceso total pueden ver esta pagina.</p>
+          <p>Administra acceso global por módulo y permisos específicos para cada operación.</p>
         </div>
       </header>
 
@@ -141,38 +237,35 @@ export function AccesosPage() {
         </label>
       </div>
 
-      <section className="table-card">
+      <section className="table-card access-panel">
         <div className="section-heading">
           <h2>Usuarios y permisos</h2>
-          <p>Crear un profesional no asigna permisos administrativos; los accesos se manejan unicamente aqui.</p>
+          <p>El acceso total conserva control completo. Los permisos de módulo permiten entrar; los permisos específicos habilitan acciones internas.</p>
         </div>
 
-        <table className="access-table">
-          <thead>
-            <tr>
-              <th>Usuario</th>
-              <th>Rol</th>
-              <th>Estado</th>
-              {permisos.map((permiso) => (
-                <th key={permiso.campo}>{permiso.label}</th>
-              ))}
-            </tr>
-          </thead>
-          <tbody>
-            {filtrados.map((usuario) => (
-              <tr key={usuario.usuario_id}>
-                <td>
-                  <div className="prof-info">
-                    <div className="prof-avatar">{iniciales(usuario.nombre)}</div>
-                    <div>
-                      <div className="prof-nombre">{usuario.nombre}</div>
-                      <div className="prof-cedula">CC: {usuario.cedula}</div>
-                      <small>{usuario.email || usuario.especialidad || "Sin informacion adicional"}</small>
-                    </div>
+        <div className="access-user-list">
+          {filtrados.map((usuario) => (
+            <article className="access-user-card" key={usuario.usuario_id}>
+              <div className="access-user-summary">
+                <div className="prof-info">
+                  <div className="prof-avatar">{iniciales(usuario.nombre)}</div>
+                  <div>
+                    <div className="prof-nombre">{usuario.nombre}</div>
+                    <div className="prof-cedula">CC: {usuario.cedula} · {usuario.rol}</div>
+                    <small>{usuario.email || usuario.especialidad || "Sin informacion adicional"}</small>
                   </div>
-                </td>
-                <td>{usuario.rol}</td>
-                <td>
+                </div>
+
+                <div className="access-user-actions">
+                  <label className="access-total-toggle" title={permisoTotal.ayuda}>
+                    <span>{permisoTotal.label}</span>
+                    <PermisoToggle
+                      checked={Boolean(usuario.permiso_ver_todo)}
+                      disabled={saving === usuario.usuario_id}
+                      onChange={(valor) => cambiarPermiso(usuario, "permiso_ver_todo", valor)}
+                    />
+                  </label>
+
                   <div className="access-status-cell">
                     <span className={`pill ${usuario.activo ? "activo" : "inactivo"}`}>{usuario.activo ? "Activo" : "Inactivo"}</span>
                     {usuario.profesional_id ? (
@@ -189,24 +282,51 @@ export function AccesosPage() {
                       <small>Sin perfil</small>
                     )}
                   </div>
-                </td>
-                {permisos.map((permiso) => (
-                  <td key={permiso.campo}>
-                    <label className="toggle-permission" title={permiso.ayuda}>
-                      <input
-                        type="checkbox"
-                        checked={Boolean(usuario[permiso.campo])}
-                        disabled={saving === usuario.usuario_id}
-                        onChange={(event) => cambiarPermiso(usuario, permiso.campo, event.target.checked)}
-                      />
-                      <span />
-                    </label>
-                  </td>
-                ))}
-              </tr>
-            ))}
-          </tbody>
-        </table>
+                </div>
+              </div>
+
+              <div className="module-permissions-grid">
+                {gruposPermisos.map((grupo) => {
+                  const Icon = grupo.icon;
+                  const moduloActivo = Boolean(usuario[grupo.modulo.campo]);
+                  return (
+                    <section className={`module-permission-card ${moduloActivo ? "enabled" : ""}`} key={grupo.modulo.campo}>
+                      <div className="module-permission-header">
+                        <span className="module-permission-icon"><Icon size={18} /></span>
+                        <div>
+                          <h3>{grupo.modulo.label}</h3>
+                          <p>{grupo.descripcion}</p>
+                        </div>
+                        <PermisoToggle
+                          checked={moduloActivo}
+                          disabled={saving === usuario.usuario_id}
+                          onChange={(valor) => cambiarPermiso(usuario, grupo.modulo.campo, valor)}
+                          title={grupo.modulo.ayuda}
+                        />
+                      </div>
+
+                      {grupo.permisos.length > 0 && (
+                        <div className="module-permission-detail">
+                          {grupo.permisos.map((permiso) => (
+                            <label className="permission-chip" title={permiso.ayuda} key={permiso.campo}>
+                              <input
+                                type="checkbox"
+                                checked={Boolean(usuario[permiso.campo])}
+                                disabled={saving === usuario.usuario_id}
+                                onChange={(event) => cambiarPermiso(usuario, permiso.campo, event.target.checked)}
+                              />
+                              <span>{permiso.label}</span>
+                            </label>
+                          ))}
+                        </div>
+                      )}
+                    </section>
+                  );
+                })}
+              </div>
+            </article>
+          ))}
+        </div>
 
         {filtrados.length === 0 && <div className="empty-state">No hay usuarios para el filtro seleccionado.</div>}
       </section>

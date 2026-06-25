@@ -1103,8 +1103,48 @@ td small { display: block; color: var(--muted); margin-top: 4px; }
   gap: 10px;
   padding: 0 20px 20px;
 }
-.access-table th { white-space: nowrap; }
-.access-table td:not(:first-child) { vertical-align: middle; }
+.access-panel {
+  overflow: visible;
+}
+.access-user-list {
+  display: grid;
+  gap: 14px;
+  padding: 16px;
+}
+.access-user-card {
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: #fff;
+  overflow: hidden;
+}
+.access-user-summary {
+  display: grid;
+  grid-template-columns: minmax(260px, 1fr) auto;
+  gap: 16px;
+  align-items: center;
+  padding: 16px;
+  border-bottom: 1px solid var(--border);
+  background: linear-gradient(180deg, #f8fafc, #fff);
+}
+.access-user-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 14px;
+  flex-wrap: wrap;
+}
+.access-total-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 10px;
+  border: 1px solid #bfdbfe;
+  border-radius: 999px;
+  background: #eff6ff;
+  color: #1d4ed8;
+  font-size: 12px;
+  font-weight: 900;
+}
 .access-status-cell {
   display: grid;
   gap: 7px;
@@ -1175,6 +1215,87 @@ td small { display: block; color: var(--muted); margin-top: 4px; }
 }
 .toggle-permission input:checked + span::after { transform: translateX(20px); }
 .toggle-permission input:disabled + span { opacity: .65; cursor: progress; }
+.module-permissions-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 12px;
+  padding: 16px;
+}
+.module-permission-card {
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  background: #f8fafc;
+  min-width: 0;
+}
+.module-permission-card.enabled {
+  border-color: #7dd3fc;
+  background: #f0f9ff;
+}
+.module-permission-header {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  gap: 10px;
+  align-items: start;
+  padding: 12px;
+}
+.module-permission-icon {
+  width: 34px;
+  height: 34px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 8px;
+  background: #fff;
+  color: var(--navy);
+  border: 1px solid #dbeafe;
+}
+.module-permission-header h3 {
+  margin: 0;
+  color: var(--navy);
+  font-size: 14px;
+}
+.module-permission-header p {
+  margin-top: 3px;
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.35;
+}
+.module-permission-detail {
+  display: flex;
+  gap: 7px;
+  flex-wrap: wrap;
+  padding: 0 12px 12px;
+}
+.permission-chip {
+  cursor: pointer;
+}
+.permission-chip input {
+  position: absolute;
+  opacity: 0;
+  pointer-events: none;
+}
+.permission-chip span {
+  display: inline-flex;
+  align-items: center;
+  min-height: 30px;
+  border: 1px solid #cbd5e1;
+  border-radius: 999px;
+  padding: 6px 10px;
+  background: #fff;
+  color: #475569;
+  font-size: 12px;
+  font-weight: 800;
+  transition: .18s ease;
+}
+.permission-chip input:checked + span {
+  border-color: var(--teal);
+  background: #ccfbf1;
+  color: #0f766e;
+}
+.permission-chip input:disabled + span {
+  opacity: .6;
+  cursor: progress;
+}
 .access-note {
   border: 1px solid #bfdbfe;
   background: #eff6ff;
@@ -1186,6 +1307,18 @@ td small { display: block; color: var(--muted); margin-top: 4px; }
   gap: 10px;
 }
 .access-note p { color: #1d4ed8; }
+@media (max-width: 760px) {
+  .access-user-summary {
+    grid-template-columns: 1fr;
+  }
+  .access-user-actions {
+    justify-content: flex-start;
+  }
+  .module-permissions-grid {
+    grid-template-columns: 1fr;
+    padding: 12px;
+  }
+}
 .training-section {
   display: grid;
   gap: 18px;

@@ -404,6 +404,13 @@ export interface PermisosAcceso {
   rol: string;
   cedula: string;
   permiso_ver_todo: boolean;
+  permiso_modulo_servicios: boolean;
+  permiso_modulo_talento_humano: boolean;
+  permiso_modulo_infraestructura: boolean;
+  permiso_modulo_recursos: boolean;
+  permiso_modulo_procesos_prioritarios: boolean;
+  permiso_modulo_historia_clinica: boolean;
+  permiso_modulo_gestion_documental: boolean;
   permiso_ver_profesionales: boolean;
   permiso_crear_profesionales: boolean;
   permiso_ver_capacitaciones: boolean;
@@ -428,6 +435,13 @@ export interface UsuarioPermisos {
   rol: string;
   activo: boolean;
   permiso_ver_todo: boolean;
+  permiso_modulo_servicios: boolean;
+  permiso_modulo_talento_humano: boolean;
+  permiso_modulo_infraestructura: boolean;
+  permiso_modulo_recursos: boolean;
+  permiso_modulo_procesos_prioritarios: boolean;
+  permiso_modulo_historia_clinica: boolean;
+  permiso_modulo_gestion_documental: boolean;
   permiso_ver_profesionales: boolean;
   permiso_crear_profesionales: boolean;
   permiso_ver_capacitaciones: boolean;
@@ -444,6 +458,13 @@ export interface UsuarioPermisos {
 export type UsuarioPermisosPayload = Pick<
   UsuarioPermisos,
   | "permiso_ver_todo"
+  | "permiso_modulo_servicios"
+  | "permiso_modulo_talento_humano"
+  | "permiso_modulo_infraestructura"
+  | "permiso_modulo_recursos"
+  | "permiso_modulo_procesos_prioritarios"
+  | "permiso_modulo_historia_clinica"
+  | "permiso_modulo_gestion_documental"
   | "permiso_ver_profesionales"
   | "permiso_crear_profesionales"
   | "permiso_ver_capacitaciones"
