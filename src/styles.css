@@ -4336,6 +4336,14 @@ td small { display: block; color: var(--muted); margin-top: 4px; }
   border-color: #fecaca;
 }
 
+.recursos-actions button.icon-action-btn {
+  width: 38px;
+  min-width: 38px;
+  min-height: 38px;
+  padding: 7px;
+  flex: 0 0 38px;
+}
+
 .lote-options {
   position: relative;
 }
@@ -6115,6 +6123,12 @@ td small { display: block; color: var(--muted); margin-top: 4px; }
 
   .recursos-actions button {
     width: 100%;
+  }
+
+  .recursos-actions button.icon-action-btn {
+    width: 42px;
+    min-width: 42px;
+    flex-basis: 42px;
   }
 
   .recursos-page .page-header {

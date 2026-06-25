@@ -350,8 +350,9 @@ function estadoNormalizado(valor?: string | null) {
   return String(valor || "").trim().toLowerCase();
 }
 
-function puedeRecibirOrden(orden?: Pick<OrdenCompraRecurso, "estado"> | null) {
-  return ["aprobada", "enviada_proveedor", "parcialmente_recibida"].includes(estadoNormalizado(orden?.estado));
+function puedeRecibirOrden(orden?: Pick<OrdenCompraRecurso, "estado" | "cantidad_pendiente_total"> | null) {
+  const pendiente = Number(orden?.cantidad_pendiente_total || 0);
+  return pendiente > 0 && ["aprobada", "enviada_proveedor", "parcialmente_recibida"].includes(estadoNormalizado(orden?.estado));
 }
 
 function puedeAprobarOrden(orden?: Pick<OrdenCompraRecurso, "estado"> | null) {
@@ -2311,14 +2312,14 @@ export function RecursosAsistencialesPage() {
                       <Save size={15} /> Aprobar
                     </button>
                   )}
-                  {puedeRecibirCompras && <button type="button" onClick={() => abrirRecepcionDesdeOrden(orden)} disabled={accion === `recibir-orden-${orden.id}` || !puedeRecibirOrden(orden)}>
+                  {puedeRecibirCompras && puedeRecibirOrden(orden) && <button type="button" onClick={() => abrirRecepcionDesdeOrden(orden)} disabled={accion === `recibir-orden-${orden.id}`}>
                     <ClipboardList size={15} /> Recibir
                   </button>}
-                  {puedeComprar && <button type="button" onClick={() => abrirEditarOrden(orden)} disabled={accion === `editar-orden-${orden.id}` || ["cerrada", "cancelada"].includes(estadoNormalizado(orden.estado))}>
-                    <Pencil size={15} /> Editar
+                  {puedeComprar && !["cerrada", "cancelada"].includes(estadoNormalizado(orden.estado)) && <button className="icon-action-btn" type="button" onClick={() => abrirEditarOrden(orden)} disabled={accion === `editar-orden-${orden.id}`} title="Editar orden" aria-label="Editar orden">
+                    <Pencil size={17} />
                   </button>}
-                  {puedeComprar && <button className="danger" type="button" onClick={() => cancelarOrden(orden)} disabled={accion === `cancelar-orden-${orden.id}` || orden.estado === "cancelada"}>
-                    <Trash2 size={15} /> Cancelar
+                  {puedeComprar && estadoNormalizado(orden.estado) !== "cancelada" && <button className="icon-action-btn danger" type="button" onClick={() => cancelarOrden(orden)} disabled={accion === `cancelar-orden-${orden.id}`} title="Cancelar orden" aria-label="Cancelar orden">
+                    <Trash2 size={17} />
                   </button>}
                 </div>
               </article>
