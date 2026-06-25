@@ -1094,10 +1094,11 @@ export function RecursosAsistencialesPage() {
         <td>${tarde ? (cumpleCondicion(tarde) ? "Cumple" : "Fuera de rango") : "-"}</td>
       </tr>`;
     }).join("");
-    const win = window.open("", "_blank", "noopener,noreferrer");
+    const win = window.open("", "_blank");
     if (!win) return;
+    win.document.open();
     win.document.write(`
-      <html><head><title>Informe temperatura humedad ${nombreMes(mes)} ${anio}</title>
+      <!doctype html><html><head><title>Informe temperatura humedad ${nombreMes(mes)} ${anio}</title>
       <style>
         body{font-family:Arial,sans-serif;color:#111827;padding:20px;}
         .header{border:3px solid #111;margin-bottom:18px;}
@@ -1129,7 +1130,8 @@ export function RecursosAsistencialesPage() {
       </table>
       </body></html>`);
     win.document.close();
-    win.print();
+    win.focus();
+    setTimeout(() => win.print(), 250);
   }
 
   async function cargarAlertasInvimaFiltradas() {
