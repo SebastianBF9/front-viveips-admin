@@ -2275,6 +2275,10 @@ export function RecursosAsistencialesPage() {
       {!loading && tab === "catalogo" && (
         <>
           <div className="toolbar">
+            <label className="search-field">
+              <Search size={18} />
+              <input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Buscar recurso, código, registro sanitario o proveedor" />
+            </label>
             <button className="secondary-btn" type="button" onClick={cargar} disabled={loading}>
               Actualizar
             </button>
@@ -2284,12 +2288,6 @@ export function RecursosAsistencialesPage() {
             {puedeComprar && <button className="primary-btn" type="button" onClick={() => setRecursoForm(inicialRecurso())}>
               <Plus size={17} /> Nuevo recurso
             </button>}
-          </div>
-          <div className="toolbar">
-            <label className="search-field">
-              <Search size={18} />
-              <input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Buscar recurso, código, registro sanitario o proveedor" />
-            </label>
             <select value={tipo} onChange={(event) => setTipo(event.target.value)}>
               <option value="">Todos los tipos</option>
               {TIPOS_RECURSO.map((item) => (
