@@ -2277,6 +2277,9 @@ export function RecursosAsistencialesPage() {
               <Search size={18} />
               <input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Buscar recurso, código, registro sanitario o proveedor" />
             </label>
+            {puedeComprar && <button className="secondary-btn" type="button" onClick={() => setCargaMasivaForm(inicialCargaMasiva())}>
+              <FileDown size={17} /> Carga masiva
+            </button>}
             <select value={tipo} onChange={(event) => setTipo(event.target.value)}>
               <option value="">Todos los tipos</option>
               {TIPOS_RECURSO.map((item) => (
