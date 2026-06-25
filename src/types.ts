@@ -999,6 +999,7 @@ export interface RecepcionRecurso {
   responsable_id?: number | null;
   observaciones: string | null;
   items?: number | null;
+  lotes_inventario_count?: number | null;
   detalles?: RecepcionRecursoDetalle[];
   created_at?: string | null;
   updated_at?: string | null;

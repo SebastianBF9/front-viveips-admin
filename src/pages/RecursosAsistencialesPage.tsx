@@ -359,6 +359,10 @@ function puedeAprobarOrden(orden?: Pick<OrdenCompraRecurso, "estado"> | null) {
   return ["borrador", "solicitada"].includes(estadoNormalizado(orden?.estado));
 }
 
+function recepcionIngresadaInventario(recepcion?: Pick<RecepcionRecurso, "lotes_inventario_count"> | null) {
+  return Number(recepcion?.lotes_inventario_count || 0) > 0;
+}
+
 function fechaHora(valor?: string | null) {
   if (!valor) return "-";
   const fecha = new Date(valor);
@@ -2192,11 +2196,11 @@ export function RecursosAsistencialesPage() {
                 </dl>
                 {puedeComprar && (
                   <div className="recursos-actions">
-                    <button type="button" onClick={() => abrirEditarRecurso(recurso)} disabled={accion === `editar-recurso-${recurso.id}`}>
-                      <Pencil size={15} /> Editar
+                    <button className="icon-action-btn" type="button" onClick={() => abrirEditarRecurso(recurso)} disabled={accion === `editar-recurso-${recurso.id}`} title="Editar recurso" aria-label="Editar recurso">
+                      <Pencil size={17} />
                     </button>
-                    <button className="danger" type="button" onClick={() => inactivarRecurso(recurso)} disabled={accion === `inactivar-recurso-${recurso.id}`}>
-                      <Trash2 size={15} /> Inactivar
+                    <button className="icon-action-btn danger" type="button" onClick={() => inactivarRecurso(recurso)} disabled={accion === `inactivar-recurso-${recurso.id}`} title="Inactivar recurso" aria-label="Inactivar recurso">
+                      <Trash2 size={17} />
                     </button>
                   </div>
                 )}
@@ -2234,11 +2238,11 @@ export function RecursosAsistencialesPage() {
                 <span className={`pill ${proveedor.estado}`}>{proveedor.estado}</span>
                 {puedeComprar && (
                   <div className="recursos-actions">
-                    <button type="button" onClick={() => setProveedorForm(proveedorAForm(proveedor))}>
-                      <Pencil size={15} /> Editar
+                    <button className="icon-action-btn" type="button" onClick={() => setProveedorForm(proveedorAForm(proveedor))} title="Editar proveedor" aria-label="Editar proveedor">
+                      <Pencil size={17} />
                     </button>
-                    <button className="danger" type="button" onClick={() => inactivarProveedor(proveedor)}>
-                      <Trash2 size={15} /> Inactivar
+                    <button className="icon-action-btn danger" type="button" onClick={() => inactivarProveedor(proveedor)} title="Inactivar proveedor" aria-label="Inactivar proveedor">
+                      <Trash2 size={17} />
                     </button>
                   </div>
                 )}
@@ -2381,11 +2385,11 @@ export function RecursosAsistencialesPage() {
                   <div><dt>Observaciones</dt><dd>{texto(recepcion.observaciones)}</dd></div>
                 </dl>
                 <div className="recursos-actions">
-                  {puedeRecibirCompras && <button type="button" onClick={() => ingresarInventario(recepcion)} disabled={accion === `inventario-recepcion-${recepcion.id}` || !["aprobada", "parcial"].includes(String(recepcion.estado))}>
+                  {puedeRecibirCompras && !recepcionIngresadaInventario(recepcion) && ["aprobada", "parcial"].includes(String(recepcion.estado)) && <button type="button" onClick={() => ingresarInventario(recepcion)} disabled={accion === `inventario-recepcion-${recepcion.id}`}>
                     <Boxes size={15} /> Inventario
                   </button>}
-                  {puedeRecibirCompras && <button type="button" onClick={() => abrirEditarRecepcion(recepcion)} disabled={accion === `editar-recepcion-${recepcion.id}`}>
-                    <Pencil size={15} /> Editar
+                  {puedeRecibirCompras && <button className="icon-action-btn" type="button" onClick={() => abrirEditarRecepcion(recepcion)} disabled={accion === `editar-recepcion-${recepcion.id}`} title="Editar recepción" aria-label="Editar recepción">
+                    <Pencil size={17} />
                   </button>}
                 </div>
               </article>
