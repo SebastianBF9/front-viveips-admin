@@ -2273,21 +2273,30 @@ export function RecursosAsistencialesPage() {
       {loading && <Loading text="Cargando recursos asistenciales..." />}
 
       {!loading && tab === "catalogo" && (
-        <>
-          <div className="toolbar">
+        <section className="table-card compras-card">
+          <div className="section-heading inline-heading">
+            <div>
+              <h2>Catálogo</h2>
+              <p>Registro maestro de medicamentos, dispositivos médicos, insumos y reactivos.</p>
+            </div>
+            <div className="infra-inline-actions">
+              <button className="secondary-btn" type="button" onClick={cargar} disabled={loading}>
+                Actualizar
+              </button>
+              {puedeComprar && <button className="secondary-btn" type="button" onClick={() => setCargaMasivaForm(inicialCargaMasiva())}>
+                <FileDown size={17} /> Carga masiva
+              </button>}
+              {puedeComprar && <button className="primary-btn" type="button" onClick={() => setRecursoForm(inicialRecurso())}>
+                <Plus size={17} /> Nuevo recurso
+              </button>}
+            </div>
+          </div>
+
+          <div className="toolbar compras-toolbar">
             <label className="search-field">
               <Search size={18} />
               <input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Buscar recurso, código, registro sanitario o proveedor" />
             </label>
-            <button className="secondary-btn" type="button" onClick={cargar} disabled={loading}>
-              Actualizar
-            </button>
-            {puedeComprar && <button className="secondary-btn" type="button" onClick={() => setCargaMasivaForm(inicialCargaMasiva())}>
-              <FileDown size={17} /> Carga masiva
-            </button>}
-            {puedeComprar && <button className="primary-btn" type="button" onClick={() => setRecursoForm(inicialRecurso())}>
-              <Plus size={17} /> Nuevo recurso
-            </button>}
             <select value={tipo} onChange={(event) => setTipo(event.target.value)}>
               <option value="">Todos los tipos</option>
               {TIPOS_RECURSO.map((item) => (
@@ -2357,7 +2366,7 @@ export function RecursosAsistencialesPage() {
             ))}
           </div>
           {!recursosFiltrados.length && <div className="empty-state">No hay recursos para los filtros seleccionados.</div>}
-        </>
+        </section>
       )}
 
       {!loading && tab === "proveedores" && (
