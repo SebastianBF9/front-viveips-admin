@@ -2224,17 +2224,6 @@ export function RecursosAsistencialesPage() {
           <h1>Recursos Asistenciales</h1>
           <p>Catálogo base de medicamentos, dispositivos médicos, insumos, reactivos, proveedores y relación con servicios IPS.</p>
         </div>
-        <div className="infra-header-actions recursos-header-actions">
-          <button className="secondary-btn" type="button" onClick={cargar} disabled={loading}>
-            Actualizar
-          </button>
-          {puedeComprar && <button className="secondary-btn" type="button" onClick={() => setCargaMasivaForm(inicialCargaMasiva())}>
-            <FileDown size={17} /> Carga masiva
-          </button>}
-          {puedeComprar && <button className="brand-action-btn" type="button" onClick={() => setRecursoForm(inicialRecurso())}>
-            <Plus size={17} /> Nuevo recurso
-          </button>}
-        </div>
       </header>
 
       <div className="kpi-grid four">
@@ -2290,8 +2279,14 @@ export function RecursosAsistencialesPage() {
               <Search size={18} />
               <input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Buscar recurso, código, registro sanitario o proveedor" />
             </label>
+            <button className="secondary-btn" type="button" onClick={cargar} disabled={loading}>
+              Actualizar
+            </button>
             {puedeComprar && <button className="secondary-btn" type="button" onClick={() => setCargaMasivaForm(inicialCargaMasiva())}>
               <FileDown size={17} /> Carga masiva
+            </button>}
+            {puedeComprar && <button className="primary-btn" type="button" onClick={() => setRecursoForm(inicialRecurso())}>
+              <Plus size={17} /> Nuevo recurso
             </button>}
             <select value={tipo} onChange={(event) => setTipo(event.target.value)}>
               <option value="">Todos los tipos</option>
