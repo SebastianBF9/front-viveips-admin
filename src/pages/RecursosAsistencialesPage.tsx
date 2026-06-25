@@ -2,6 +2,7 @@ import {
   AlertTriangle,
   Boxes,
   ClipboardList,
+  Droplets,
   FileDown,
   Eye,
   FlaskConical,
@@ -10,9 +11,11 @@ import {
   PackagePlus,
   Pencil,
   Plus,
+  Printer,
   Save,
   Search,
   Snowflake,
+  Thermometer,
   Trash2,
   Truck,
   X,
@@ -30,6 +33,7 @@ import {
   asociarServicioRecurso,
   buscarPacientesIpsHealthcare,
   cambiarEstadoInventarioLote,
+  crearTemperaturaHumedadRecurso,
   crearInventarioInicial,
   crearOrdenCompraRecurso,
   crearDespachoRecurso,
@@ -57,6 +61,7 @@ import {
   listarDespachosRecursos,
   listarHistorialEntregasRecursos,
   listarResultadosInvima,
+  listarTemperaturaHumedadRecursos,
   listarOrdenesCompraRecursos,
   listarProfesionales,
   listarProveedoresRecursos,
@@ -99,6 +104,8 @@ import type {
   RecursoAsistencialMasivoPayload,
   RecursoAsistencialPayload,
   ServicioIps,
+  TemperaturaHumedadRecurso,
+  TemperaturaHumedadResumen,
 } from "../types";
 import { Loading } from "../ui/Loading";
 
@@ -116,7 +123,7 @@ const TIPOS_RECEPCION = ["tecnica", "administrativa", "tecnica_administrativa"];
 const ESTADOS_RECEPCION = ["pendiente", "aprobada", "rechazada", "parcial"];
 const ESTADOS_LOTE = ["disponible", "cuarentena", "bloqueado", "vencido", "agotado", "dado_de_baja"];
 const ESTADOS_DESPACHO = ["preparado", "en_camino", "entregado", "devuelto", "fallido", "cancelado"];
-const TABS = ["catalogo", "proveedores", "compras", "recepcion", "inventario", "distribucion", "auditoria", "reportes", "invima"] as const;
+const TABS = ["catalogo", "proveedores", "compras", "recepcion", "inventario", "distribucion", "temperatura", "auditoria", "reportes", "invima"] as const;
 
 type TabKey = (typeof TABS)[number];
 type AlertaKey = "proximos_vencer" | "vencidos" | "stock_minimo" | "reorden" | "recepciones" | "entregas";
@@ -137,6 +144,13 @@ const REPORTES_VACIOS: ReportesRecursosResumen = {
   compras_por_proveedor: [],
   cumplimiento_entregas: [],
   rotacion: [],
+};
+
+const TEMPERATURA_RESUMEN_VACIO: TemperaturaHumedadResumen = {
+  total: 0,
+  cumplen: 0,
+  fuera_rango: 0,
+  ubicaciones: [],
 };
 
 const INVIMA_ESTADO_VACIO: InvimaAlertasEstado = {
@@ -301,6 +315,17 @@ type InventarioInicialForm = {
   motivo: string;
 };
 
+type TemperaturaForm = {
+  fecha: string;
+  turno: "manana" | "tarde";
+  hora: string;
+  ubicacion: string;
+  dispositivo_codigo: string;
+  temperatura: string;
+  humedad: string;
+  observaciones: string;
+};
+
 function bool(valor: unknown) {
   return valor === true || valor === 1 || valor === "1";
 }
@@ -355,6 +380,7 @@ function labelTabRecursos(tab: TabKey) {
     recepcion: "Recepción",
     inventario: "Inventario",
     distribucion: "Distribución",
+    temperatura: "Temperatura",
     auditoria: "Auditoría",
     reportes: "Reportes",
     invima: "Alertas INVIMA",
@@ -384,6 +410,26 @@ function fechaHora(valor?: string | null) {
   const fecha = new Date(valor);
   if (Number.isNaN(fecha.getTime())) return texto(valor);
   return fecha.toLocaleString("es-CO", { dateStyle: "medium", timeStyle: "short" });
+}
+
+function nombreMes(mes: number) {
+  const fecha = new Date(2026, mes - 1, 1);
+  return fecha.toLocaleString("es-CO", { month: "long" });
+}
+
+function diasEnMes(anio: number, mes: number) {
+  return new Date(anio, mes, 0).getDate();
+}
+
+function labelTurno(turno?: string | null) {
+  if (turno === "manana") return "Mañana";
+  if (turno === "tarde") return "Tarde";
+  if (turno === "automatico") return "Automático";
+  return texto(turno);
+}
+
+function cumpleCondicion(registro?: Pick<TemperaturaHumedadRecurso, "cumple"> | null) {
+  return Boolean(registro) && bool(registro?.cumple);
 }
 
 function labelAuditoria(valor?: string | null) {
@@ -591,6 +637,20 @@ function inicialInventarioInicial(): InventarioInicialForm {
   };
 }
 
+function inicialTemperaturaForm(): TemperaturaForm {
+  const ahora = new Date();
+  return {
+    fecha: ahora.toISOString().slice(0, 10),
+    turno: ahora.getHours() < 13 ? "manana" : "tarde",
+    hora: ahora.toTimeString().slice(0, 5),
+    ubicacion: "Farmacia",
+    dispositivo_codigo: "",
+    temperatura: "",
+    humedad: "",
+    observaciones: "",
+  };
+}
+
 function inicialOrdenCompra(): OrdenCompraForm {
   const hoy = new Date().toISOString().slice(0, 10);
   return {
@@ -774,6 +834,8 @@ export function RecursosAsistencialesPage() {
   const [movimientosInventario, setMovimientosInventario] = useState<MovimientoInventarioRecurso[]>([]);
   const [auditoria, setAuditoria] = useState<AuditoriaRecurso[]>([]);
   const [reportes, setReportes] = useState<ReportesRecursosResumen>(REPORTES_VACIOS);
+  const [temperaturaRegistros, setTemperaturaRegistros] = useState<TemperaturaHumedadRecurso[]>([]);
+  const [temperaturaResumen, setTemperaturaResumen] = useState<TemperaturaHumedadResumen>(TEMPERATURA_RESUMEN_VACIO);
   const [alertasInvima, setAlertasInvima] = useState<InvimaAlertaResultado[]>([]);
   const [estadoInvima, setEstadoInvima] = useState<InvimaAlertasEstado>(INVIMA_ESTADO_VACIO);
   const [despachos, setDespachos] = useState<DespachoRecurso[]>([]);
@@ -811,6 +873,11 @@ export function RecursosAsistencialesPage() {
   const [reporteRecursoId, setReporteRecursoId] = useState("");
   const [reporteProveedorId, setReporteProveedorId] = useState("");
   const [reporteProfesionalId, setReporteProfesionalId] = useState("");
+  const fechaBaseTemperatura = new Date();
+  const [temperaturaAnio, setTemperaturaAnio] = useState(String(fechaBaseTemperatura.getFullYear()));
+  const [temperaturaMes, setTemperaturaMes] = useState(String(fechaBaseTemperatura.getMonth() + 1));
+  const [temperaturaUbicacion, setTemperaturaUbicacion] = useState("Farmacia");
+  const [temperaturaForm, setTemperaturaForm] = useState<TemperaturaForm>(inicialTemperaturaForm());
   const [invimaQuery, setInvimaQuery] = useState("");
   const [invimaTipo, setInvimaTipo] = useState("");
   const [invimaDesde, setInvimaDesde] = useState("");
@@ -847,7 +914,7 @@ export function RecursosAsistencialesPage() {
       const accesoData = await obtenerMiAcceso();
       setAcceso(accesoData);
       const puedeConsultarAuditoria = Boolean(accesoData.permiso_ver_todo || accesoData.permiso_recursos_auditoria);
-      const [recursosData, proveedoresData, serviciosData, ordenesData, recepcionesData, lotesData, movimientosData, despachosData, profesionalesData, auditoriaData, reportesData, invimaData] = await Promise.all([
+      const [recursosData, proveedoresData, serviciosData, ordenesData, recepcionesData, lotesData, movimientosData, despachosData, profesionalesData, auditoriaData, reportesData, temperaturaData, invimaData] = await Promise.all([
         listarRecursosAsistenciales(),
         listarProveedoresRecursos(),
         listarServiciosIps(),
@@ -859,6 +926,7 @@ export function RecursosAsistencialesPage() {
         listarProfesionales(),
         puedeConsultarAuditoria ? listarAuditoriaRecursos({ limite: 500 }) : Promise.resolve({ eventos: [] }),
         puedeConsultarAuditoria ? obtenerReportesRecursos() : Promise.resolve({ reportes: REPORTES_VACIOS }),
+        listarTemperaturaHumedadRecursos({ anio: temperaturaAnio, mes: temperaturaMes, ubicacion: temperaturaUbicacion }),
         puedeConsultarAuditoria ? listarResultadosInvima({ limite: 100 }) : Promise.resolve({ alertas: [], estado: INVIMA_ESTADO_VACIO }),
       ]);
       setRecursos(recursosData.recursos || []);
@@ -887,6 +955,8 @@ export function RecursosAsistencialesPage() {
       }
       setAuditoria(auditoriaData.eventos || []);
       setReportes(reportesData.reportes || REPORTES_VACIOS);
+      setTemperaturaRegistros(temperaturaData.registros || []);
+      setTemperaturaResumen(temperaturaData.resumen || TEMPERATURA_RESUMEN_VACIO);
       setAlertasInvima(invimaData.alertas || []);
       setEstadoInvima(invimaData.estado || INVIMA_ESTADO_VACIO);
       setServicios(
@@ -923,6 +993,132 @@ export function RecursosAsistencialesPage() {
     } finally {
       setAccion("");
     }
+  }
+
+  async function cargarTemperaturaFiltrada() {
+    setAccion("cargar-temperatura");
+    setError("");
+    try {
+      const data = await listarTemperaturaHumedadRecursos({
+        anio: temperaturaAnio,
+        mes: temperaturaMes,
+        ubicacion: temperaturaUbicacion,
+      });
+      setTemperaturaRegistros(data.registros || []);
+      setTemperaturaResumen(data.resumen || TEMPERATURA_RESUMEN_VACIO);
+      setSuccess("Informe de temperatura y humedad actualizado");
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "No fue posible cargar temperatura y humedad");
+    } finally {
+      setAccion("");
+    }
+  }
+
+  async function guardarTemperaturaHumedad() {
+    const temperatura = numero(temperaturaForm.temperatura);
+    const humedad = numero(temperaturaForm.humedad);
+    if (!temperaturaForm.fecha || !temperaturaForm.turno || temperatura == null || humedad == null) {
+      setError("Fecha, turno, temperatura y humedad son obligatorios.");
+      return;
+    }
+    setAccion("guardar-temperatura");
+    setError("");
+    setSuccess("");
+    try {
+      const data = await crearTemperaturaHumedadRecurso({
+        fecha: temperaturaForm.fecha,
+        turno: temperaturaForm.turno,
+        hora: temperaturaForm.hora || null,
+        ubicacion: temperaturaForm.ubicacion || "Farmacia",
+        dispositivo_codigo: temperaturaForm.dispositivo_codigo || null,
+        temperatura,
+        humedad,
+        temperatura_min: 15,
+        temperatura_max: 30,
+        humedad_min: 40,
+        humedad_max: 70,
+        observaciones: temperaturaForm.observaciones || null,
+      });
+      setSuccess(data.mensaje);
+      setTemperaturaAnio(String(new Date(`${temperaturaForm.fecha}T00:00:00`).getFullYear()));
+      setTemperaturaMes(String(new Date(`${temperaturaForm.fecha}T00:00:00`).getMonth() + 1));
+      setTemperaturaUbicacion(temperaturaForm.ubicacion || "Farmacia");
+      const actualizados = await listarTemperaturaHumedadRecursos({
+        anio: new Date(`${temperaturaForm.fecha}T00:00:00`).getFullYear(),
+        mes: new Date(`${temperaturaForm.fecha}T00:00:00`).getMonth() + 1,
+        ubicacion: temperaturaForm.ubicacion || "Farmacia",
+      });
+      setTemperaturaRegistros(actualizados.registros || []);
+      setTemperaturaResumen(actualizados.resumen || TEMPERATURA_RESUMEN_VACIO);
+      setTemperaturaForm({ ...inicialTemperaturaForm(), ubicacion: temperaturaForm.ubicacion || "Farmacia", dispositivo_codigo: temperaturaForm.dispositivo_codigo });
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "No fue posible guardar temperatura y humedad");
+    } finally {
+      setAccion("");
+    }
+  }
+
+  function imprimirTemperaturaHumedad() {
+    const anio = Number(temperaturaAnio);
+    const mes = Number(temperaturaMes);
+    const dias = diasEnMes(anio, mes);
+    const porDia = new Map<string, Record<string, TemperaturaHumedadRecurso>>();
+    temperaturaRegistros.forEach((registro) => {
+      const dia = String(Number(String(registro.fecha).slice(8, 10)));
+      const actual = porDia.get(dia) || {};
+      actual[registro.turno] = registro;
+      porDia.set(dia, actual);
+    });
+    const filas = Array.from({ length: dias }, (_, index) => {
+      const dia = String(index + 1);
+      const manana = porDia.get(dia)?.manana;
+      const tarde = porDia.get(dia)?.tarde;
+      return `<tr>
+        <td>${dia}</td>
+        <td>${texto(manana?.temperatura)} °C</td>
+        <td>${texto(manana?.humedad)} %</td>
+        <td>${manana ? (cumpleCondicion(manana) ? "Cumple" : "Fuera de rango") : "-"}</td>
+        <td>${texto(tarde?.temperatura)} °C</td>
+        <td>${texto(tarde?.humedad)} %</td>
+        <td>${tarde ? (cumpleCondicion(tarde) ? "Cumple" : "Fuera de rango") : "-"}</td>
+      </tr>`;
+    }).join("");
+    const win = window.open("", "_blank", "noopener,noreferrer");
+    if (!win) return;
+    win.document.write(`
+      <html><head><title>Informe temperatura humedad ${nombreMes(mes)} ${anio}</title>
+      <style>
+        body{font-family:Arial,sans-serif;color:#111827;padding:20px;}
+        .header{border:3px solid #111;margin-bottom:18px;}
+        .header div{border-bottom:1px solid #111;padding:8px 10px;font-weight:700;background:#d9dcff;}
+        .header div:last-child{border-bottom:0;}
+        .meta{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin-bottom:14px;}
+        .box{border:2px solid #111;padding:8px;text-align:center;font-weight:700;}
+        table{width:100%;border-collapse:collapse;} th,td{border:1px solid #111;padding:5px;text-align:center;font-size:11px;} th{background:#f3f4f6;}
+        .params{margin:12px 0;display:grid;grid-template-columns:1fr 1fr;gap:12px;}
+        .ok{color:#047857}.bad{color:#dc2626}
+      </style></head><body>
+      <div class="header">
+        <div>FORMATO PARA REGISTRO DE CONDICIONES DE ALMACENAMIENTO DE MEDICAMENTOS Y DISPOSITIVOS MÉDICOS</div>
+        <div>PROCESO: ALMACENAMIENTO</div>
+        <div>SISTEMA DE GESTIÓN DE CALIDAD</div>
+      </div>
+      <div class="meta">
+        <div class="box">AÑO: ${anio}</div>
+        <div class="box">MES: ${nombreMes(mes).toUpperCase()}</div>
+        <div class="box">UBICACIÓN: ${texto(temperaturaUbicacion)}</div>
+      </div>
+      <div class="params">
+        <div class="box">Temperatura ambiente: 15 °C - 30 °C</div>
+        <div class="box">Humedad relativa: 40 % - 70 %</div>
+      </div>
+      <table>
+        <thead><tr><th>Día</th><th>Mañana °C</th><th>Mañana %HR</th><th>Estado</th><th>Tarde °C</th><th>Tarde %HR</th><th>Estado</th></tr></thead>
+        <tbody>${filas}</tbody>
+      </table>
+      </body></html>`);
+    win.document.close();
+    win.print();
   }
 
   async function cargarAlertasInvimaFiltradas() {
@@ -995,6 +1191,28 @@ export function RecursosAsistencialesPage() {
     }),
     [recursos],
   );
+
+  const temperaturaMatriz = useMemo(() => {
+    const anio = Number(temperaturaAnio) || new Date().getFullYear();
+    const mes = Number(temperaturaMes) || new Date().getMonth() + 1;
+    const totalDias = diasEnMes(anio, mes);
+    const porDia = new Map<number, { manana?: TemperaturaHumedadRecurso; tarde?: TemperaturaHumedadRecurso }>();
+    temperaturaRegistros.forEach((registro) => {
+      const dia = Number(String(registro.fecha).slice(8, 10));
+      const actual = porDia.get(dia) || {};
+      if (registro.turno === "manana") actual.manana = registro;
+      if (registro.turno === "tarde") actual.tarde = registro;
+      porDia.set(dia, actual);
+    });
+    return Array.from({ length: totalDias }, (_, index) => ({
+      dia: index + 1,
+      manana: porDia.get(index + 1)?.manana,
+      tarde: porDia.get(index + 1)?.tarde,
+    }));
+  }, [temperaturaAnio, temperaturaMes, temperaturaRegistros]);
+
+  const temperaturaEsperados = temperaturaMatriz.length * 2;
+  const temperaturaCumplimiento = temperaturaEsperados ? Math.round((temperaturaRegistros.length / temperaturaEsperados) * 100) : 0;
 
   const ordenesFiltradas = useMemo(() => {
     const q = compraQuery.trim().toLowerCase();
@@ -2795,6 +3013,132 @@ export function RecursosAsistencialesPage() {
         </section>
       )}
 
+      {!loading && tab === "temperatura" && (
+        <section className="table-card compras-card temperatura-card">
+          <div className="section-heading inline-heading">
+            <div>
+              <h2>Temperatura y humedad</h2>
+              <p>Registro de condiciones de almacenamiento de farmacia, dos veces al día: mañana y tarde.</p>
+            </div>
+            <div className="infra-inline-actions">
+              <button className="secondary-btn" type="button" onClick={imprimirTemperaturaHumedad} disabled={!temperaturaRegistros.length}>
+                <Printer size={16} /> Imprimir informe
+              </button>
+              <button className="secondary-btn" type="button" onClick={cargarTemperaturaFiltrada} disabled={accion === "cargar-temperatura"}>
+                Actualizar
+              </button>
+            </div>
+          </div>
+
+          <div className="temperatura-summary">
+            <div><Thermometer size={18} /><span>Rango temperatura</span><strong>15 °C - 30 °C</strong></div>
+            <div><Droplets size={18} /><span>Rango humedad</span><strong>40 % - 70 %</strong></div>
+            <div><ClipboardList size={18} /><span>Registros del mes</span><strong>{temperaturaRegistros.length} / {temperaturaEsperados}</strong></div>
+            <div><AlertTriangle size={18} /><span>Fuera de rango</span><strong>{temperaturaResumen.fuera_rango}</strong></div>
+          </div>
+
+          <div className="temperatura-entry-grid">
+            <section className="temperatura-panel">
+              <h3>Registrar lectura</h3>
+              <div className="recursos-form-grid">
+                <label>Fecha
+                  <input type="date" value={temperaturaForm.fecha} onChange={(event) => setTemperaturaForm({ ...temperaturaForm, fecha: event.target.value })} />
+                </label>
+                <label>Turno
+                  <select value={temperaturaForm.turno} onChange={(event) => setTemperaturaForm({ ...temperaturaForm, turno: event.target.value as "manana" | "tarde" })}>
+                    <option value="manana">Mañana</option>
+                    <option value="tarde">Tarde</option>
+                  </select>
+                </label>
+                <label>Hora
+                  <input type="time" value={temperaturaForm.hora} onChange={(event) => setTemperaturaForm({ ...temperaturaForm, hora: event.target.value })} />
+                </label>
+                <label>Ubicación
+                  <input value={temperaturaForm.ubicacion} onChange={(event) => setTemperaturaForm({ ...temperaturaForm, ubicacion: event.target.value })} />
+                </label>
+                <label>Temperatura °C
+                  <input inputMode="decimal" value={temperaturaForm.temperatura} onChange={(event) => setTemperaturaForm({ ...temperaturaForm, temperatura: event.target.value })} />
+                </label>
+                <label>Humedad %
+                  <input inputMode="decimal" value={temperaturaForm.humedad} onChange={(event) => setTemperaturaForm({ ...temperaturaForm, humedad: event.target.value })} />
+                </label>
+                <label>Termohigrómetro
+                  <input value={temperaturaForm.dispositivo_codigo} onChange={(event) => setTemperaturaForm({ ...temperaturaForm, dispositivo_codigo: event.target.value })} placeholder="Código o serial" />
+                </label>
+                <label className="wide-field">Observaciones
+                  <input value={temperaturaForm.observaciones} onChange={(event) => setTemperaturaForm({ ...temperaturaForm, observaciones: event.target.value })} />
+                </label>
+              </div>
+              <button className="brand-action-btn" type="button" onClick={guardarTemperaturaHumedad} disabled={accion === "guardar-temperatura"}>
+                <Save size={16} /> Guardar lectura
+              </button>
+            </section>
+
+            <section className="temperatura-panel">
+              <h3>Filtro de informe</h3>
+              <div className="recursos-form-grid">
+                <label>Año
+                  <input value={temperaturaAnio} onChange={(event) => setTemperaturaAnio(event.target.value)} inputMode="numeric" />
+                </label>
+                <label>Mes
+                  <select value={temperaturaMes} onChange={(event) => setTemperaturaMes(event.target.value)}>
+                    {Array.from({ length: 12 }, (_, index) => (
+                      <option key={index + 1} value={index + 1}>{nombreMes(index + 1)}</option>
+                    ))}
+                  </select>
+                </label>
+                <label className="wide-field">Ubicación
+                  <input value={temperaturaUbicacion} onChange={(event) => setTemperaturaUbicacion(event.target.value)} />
+                </label>
+              </div>
+              <button className="secondary-btn" type="button" onClick={cargarTemperaturaFiltrada} disabled={accion === "cargar-temperatura"}>
+                Consultar informe
+              </button>
+            </section>
+          </div>
+
+          <div className="temperatura-report-head">
+            <div>
+              <span>Informe mensual</span>
+              <strong>{nombreMes(Number(temperaturaMes)).toUpperCase()} {temperaturaAnio}</strong>
+              <small>{texto(temperaturaUbicacion)} · Cumplimiento de registro {temperaturaCumplimiento}%</small>
+            </div>
+          </div>
+          <div className="temperatura-table-wrap">
+            <table className="temperatura-table">
+              <thead>
+                <tr>
+                  <th>Día</th>
+                  <th>Mañana</th>
+                  <th>Tarde</th>
+                </tr>
+              </thead>
+              <tbody>
+                {temperaturaMatriz.map((fila) => (
+                  <tr key={fila.dia}>
+                    <th>{fila.dia}</th>
+                    {[fila.manana, fila.tarde].map((registro, index) => (
+                      <td key={`${fila.dia}-${index}`} className={registro ? (cumpleCondicion(registro) ? "ok" : "bad") : "empty"}>
+                        {registro ? (
+                          <>
+                            <strong>{labelTurno(registro.turno)}</strong>
+                            <span><Thermometer size={13} /> {texto(registro.temperatura)} °C</span>
+                            <span><Droplets size={13} /> {texto(registro.humedad)} %</span>
+                            <small>{cumpleCondicion(registro) ? "Cumple" : "Fuera de rango"} · {texto(registro.hora)}</small>
+                          </>
+                        ) : (
+                          <small>Sin registro</small>
+                        )}
+                      </td>
+                    ))}
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </section>
+      )}
+
       {!loading && tab === "auditoria" && puedeConsultarAuditoria && (
         <section className="table-card compras-card auditoria-card">
           <div className="section-heading inline-heading">
@@ -3174,7 +3518,7 @@ export function RecursosAsistencialesPage() {
         </section>
       )}
 
-      {!loading && !["catalogo", "proveedores", "compras", "recepcion", "inventario", "distribucion", "auditoria", "reportes", "invima"].includes(tab) && (
+      {!loading && !["catalogo", "proveedores", "compras", "recepcion", "inventario", "distribucion", "temperatura", "auditoria", "reportes", "invima"].includes(tab) && (
         <div className="standard-card recursos-placeholder">
           <ClipboardList size={22} />
           <div>

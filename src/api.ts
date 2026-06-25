@@ -71,6 +71,9 @@ import type {
   EnviarExamenPayload,
   ResultadoExamenCapacitacion,
   ReportesRecursosResumen,
+  TemperaturaHumedadPayload,
+  TemperaturaHumedadRecurso,
+  TemperaturaHumedadResumen,
 } from "./types";
 
 const API_URL = import.meta.env.VITE_API_URL || "https://api-pruebas.viveips.com.co";
@@ -786,6 +789,30 @@ export async function obtenerReportesRecursos(params: {
   });
   const suffix = query.toString() ? `?${query.toString()}` : "";
   return apiCall<{ success: boolean; reportes: ReportesRecursosResumen }>("GET", `/reportes-recursos/resumen${suffix}`);
+}
+
+export async function listarTemperaturaHumedadRecursos(params: {
+  anio?: number | string;
+  mes?: number | string;
+  fecha_desde?: string;
+  fecha_hasta?: string;
+  ubicacion?: string;
+} = {}) {
+  const query = new URLSearchParams();
+  Object.entries(params).forEach(([key, value]) => {
+    if (value !== undefined && value !== null && String(value).trim()) query.set(key, String(value));
+  });
+  const suffix = query.toString() ? `?${query.toString()}` : "";
+  return apiCall<{
+    success: boolean;
+    registros: TemperaturaHumedadRecurso[];
+    total: number;
+    resumen: TemperaturaHumedadResumen;
+  }>("GET", `/temperatura-humedad-recursos${suffix}`);
+}
+
+export async function crearTemperaturaHumedadRecurso(payload: TemperaturaHumedadPayload) {
+  return apiCall<{ success: boolean; mensaje: string; registro: TemperaturaHumedadRecurso }>("POST", "/temperatura-humedad-recursos", payload);
 }
 
 export async function listarResultadosInvima(params: {
