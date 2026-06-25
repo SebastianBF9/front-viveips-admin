@@ -13,6 +13,7 @@ import type {
   EntregaFallidaPayload,
   ReintentoEntregaPayload,
   SugerenciaFefoResponse,
+  InventarioInicialPayload,
   ExamenCapacitacion,
   ArchivoCapacitacionProfesional,
   ProfesionalServicioPayload,
@@ -50,6 +51,8 @@ import type {
   PacienteIpsHealthcare,
   RecursoAsistencial,
   RecursoAsistencialPayload,
+  RecursosMasivosPayload,
+  RecursosMasivosResponse,
   RecursoProveedorRelacion,
   RecursoServicioRelacion,
   ProveedorRecurso,
@@ -590,6 +593,10 @@ export async function crearRecursoAsistencial(payload: RecursoAsistencialPayload
   return apiCall<{ success: boolean; mensaje: string; recurso_id: number }>("POST", "/recursos-asistenciales", payload);
 }
 
+export async function crearRecursosAsistencialesMasivo(payload: RecursosMasivosPayload) {
+  return apiCall<RecursosMasivosResponse>("POST", "/recursos-asistenciales/masivo", payload);
+}
+
 export async function actualizarRecursoAsistencial(id: number, payload: RecursoAsistencialPayload) {
   return apiCall<{ success: boolean; mensaje: string }>("PUT", `/recursos-asistenciales/${id}`, payload);
 }
@@ -700,6 +707,10 @@ export async function actualizarRecepcionRecurso(id: number, payload: RecepcionR
 
 export async function ingresarRecepcionAInventario(id: number) {
   return apiCall<{ success: boolean; mensaje: string; lotes_creados: number; lotes_omitidos: number }>("POST", `/recepciones-recursos/${id}/ingresar-inventario`);
+}
+
+export async function crearInventarioInicial(payload: InventarioInicialPayload) {
+  return apiCall<{ success: boolean; mensaje: string; lote_id: number }>("POST", "/inventario-recursos/lotes/inicial", payload);
 }
 
 export async function listarInventarioLotes(params: { estado?: string; recurso_id?: number | string; busqueda?: string } = {}) {

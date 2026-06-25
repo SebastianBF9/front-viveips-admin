@@ -30,11 +30,13 @@ import {
   asociarServicioRecurso,
   buscarPacientesIpsHealthcare,
   cambiarEstadoInventarioLote,
+  crearInventarioInicial,
   crearOrdenCompraRecurso,
   crearDespachoRecurso,
   crearRecepcionRecurso,
   crearProveedorRecurso,
   crearRecursoAsistencial,
+  crearRecursosAsistencialesMasivo,
   crearSolicitudCompraReorden,
   darBajaInventarioLote,
   devolverDespachoInventarioRecurso,
@@ -94,6 +96,7 @@ import type {
   RecepcionRecursoDetalle,
   RecepcionRecursoPayload,
   RecursoAsistencial,
+  RecursoAsistencialMasivoPayload,
   RecursoAsistencialPayload,
   ServicioIps,
 } from "../types";
@@ -181,6 +184,10 @@ type RecursoForm = {
 };
 
 type ProveedorForm = ProveedorRecursoPayload & { id?: number };
+
+type CargaMasivaForm = {
+  texto: string;
+};
 
 type OrdenDetalleForm = {
   recurso_id: string;
@@ -282,6 +289,15 @@ type OperacionLoteForm = {
   ubicacionDestino: string;
   origenDevolucion: "profesional" | "paciente";
   aptoReintegro: boolean;
+  motivo: string;
+};
+
+type InventarioInicialForm = {
+  recurso_id: string;
+  lote: string;
+  cantidad_inicial: string;
+  fecha_vencimiento: string;
+  ubicacion: string;
   motivo: string;
 };
 
@@ -531,6 +547,12 @@ function inicialProveedor(): ProveedorForm {
   };
 }
 
+function inicialCargaMasiva(): CargaMasivaForm {
+  return {
+    texto: "codigo,nombre,tipo_recurso,registro_sanitario,presentacion,unidad_medida,stock_minimo,punto_reorden,lote_inicial,cantidad_inicial,fecha_vencimiento_lote,ubicacion_inicial,motivo_inventario_inicial\nRA-EJEMPLO,Recurso ejemplo,insumo,REG-001,Caja,unidad,0,0,LOTE-001,100,,Almacén principal,Inventario inicial",
+  };
+}
+
 function proveedorAForm(proveedor: ProveedorRecurso): ProveedorForm {
   return {
     id: proveedor.id,
@@ -555,6 +577,17 @@ function detalleOrdenInicial(): OrdenDetalleForm {
     valor_unitario: "0",
     fecha_estimada_entrega: "",
     observaciones: "",
+  };
+}
+
+function inicialInventarioInicial(): InventarioInicialForm {
+  return {
+    recurso_id: "",
+    lote: "",
+    cantidad_inicial: "",
+    fecha_vencimiento: "",
+    ubicacion: "Almacén principal",
+    motivo: "Inventario inicial",
   };
 }
 
@@ -783,6 +816,7 @@ export function RecursosAsistencialesPage() {
   const [invimaDesde, setInvimaDesde] = useState("");
   const [invimaHasta, setInvimaHasta] = useState("");
   const [recursoForm, setRecursoForm] = useState<RecursoForm | null>(null);
+  const [cargaMasivaForm, setCargaMasivaForm] = useState<CargaMasivaForm | null>(null);
   const [proveedorForm, setProveedorForm] = useState<ProveedorForm | null>(null);
   const [ordenForm, setOrdenForm] = useState<OrdenCompraForm | null>(null);
   const [recepcionForm, setRecepcionForm] = useState<RecepcionForm | null>(null);
@@ -802,6 +836,7 @@ export function RecursosAsistencialesPage() {
   const [alertaActiva, setAlertaActiva] = useState<AlertaKey | null>(null);
   const [auditoriaDetalle, setAuditoriaDetalle] = useState<AuditoriaRecurso | null>(null);
   const [operacionLoteForm, setOperacionLoteForm] = useState<OperacionLoteForm | null>(null);
+  const [inventarioInicialForm, setInventarioInicialForm] = useState<InventarioInicialForm | null>(null);
   const [fefoRecursoId, setFefoRecursoId] = useState("");
   const [fefoCantidad, setFefoCantidad] = useState("1");
 
@@ -1151,7 +1186,7 @@ export function RecursosAsistencialesPage() {
 
     const recepcionesPendientes = recepciones
       .filter((recepcion) => ["aprobada", "parcial"].includes(estadoNormalizado(recepcion.estado)))
-      .filter((recepcion) => !lotesInventario.some((lote) => Number(lote.recepcion_id) === recepcion.id))
+      .filter((recepcion) => !recepcionIngresadaInventario(recepcion))
       .map((recepcion) => ({
         id: `recepcion-${recepcion.id}`,
         titulo: `Orden ${texto(recepcion.numero_orden)}`,
@@ -1465,6 +1500,67 @@ export function RecursosAsistencialesPage() {
     };
   }
 
+  function separarFilaMasiva(linea: string) {
+    const separador = linea.includes("\t") ? "\t" : linea.includes(";") ? ";" : ",";
+    return linea.split(separador).map((valor) => valor.trim());
+  }
+
+  function parsearCargaMasivaRecursos(textoCarga: string): RecursoAsistencialMasivoPayload[] {
+    const lineas = textoCarga.split(/\r?\n/).map((linea) => linea.trim()).filter(Boolean);
+    if (lineas.length < 2) throw new Error("La carga masiva requiere encabezados y al menos una fila.");
+    const encabezados = separarFilaMasiva(lineas[0]).map((item) => item.toLowerCase());
+    const requeridos = ["nombre", "tipo_recurso", "registro_sanitario"];
+    const faltantes = requeridos.filter((campo) => !encabezados.includes(campo));
+    if (faltantes.length) throw new Error(`Faltan columnas obligatorias: ${faltantes.join(", ")}`);
+    return lineas.slice(1).map((linea, index) => {
+      const columnas = separarFilaMasiva(linea);
+      const fila = Object.fromEntries(encabezados.map((campo, idx) => [campo, columnas[idx] || ""]));
+      if (!fila.nombre || !fila.tipo_recurso || !fila.registro_sanitario) {
+        throw new Error(`Fila ${index + 2}: nombre, tipo_recurso y registro_sanitario son obligatorios.`);
+      }
+      const cantidadInicial = numero(fila.cantidad_inicial || "") || 0;
+      if (cantidadInicial > 0 && !fila.lote_inicial) {
+        throw new Error(`Fila ${index + 2}: lote_inicial es obligatorio cuando cantidad_inicial es mayor a cero.`);
+      }
+      if (cantidadInicial > 0 && fila.tipo_recurso === "medicamento" && !fila.fecha_vencimiento_lote) {
+        throw new Error(`Fila ${index + 2}: fecha_vencimiento_lote es obligatoria para medicamentos con inventario inicial.`);
+      }
+      return {
+        codigo: fila.codigo || null,
+        nombre: fila.nombre,
+        tipo_recurso: fila.tipo_recurso,
+        descripcion: fila.descripcion || null,
+        presentacion: fila.presentacion || null,
+        unidad_medida: fila.unidad_medida || null,
+        concentracion: fila.concentracion || null,
+        principio_activo: fila.principio_activo || null,
+        registro_sanitario: fila.registro_sanitario,
+        fecha_vencimiento_registro_sanitario: fila.fecha_vencimiento_registro_sanitario || null,
+        requiere_registro_sanitario: true,
+        requiere_cadena_frio: ["1", "true", "si", "sí"].includes(String(fila.requiere_cadena_frio || "").toLowerCase()),
+        temperatura_min: numero(fila.temperatura_min || ""),
+        temperatura_max: numero(fila.temperatura_max || ""),
+        humedad_min: numero(fila.humedad_min || ""),
+        humedad_max: numero(fila.humedad_max || ""),
+        es_lasa: ["1", "true", "si", "sí"].includes(String(fila.es_lasa || "").toLowerCase()),
+        alto_riesgo: ["1", "true", "si", "sí"].includes(String(fila.medicamento_controlado || fila.alto_riesgo || "").toLowerCase()),
+        requiere_formula: fila.tipo_recurso !== "insumo",
+        requiere_ficha_tecnica: ["1", "true", "si", "sí"].includes(String(fila.requiere_ficha_tecnica || "").toLowerCase()),
+        stock_minimo: numero(fila.stock_minimo || "") || 0,
+        stock_maximo: numero(fila.stock_maximo || "") || 0,
+        punto_reorden: numero(fila.punto_reorden || "") || 0,
+        tiempo_reposicion_dias: fila.tiempo_reposicion_dias ? Number(fila.tiempo_reposicion_dias) : null,
+        estado: fila.estado || "activo",
+        observaciones: fila.observaciones || null,
+        lote_inicial: fila.lote_inicial || null,
+        cantidad_inicial: cantidadInicial,
+        fecha_vencimiento_lote: fila.fecha_vencimiento_lote || null,
+        ubicacion_inicial: fila.ubicacion_inicial || null,
+        motivo_inventario_inicial: fila.motivo_inventario_inicial || null,
+      };
+    });
+  }
+
   function payloadOrden(form: OrdenCompraForm): OrdenCompraRecursoPayload {
     return {
       numero_orden: form.numero_orden.trim() || null,
@@ -1602,6 +1698,58 @@ export function RecursosAsistencialesPage() {
       await cargar();
     } catch (err) {
       setError(err instanceof Error ? err.message : "No fue posible guardar el recurso");
+    } finally {
+      setAccion("");
+    }
+  }
+
+  async function guardarCargaMasivaRecursos() {
+    if (!cargaMasivaForm) return;
+    setAccion("carga-masiva-recursos");
+    setError("");
+    setSuccess("");
+    try {
+      const recursosCarga = parsearCargaMasivaRecursos(cargaMasivaForm.texto);
+      const data = await crearRecursosAsistencialesMasivo({ recursos: recursosCarga });
+      const detalleErrores = data.errores.length ? ` Errores: ${data.errores.slice(0, 3).map((item) => `fila ${item.fila}: ${item.error}`).join(" | ")}` : "";
+      setSuccess(`${data.mensaje}${detalleErrores}`);
+      if (!data.errores.length) setCargaMasivaForm(null);
+      await cargar();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "No fue posible crear recursos masivamente");
+    } finally {
+      setAccion("");
+    }
+  }
+
+  async function guardarInventarioInicial() {
+    if (!inventarioInicialForm) return;
+    if (!inventarioInicialForm.recurso_id || !inventarioInicialForm.lote.trim() || !(numero(inventarioInicialForm.cantidad_inicial) || 0)) {
+      setError("Recurso, lote y cantidad inicial son obligatorios.");
+      return;
+    }
+    if (!inventarioInicialForm.motivo.trim()) {
+      setError("El motivo es obligatorio.");
+      return;
+    }
+    setAccion("inventario-inicial");
+    setError("");
+    setSuccess("");
+    try {
+      const data = await crearInventarioInicial({
+        recurso_id: Number(inventarioInicialForm.recurso_id),
+        lote: inventarioInicialForm.lote.trim(),
+        cantidad_inicial: numero(inventarioInicialForm.cantidad_inicial) || 0,
+        fecha_vencimiento: inventarioInicialForm.fecha_vencimiento || null,
+        ubicacion: inventarioInicialForm.ubicacion || null,
+        motivo: inventarioInicialForm.motivo,
+      });
+      setSuccess(data.mensaje);
+      setInventarioInicialForm(null);
+      setTab("inventario");
+      await cargar();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "No fue posible crear inventario inicial");
     } finally {
       setAccion("");
     }
@@ -2076,14 +2224,6 @@ export function RecursosAsistencialesPage() {
           <h1>Recursos Asistenciales</h1>
           <p>Catálogo base de medicamentos, dispositivos médicos, insumos, reactivos, proveedores y relación con servicios IPS.</p>
         </div>
-        <div className="infra-header-actions recursos-header-actions">
-          <button className="secondary-btn" type="button" onClick={cargar} disabled={loading}>
-            Actualizar
-          </button>
-          {puedeComprar && <button className="brand-action-btn" type="button" onClick={() => setRecursoForm(inicialRecurso())}>
-            <Plus size={17} /> Nuevo recurso
-          </button>}
-        </div>
       </header>
 
       <div className="kpi-grid four">
@@ -2133,8 +2273,26 @@ export function RecursosAsistencialesPage() {
       {loading && <Loading text="Cargando recursos asistenciales..." />}
 
       {!loading && tab === "catalogo" && (
-        <>
-          <div className="toolbar">
+        <section className="table-card compras-card">
+          <div className="section-heading inline-heading">
+            <div>
+              <h2>Catálogo</h2>
+              <p>Registro maestro de medicamentos, dispositivos médicos, insumos y reactivos.</p>
+            </div>
+            <div className="infra-inline-actions">
+              <button className="secondary-btn" type="button" onClick={cargar} disabled={loading}>
+                Actualizar
+              </button>
+              {puedeComprar && <button className="secondary-btn" type="button" onClick={() => setCargaMasivaForm(inicialCargaMasiva())}>
+                <FileDown size={17} /> Carga masiva
+              </button>}
+              {puedeComprar && <button className="brand-action-btn" type="button" onClick={() => setRecursoForm(inicialRecurso())}>
+                <Plus size={17} /> Nuevo recurso
+              </button>}
+            </div>
+          </div>
+
+          <div className="toolbar compras-toolbar">
             <label className="search-field">
               <Search size={18} />
               <input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Buscar recurso, código, registro sanitario o proveedor" />
@@ -2208,7 +2366,7 @@ export function RecursosAsistencialesPage() {
             ))}
           </div>
           {!recursosFiltrados.length && <div className="empty-state">No hay recursos para los filtros seleccionados.</div>}
-        </>
+        </section>
       )}
 
       {!loading && tab === "proveedores" && (
@@ -2218,7 +2376,7 @@ export function RecursosAsistencialesPage() {
               <h2>Proveedores</h2>
               <p>Aliados para compra y suministro de recursos asistenciales.</p>
             </div>
-            {puedeComprar && <button className="primary-btn" type="button" onClick={() => setProveedorForm(inicialProveedor())}>
+            {puedeComprar && <button className="brand-action-btn" type="button" onClick={() => setProveedorForm(inicialProveedor())}>
               <Plus size={16} /> Nuevo proveedor
             </button>}
           </div>
@@ -2259,7 +2417,7 @@ export function RecursosAsistencialesPage() {
               <h2>Órdenes de compra</h2>
               <p>Adquisición de medicamentos, dispositivos médicos, insumos y reactivos desde proveedores registrados.</p>
             </div>
-            {puedeComprar && <button className="primary-btn" type="button" onClick={() => setOrdenForm(inicialOrdenCompra())}>
+            {puedeComprar && <button className="brand-action-btn" type="button" onClick={() => setOrdenForm(inicialOrdenCompra())}>
               <Plus size={16} /> Nueva orden
             </button>}
           </div>
@@ -2340,7 +2498,7 @@ export function RecursosAsistencialesPage() {
               <h2>Recepción técnica y administrativa</h2>
               <p>Valida cantidad, lote, vencimiento, empaque, registro sanitario y condiciones de transporte.</p>
             </div>
-            <button className="primary-btn" type="button" onClick={() => setTab("compras")}>
+            <button className="brand-action-btn" type="button" onClick={() => setTab("compras")}>
               <Truck size={16} /> Ir a compras
             </button>
           </div>
@@ -2409,6 +2567,9 @@ export function RecursosAsistencialesPage() {
             <button className="secondary-btn" type="button" onClick={cargar} disabled={loading}>
               Actualizar
             </button>
+            {puedeAjustarInventario && <button className="brand-action-btn" type="button" onClick={() => setInventarioInicialForm(inicialInventarioInicial())}>
+              <Plus size={16} /> Inventario inicial
+            </button>}
           </div>
 
           <div className="toolbar compras-toolbar">
@@ -2514,7 +2675,7 @@ export function RecursosAsistencialesPage() {
               <h2>Distribución domiciliaria</h2>
               <p>Entrega interna al responsable de ruta y salida de inventario hacia domicilio del paciente.</p>
             </div>
-            {puedeDespachar && <button className="primary-btn" type="button" onClick={() => setDespachoForm(inicialDespacho())}>
+            {puedeDespachar && <button className="brand-action-btn" type="button" onClick={() => setDespachoForm(inicialDespacho())}>
               <Plus size={16} /> Nuevo despacho
             </button>}
           </div>
@@ -3312,6 +3473,88 @@ export function RecursosAsistencialesPage() {
             </div>
             <div className="modal-actions">
               <button className="secondary-btn" type="button" onClick={() => setAlertaActiva(null)}>Cerrar</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {cargaMasivaForm && (
+        <div className="modal-backdrop" onMouseDown={() => setCargaMasivaForm(null)}>
+          <div className="modal wide-modal recursos-modal" onMouseDown={(event) => event.stopPropagation()}>
+            <div className="infra-modal-header">
+              <div>
+                <h2>Creación masiva de recursos</h2>
+                <p>Columnas mínimas: nombre, tipo_recurso y registro_sanitario.</p>
+              </div>
+              <button type="button" onClick={() => setCargaMasivaForm(null)} aria-label="Cerrar"><X size={20} /></button>
+            </div>
+            <div className="infra-form-body">
+              <Section title="Filas CSV o Excel">
+                <label className="wide-field">Datos
+                  <textarea
+                    rows={10}
+                    value={cargaMasivaForm.texto}
+                    onChange={(event) => setCargaMasivaForm({ texto: event.target.value })}
+                    spellCheck={false}
+                  />
+                </label>
+                <div className="recursos-inline-note wide-field">
+                  Tipos válidos: medicamento, dispositivo_medico, insumo, reactivo. Para iniciar existencias usa lote_inicial y cantidad_inicial; en medicamentos también fecha_vencimiento_lote.
+                </div>
+              </Section>
+            </div>
+            <div className="modal-actions">
+              <button className="secondary-btn" type="button" onClick={() => setCargaMasivaForm(null)}>Cancelar</button>
+              <button className="primary-btn infra-save-btn" type="button" onClick={guardarCargaMasivaRecursos} disabled={accion === "carga-masiva-recursos"}>
+                <Save size={16} /> Crear recursos
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {inventarioInicialForm && (
+        <div className="modal-backdrop" onMouseDown={() => setInventarioInicialForm(null)}>
+          <div className="modal wide-modal recursos-modal" onMouseDown={(event) => event.stopPropagation()}>
+            <div className="infra-modal-header">
+              <div>
+                <h2>Inventario inicial</h2>
+                <p>Crea existencias por lote sin orden de compra ni recepción.</p>
+              </div>
+              <button type="button" onClick={() => setInventarioInicialForm(null)} aria-label="Cerrar"><X size={20} /></button>
+            </div>
+            <div className="infra-form-body">
+              <Section title="Lote inicial">
+                <label className="wide-field">Recurso
+                  <select value={inventarioInicialForm.recurso_id} onChange={(event) => setInventarioInicialForm({ ...inventarioInicialForm, recurso_id: event.target.value })}>
+                    <option value="">Seleccionar recurso</option>
+                    {recursos.filter((recurso) => recurso.estado === "activo").map((recurso) => (
+                      <option key={recurso.id} value={recurso.id}>{texto(recurso.codigo)} · {recurso.nombre} · {labelTipo(recurso.tipo_recurso)}</option>
+                    ))}
+                  </select>
+                </label>
+                <label>Lote
+                  <input value={inventarioInicialForm.lote} onChange={(event) => setInventarioInicialForm({ ...inventarioInicialForm, lote: event.target.value })} />
+                </label>
+                <label>Cantidad inicial
+                  <input value={inventarioInicialForm.cantidad_inicial} onChange={(event) => setInventarioInicialForm({ ...inventarioInicialForm, cantidad_inicial: event.target.value })} inputMode="decimal" />
+                </label>
+                <label>Fecha vencimiento
+                  <input type="date" value={inventarioInicialForm.fecha_vencimiento} onChange={(event) => setInventarioInicialForm({ ...inventarioInicialForm, fecha_vencimiento: event.target.value })} />
+                </label>
+                <label>Ubicación
+                  <input value={inventarioInicialForm.ubicacion} onChange={(event) => setInventarioInicialForm({ ...inventarioInicialForm, ubicacion: event.target.value })} />
+                </label>
+                <label className="wide-field">Motivo
+                  <input value={inventarioInicialForm.motivo} onChange={(event) => setInventarioInicialForm({ ...inventarioInicialForm, motivo: event.target.value })} />
+                </label>
+              </Section>
+            </div>
+            <div className="modal-actions">
+              <button className="secondary-btn" type="button" onClick={() => setInventarioInicialForm(null)}>Cancelar</button>
+              <button className="primary-btn infra-save-btn" type="button" onClick={guardarInventarioInicial} disabled={accion === "inventario-inicial"}>
+                <Save size={16} /> Guardar lote
+              </button>
             </div>
           </div>
         </div>

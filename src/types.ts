@@ -875,6 +875,25 @@ export interface RecursoAsistencialPayload {
   observaciones?: string | null;
 }
 
+export interface RecursoAsistencialMasivoPayload extends RecursoAsistencialPayload {
+  lote_inicial?: string | null;
+  cantidad_inicial?: number | null;
+  fecha_vencimiento_lote?: string | null;
+  ubicacion_inicial?: string | null;
+  motivo_inventario_inicial?: string | null;
+}
+
+export interface RecursosMasivosPayload {
+  recursos: RecursoAsistencialMasivoPayload[];
+}
+
+export interface RecursosMasivosResponse {
+  success: boolean;
+  mensaje: string;
+  creados: Array<{ fila: number; id: number; codigo?: string | null; nombre?: string | null; inventario_lote_id?: number | null }>;
+  errores: Array<{ fila: number; nombre?: string | null; error: string }>;
+}
+
 export interface ProveedorRecurso {
   id: number;
   nombre: string;
@@ -1058,6 +1077,15 @@ export interface InventarioLoteRecurso {
   fecha_recepcion?: string | null;
   created_at?: string | null;
   updated_at?: string | null;
+}
+
+export interface InventarioInicialPayload {
+  recurso_id: number;
+  lote: string;
+  cantidad_inicial: number;
+  fecha_vencimiento?: string | null;
+  ubicacion?: string | null;
+  motivo: string;
 }
 
 export interface MovimientoInventarioRecurso {
