@@ -4701,6 +4701,10 @@ td small { display: block; color: var(--muted); margin-top: 4px; }
   border-color: #cfddea;
 }
 
+.recursos-form-spacer {
+  min-height: 1px;
+}
+
 .patient-selector {
   display: grid;
   gap: 10px;
@@ -6388,6 +6392,10 @@ td small { display: block; color: var(--muted); margin-top: 4px; }
   .reportes-grid,
   .auditoria-diff-row {
     grid-template-columns: 1fr;
+  }
+
+  .recursos-form-spacer {
+    display: none;
   }
 
   .orden-section-head,

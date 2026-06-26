@@ -3965,6 +3965,7 @@ export function RecursosAsistencialesPage() {
                 <label>Registro sanitario conocido o sugerido
                   <input value={recursoForm.registro_sanitario} onChange={(event) => actualizarRecurso("registro_sanitario", event.target.value)} />
                 </label>
+                <div className="recursos-form-spacer" aria-hidden="true" />
                 <label className="infra-check-field"><input type="checkbox" checked={recursoForm.requiere_registro_sanitario} disabled readOnly /> Requiere registro sanitario</label>
                 <label className="infra-check-field"><input type="checkbox" checked={recursoForm.es_lasa} onChange={(event) => actualizarRecurso("es_lasa", event.target.checked)} disabled={!reglasTipoRecurso(recursoForm.tipo_recurso).esMedicamento} /> Es medicamento LASA</label>
                 <label className="infra-check-field"><input type="checkbox" checked={recursoForm.alto_riesgo} onChange={(event) => actualizarRecurso("alto_riesgo", event.target.checked)} disabled={!reglasTipoRecurso(recursoForm.tipo_recurso).esMedicamento} /> Medicamento controlado</label>
