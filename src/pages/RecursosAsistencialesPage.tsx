@@ -666,12 +666,13 @@ function inicialOrdenCompra(): OrdenCompraForm {
 }
 
 function ordenCompraAForm(orden: OrdenCompraRecurso): OrdenCompraForm {
+  const fechaEstimada = orden.fecha_estimada_entrega || orden.detalles?.find((detalle) => detalle.fecha_estimada_entrega)?.fecha_estimada_entrega || "";
   return {
     id: orden.id,
     numero_orden: orden.numero_orden || "",
     proveedor_id: orden.proveedor_id ? String(orden.proveedor_id) : "",
     fecha_orden: orden.fecha_orden || "",
-    fecha_estimada_entrega: orden.fecha_estimada_entrega || "",
+    fecha_estimada_entrega: fechaEstimada,
     estado: orden.estado || "borrador",
     impuestos: orden.impuestos != null ? String(orden.impuestos) : "0",
     factura_numero: orden.factura_numero || "",
@@ -1793,11 +1794,12 @@ export function RecursosAsistencialesPage() {
   }
 
   function payloadOrden(form: OrdenCompraForm): OrdenCompraRecursoPayload {
+    const fechaEstimada = form.fecha_estimada_entrega || null;
     return {
       numero_orden: form.numero_orden.trim() || null,
       proveedor_id: Number(form.proveedor_id),
       fecha_orden: form.fecha_orden || null,
-      fecha_estimada_entrega: form.fecha_estimada_entrega || null,
+      fecha_estimada_entrega: fechaEstimada,
       estado: form.estado,
       impuestos: numero(form.impuestos) || 0,
       factura_numero: form.factura_numero || null,
@@ -1809,7 +1811,7 @@ export function RecursosAsistencialesPage() {
           recurso_id: Number(detalle.recurso_id),
           cantidad: numero(detalle.cantidad) || 0,
           valor_unitario: numero(detalle.valor_unitario) || 0,
-          fecha_estimada_entrega: detalle.fecha_estimada_entrega || null,
+          fecha_estimada_entrega: fechaEstimada,
           observaciones: detalle.observaciones || null,
         })),
     };
@@ -4120,9 +4122,6 @@ export function RecursosAsistencialesPage() {
                         </label>
                         <label>Valor unitario
                           <input value={detalle.valor_unitario} onChange={(event) => actualizarDetalleOrden(index, "valor_unitario", event.target.value)} inputMode="decimal" />
-                        </label>
-                        <label>Entrega estimada
-                          <input type="date" value={detalle.fecha_estimada_entrega} onChange={(event) => actualizarDetalleOrden(index, "fecha_estimada_entrega", event.target.value)} />
                         </label>
                         <div className="orden-detalle-total">
                           <span>Total línea</span>

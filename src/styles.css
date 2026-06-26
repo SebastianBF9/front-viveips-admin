@@ -5059,7 +5059,7 @@ td small { display: block; color: var(--muted); margin-top: 4px; }
 
 .orden-detalle-row {
   display: grid;
-  grid-template-columns: minmax(220px, 1.4fr) minmax(90px, .55fr) minmax(130px, .75fr) minmax(130px, .8fr) minmax(110px, .6fr) auto;
+  grid-template-columns: minmax(240px, 1.6fr) minmax(90px, .55fr) minmax(130px, .75fr) minmax(120px, .65fr) auto;
   gap: 12px;
   align-items: end;
   border: 1px solid #dbe6f0;
