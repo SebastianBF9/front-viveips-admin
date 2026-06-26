@@ -5093,7 +5093,7 @@ td small { display: block; color: var(--muted); margin-top: 4px; }
 
 .recepcion-detalle-row {
   display: grid;
-  grid-template-columns: minmax(220px, 1.3fr) repeat(5, minmax(110px, .7fr));
+  grid-template-columns: minmax(240px, 1.4fr) repeat(3, minmax(140px, .8fr));
   gap: 12px;
   align-items: end;
   border: 1px solid #dbe6f0;
@@ -5120,6 +5120,28 @@ td small { display: block; color: var(--muted); margin-top: 4px; }
 .recepcion-detalle-row select {
   width: 100%;
   min-width: 0;
+}
+
+.recepcion-expiry-field {
+  display: grid;
+  gap: 8px;
+}
+
+.expiry-na-btn {
+  min-height: 42px;
+  border: 1px solid #cfddea;
+  border-radius: 8px;
+  background: #f8fbfe;
+  color: #1f3b53;
+  font-size: 12px;
+  font-weight: 950;
+  cursor: pointer;
+}
+
+.expiry-na-btn.active {
+  border-color: #0f9f9a;
+  background: #e6fffb;
+  color: #0f766e;
 }
 
 .recepcion-detalle-row .infra-check-field {

@@ -1056,10 +1056,11 @@ export interface RecepcionRecursoPayload {
   observaciones?: string | null;
   detalles: Array<{
     recurso_id: number;
-    lote?: string | null;
-    cantidad_recibida: number;
-    fecha_vencimiento?: string | null;
-    permitir_exceso?: boolean;
+  lote?: string | null;
+  cantidad_recibida: number;
+  fecha_vencimiento?: string | null;
+  fecha_vencimiento_no_aplica?: boolean;
+  permitir_exceso?: boolean;
     justificacion_exceso?: string | null;
     registro_sanitario_lote?: string | null;
     registro_sanitario_validado?: boolean;
