@@ -911,6 +911,15 @@ export function RecursosAsistencialesPage() {
   const [fefoRecursoId, setFefoRecursoId] = useState("");
   const [fefoCantidad, setFefoCantidad] = useState("1");
 
+  useEffect(() => {
+    if (!error && !success) return;
+    const timer = window.setTimeout(() => {
+      setError("");
+      setSuccess("");
+    }, 4500);
+    return () => window.clearTimeout(timer);
+  }, [error, success]);
+
   async function cargar() {
     setLoading(true);
     setError("");
