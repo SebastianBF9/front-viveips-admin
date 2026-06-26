@@ -172,7 +172,6 @@ type RecursoForm = {
   concentracion: string;
   principio_activo: string;
   registro_sanitario: string;
-  fecha_vencimiento_registro_sanitario: string;
   requiere_registro_sanitario: boolean;
   requiere_cadena_frio: boolean;
   temperatura_min: string;
@@ -517,7 +516,6 @@ function inicialRecurso(): RecursoForm {
     concentracion: "",
     principio_activo: "",
     registro_sanitario: "",
-    fecha_vencimiento_registro_sanitario: "",
     requiere_registro_sanitario: true,
     requiere_cadena_frio: false,
     temperatura_min: "",
@@ -556,7 +554,6 @@ function recursoAForm(recurso: RecursoAsistencial): RecursoForm {
     concentracion: recurso.concentracion || "",
     principio_activo: recurso.principio_activo || "",
     registro_sanitario: recurso.registro_sanitario || "",
-    fecha_vencimiento_registro_sanitario: recurso.fecha_vencimiento_registro_sanitario || "",
     requiere_registro_sanitario: bool(recurso.requiere_registro_sanitario),
     requiere_cadena_frio: bool(recurso.requiere_cadena_frio),
     temperatura_min: recurso.temperatura_min != null ? String(recurso.temperatura_min) : "",
@@ -1714,7 +1711,7 @@ export function RecursosAsistencialesPage() {
       concentracion: normalizado.concentracion || null,
       principio_activo: normalizado.principio_activo || null,
       registro_sanitario: normalizado.registro_sanitario || null,
-      fecha_vencimiento_registro_sanitario: normalizado.fecha_vencimiento_registro_sanitario || null,
+      fecha_vencimiento_registro_sanitario: null,
       requiere_registro_sanitario: normalizado.requiere_registro_sanitario,
       requiere_cadena_frio: normalizado.requiere_cadena_frio,
       temperatura_min: normalizado.requiere_cadena_frio ? numero(normalizado.temperatura_min) : null,
@@ -1769,7 +1766,7 @@ export function RecursosAsistencialesPage() {
         concentracion: fila.concentracion || null,
         principio_activo: fila.principio_activo || null,
         registro_sanitario: fila.registro_sanitario || null,
-        fecha_vencimiento_registro_sanitario: fila.fecha_vencimiento_registro_sanitario || null,
+        fecha_vencimiento_registro_sanitario: null,
         requiere_registro_sanitario: true,
         requiere_cadena_frio: ["1", "true", "si", "sí"].includes(String(fila.requiere_cadena_frio || "").toLowerCase()),
         temperatura_min: numero(fila.temperatura_min || ""),
@@ -3968,15 +3965,12 @@ export function RecursosAsistencialesPage() {
                 <label>Registro sanitario conocido o sugerido
                   <input value={recursoForm.registro_sanitario} onChange={(event) => actualizarRecurso("registro_sanitario", event.target.value)} />
                 </label>
-                <label>Vencimiento registro sanitario
-                  <input type="date" value={recursoForm.fecha_vencimiento_registro_sanitario} onChange={(event) => actualizarRecurso("fecha_vencimiento_registro_sanitario", event.target.value)} />
-                </label>
                 <label className="infra-check-field"><input type="checkbox" checked={recursoForm.requiere_registro_sanitario} disabled readOnly /> Requiere registro sanitario</label>
                 <label className="infra-check-field"><input type="checkbox" checked={recursoForm.es_lasa} onChange={(event) => actualizarRecurso("es_lasa", event.target.checked)} disabled={!reglasTipoRecurso(recursoForm.tipo_recurso).esMedicamento} /> Es medicamento LASA</label>
                 <label className="infra-check-field"><input type="checkbox" checked={recursoForm.alto_riesgo} onChange={(event) => actualizarRecurso("alto_riesgo", event.target.checked)} disabled={!reglasTipoRecurso(recursoForm.tipo_recurso).esMedicamento} /> Medicamento controlado</label>
                 <label className="infra-check-field"><input type="checkbox" checked={recursoForm.requiere_formula} disabled readOnly /> Requiere fórmula</label>
                 <div className="recursos-inline-note wide-field">
-                  El registro sanitario del catálogo es opcional; el dato real puede registrarse por lote durante la recepción. Fórmula aplica para medicamentos, dispositivos médicos y reactivos; insumos no la requieren.
+                  El registro sanitario del catálogo es opcional; el dato real y el vencimiento aplicable se registran por lote durante la recepción. Fórmula aplica para medicamentos, dispositivos médicos y reactivos; insumos no la requieren.
                 </div>
                 {recursoForm.es_lasa && <div className="recursos-lasa-alert wide-field">LASA marcado: validar almacenamiento, rotulación y dispensación diferenciada.</div>}
               </Section>
