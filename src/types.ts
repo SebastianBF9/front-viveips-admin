@@ -1012,6 +1012,7 @@ export interface RecepcionRecursoDetalle {
   fecha_vencimiento?: string | null;
   permitir_exceso?: number | boolean;
   justificacion_exceso?: string | null;
+  registro_sanitario_lote?: string | null;
   registro_sanitario_validado?: number | boolean;
   empaque_integro?: number | boolean;
   temperatura_recibida?: number | null;
@@ -1060,6 +1061,7 @@ export interface RecepcionRecursoPayload {
     fecha_vencimiento?: string | null;
     permitir_exceso?: boolean;
     justificacion_exceso?: string | null;
+    registro_sanitario_lote?: string | null;
     registro_sanitario_validado?: boolean;
     empaque_integro?: boolean;
     temperatura_recibida?: number | null;
@@ -1075,6 +1077,7 @@ export interface InventarioLoteRecurso {
   recurso_id: number;
   lote: string;
   fecha_vencimiento: string | null;
+  registro_sanitario_lote?: string | null;
   cantidad_inicial: number | null;
   cantidad_actual: number | null;
   cantidad_comprometida?: number | null;

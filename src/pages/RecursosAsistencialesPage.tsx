@@ -233,6 +233,7 @@ type RecepcionDetalleForm = {
   cantidad_pendiente: string;
   permitir_exceso: boolean;
   justificacion_exceso: string;
+  registro_sanitario_lote: string;
   registro_sanitario_validado: boolean;
   empaque_integro: boolean;
   temperatura_recibida: string;
@@ -595,7 +596,7 @@ function inicialProveedor(): ProveedorForm {
 
 function inicialCargaMasiva(): CargaMasivaForm {
   return {
-    texto: "codigo,nombre,tipo_recurso,registro_sanitario,presentacion,unidad_medida,stock_minimo,punto_reorden,lote_inicial,cantidad_inicial,fecha_vencimiento_lote,ubicacion_inicial,motivo_inventario_inicial\nRA-EJEMPLO,Recurso ejemplo,insumo,REG-001,Caja,unidad,0,0,LOTE-001,100,,Almacén principal,Inventario inicial",
+    texto: "codigo,nombre,tipo_recurso,registro_sanitario,presentacion,unidad_medida,stock_minimo,punto_reorden,lote_inicial,cantidad_inicial,fecha_vencimiento_lote,ubicacion_inicial,motivo_inventario_inicial\nRA-EJEMPLO,Recurso ejemplo,insumo,,Caja,unidad,0,0,LOTE-001,100,,Almacén principal,Inventario inicial",
   };
 }
 
@@ -698,6 +699,7 @@ function detalleRecepcionInicial(): RecepcionDetalleForm {
     cantidad_pendiente: "",
     permitir_exceso: false,
     justificacion_exceso: "",
+    registro_sanitario_lote: "",
     registro_sanitario_validado: false,
     empaque_integro: true,
     temperatura_recibida: "",
@@ -749,6 +751,7 @@ function recepcionAForm(recepcion: RecepcionRecurso): RecepcionForm {
       cantidad_pendiente: "",
       permitir_exceso: bool(detalle.permitir_exceso),
       justificacion_exceso: detalle.justificacion_exceso || "",
+      registro_sanitario_lote: detalle.registro_sanitario_lote || "",
       registro_sanitario_validado: bool(detalle.registro_sanitario_validado),
       empaque_integro: bool(detalle.empaque_integro),
       temperatura_recibida: detalle.temperatura_recibida != null ? String(detalle.temperatura_recibida) : "",
@@ -1254,7 +1257,7 @@ export function RecursosAsistencialesPage() {
     return lotesInventario.filter((lote) => {
       if (inventarioEstado && lote.estado !== inventarioEstado) return false;
       if (!q) return true;
-      return [lote.lote, lote.recurso_codigo, lote.recurso_nombre, lote.numero_orden, lote.ubicacion].some((value) =>
+      return [lote.lote, lote.registro_sanitario_lote, lote.recurso_codigo, lote.recurso_nombre, lote.numero_orden, lote.ubicacion].some((value) =>
         String(value || "").toLowerCase().includes(q),
       );
     });
@@ -1740,14 +1743,14 @@ export function RecursosAsistencialesPage() {
     const lineas = textoCarga.split(/\r?\n/).map((linea) => linea.trim()).filter(Boolean);
     if (lineas.length < 2) throw new Error("La carga masiva requiere encabezados y al menos una fila.");
     const encabezados = separarFilaMasiva(lineas[0]).map((item) => item.toLowerCase());
-    const requeridos = ["nombre", "tipo_recurso", "registro_sanitario"];
+    const requeridos = ["nombre", "tipo_recurso"];
     const faltantes = requeridos.filter((campo) => !encabezados.includes(campo));
     if (faltantes.length) throw new Error(`Faltan columnas obligatorias: ${faltantes.join(", ")}`);
     return lineas.slice(1).map((linea, index) => {
       const columnas = separarFilaMasiva(linea);
       const fila = Object.fromEntries(encabezados.map((campo, idx) => [campo, columnas[idx] || ""]));
-      if (!fila.nombre || !fila.tipo_recurso || !fila.registro_sanitario) {
-        throw new Error(`Fila ${index + 2}: nombre, tipo_recurso y registro_sanitario son obligatorios.`);
+      if (!fila.nombre || !fila.tipo_recurso) {
+        throw new Error(`Fila ${index + 2}: nombre y tipo_recurso son obligatorios.`);
       }
       const cantidadInicial = numero(fila.cantidad_inicial || "") || 0;
       if (cantidadInicial > 0 && !fila.lote_inicial) {
@@ -1765,7 +1768,7 @@ export function RecursosAsistencialesPage() {
         unidad_medida: fila.unidad_medida || null,
         concentracion: fila.concentracion || null,
         principio_activo: fila.principio_activo || null,
-        registro_sanitario: fila.registro_sanitario,
+        registro_sanitario: fila.registro_sanitario || null,
         fecha_vencimiento_registro_sanitario: fila.fecha_vencimiento_registro_sanitario || null,
         requiere_registro_sanitario: true,
         requiere_cadena_frio: ["1", "true", "si", "sí"].includes(String(fila.requiere_cadena_frio || "").toLowerCase()),
@@ -1832,6 +1835,7 @@ export function RecursosAsistencialesPage() {
           fecha_vencimiento: detalle.fecha_vencimiento || null,
           permitir_exceso: detalle.permitir_exceso,
           justificacion_exceso: detalle.justificacion_exceso || null,
+          registro_sanitario_lote: detalle.registro_sanitario_lote || null,
           registro_sanitario_validado: detalle.registro_sanitario_validado,
           empaque_integro: detalle.empaque_integro,
           temperatura_recibida: numero(detalle.temperatura_recibida),
@@ -1886,10 +1890,6 @@ export function RecursosAsistencialesPage() {
     if (!recursoForm) return;
     if (!recursoForm.nombre.trim()) {
       setError("El nombre del recurso es obligatorio.");
-      return;
-    }
-    if (!recursoForm.registro_sanitario.trim()) {
-      setError("El registro sanitario es obligatorio para todos los recursos asistenciales.");
       return;
     }
     setAccion("guardar-recurso");
@@ -2806,7 +2806,7 @@ export function RecursosAsistencialesPage() {
           <div className="toolbar compras-toolbar">
             <label className="search-field">
               <Search size={18} />
-              <input value={inventarioQuery} onChange={(event) => setInventarioQuery(event.target.value)} placeholder="Buscar lote, recurso u orden" />
+              <input value={inventarioQuery} onChange={(event) => setInventarioQuery(event.target.value)} placeholder="Buscar lote, INVIMA, recurso u orden" />
             </label>
             <select value={inventarioEstado} onChange={(event) => setInventarioEstado(event.target.value)}>
               <option value="">Todos los estados</option>
@@ -2842,6 +2842,7 @@ export function RecursosAsistencialesPage() {
                 <dl className="recurso-dl">
                   <div><dt>Cantidad actual</dt><dd>{texto(lote.cantidad_actual)}</dd></div>
                   <div><dt>Disponible despacho</dt><dd>{texto(lote.cantidad_disponible_despacho ?? lote.cantidad_actual)}</dd></div>
+                  <div><dt>Registro INVIMA</dt><dd>{texto(lote.registro_sanitario_lote)}</dd></div>
                   <div><dt>Vencimiento</dt><dd>{texto(lote.fecha_vencimiento)}</dd></div>
                   <div><dt>Ubicación</dt><dd>{texto(lote.ubicacion)}</dd></div>
                   <div><dt>Orden origen</dt><dd>{texto(lote.numero_orden)}</dd></div>
@@ -3748,6 +3749,7 @@ export function RecursosAsistencialesPage() {
               <div><span>Existencia inicial</span><strong>{texto(loteDetalle.cantidad_inicial)}</strong></div>
               <div><span>Existencia actual</span><strong>{texto(loteDetalle.cantidad_actual)}</strong></div>
               <div><span>Estado</span><strong className={`pill ${loteDetalle.estado}`}>{loteDetalle.estado}</strong></div>
+              <div><span>Registro INVIMA</span><strong>{texto(loteDetalle.registro_sanitario_lote)}</strong></div>
               <div><span>Ubicación</span><strong>{texto(loteDetalle.ubicacion)}</strong></div>
             </div>
             <div className="movimientos-modal-body">
@@ -3841,7 +3843,7 @@ export function RecursosAsistencialesPage() {
             <div className="infra-modal-header">
               <div>
                 <h2>Creación masiva de recursos</h2>
-                <p>Columnas mínimas: nombre, tipo_recurso y registro_sanitario.</p>
+                <p>Columnas mínimas: nombre y tipo_recurso. registro_sanitario puede ir vacío.</p>
               </div>
               <button type="button" onClick={() => setCargaMasivaForm(null)} aria-label="Cerrar"><X size={20} /></button>
             </div>
@@ -3963,7 +3965,7 @@ export function RecursosAsistencialesPage() {
               </Section>
 
               <Section title="Registro sanitario y riesgos">
-                <label>Registro sanitario
+                <label>Registro sanitario conocido o sugerido
                   <input value={recursoForm.registro_sanitario} onChange={(event) => actualizarRecurso("registro_sanitario", event.target.value)} />
                 </label>
                 <label>Vencimiento registro sanitario
@@ -3974,7 +3976,7 @@ export function RecursosAsistencialesPage() {
                 <label className="infra-check-field"><input type="checkbox" checked={recursoForm.alto_riesgo} onChange={(event) => actualizarRecurso("alto_riesgo", event.target.checked)} disabled={!reglasTipoRecurso(recursoForm.tipo_recurso).esMedicamento} /> Medicamento controlado</label>
                 <label className="infra-check-field"><input type="checkbox" checked={recursoForm.requiere_formula} disabled readOnly /> Requiere fórmula</label>
                 <div className="recursos-inline-note wide-field">
-                  Registro sanitario aplica para todos. Fórmula aplica para medicamentos, dispositivos médicos y reactivos; insumos no la requieren. Vencimiento de lote obligatorio solo para medicamentos.
+                  El registro sanitario del catálogo es opcional; el dato real puede registrarse por lote durante la recepción. Fórmula aplica para medicamentos, dispositivos médicos y reactivos; insumos no la requieren.
                 </div>
                 {recursoForm.es_lasa && <div className="recursos-lasa-alert wide-field">LASA marcado: validar almacenamiento, rotulación y dispensación diferenciada.</div>}
               </Section>
@@ -4229,6 +4231,9 @@ export function RecursosAsistencialesPage() {
                       )}
                       <label>Fecha vencimiento
                         <input type="date" value={detalle.fecha_vencimiento} onChange={(event) => actualizarDetalleRecepcion(index, "fecha_vencimiento", event.target.value)} />
+                      </label>
+                      <label>Registro INVIMA recibido
+                        <input value={detalle.registro_sanitario_lote} onChange={(event) => actualizarDetalleRecepcion(index, "registro_sanitario_lote", event.target.value)} placeholder="Ej. INVIMA 2024M-..." />
                       </label>
                       <label>Temperatura
                         <input value={detalle.temperatura_recibida} onChange={(event) => actualizarDetalleRecepcion(index, "temperatura_recibida", event.target.value)} inputMode="decimal" />
