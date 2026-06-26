@@ -2543,8 +2543,8 @@ export function RecursosAsistencialesPage() {
         ))}
       </div>
 
-      {error && <div className="error-box">{error}</div>}
-      {success && <div className="success-box">{success}</div>}
+      {error && <div className="error-box recursos-floating-alert">{error}</div>}
+      {success && <div className="success-box recursos-floating-alert">{success}</div>}
       {loading && <Loading text="Cargando recursos asistenciales..." />}
 
       {!loading && tab === "catalogo" && (
