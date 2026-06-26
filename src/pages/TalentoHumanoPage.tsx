@@ -320,6 +320,11 @@ function normalizarEstadoContrato(valor?: string | null) {
   return normalizar(valor).replace(/[\s-]+/g, "_");
 }
 
+function esContratoValorFijo(especialidad?: string | null) {
+  const cargo = normalizar(especialidad);
+  return cargo.includes("biomedico") || cargo.includes("biomedica") || cargo.includes("administrativo") || cargo.includes("administrativa");
+}
+
 function infoContrato(profesional: ProfesionalAdmin, contrato?: ContratoEstado | null) {
   const estado = normalizarEstadoContrato(contrato?.estado || profesional.estado_contrato);
   if (!estado) {
@@ -395,6 +400,7 @@ export function TalentoHumanoPage() {
   const [contratoEstado, setContratoEstado] = useState<ContratoEstado | null>(null);
   const [valorUrbano, setValorUrbano] = useState("");
   const [valorRural, setValorRural] = useState("");
+  const [valorMensual, setValorMensual] = useState("");
   const [fechaInicio, setFechaInicio] = useState(() => new Date().toISOString().slice(0, 10));
   const [query, setQuery] = useState("");
   const [estado, setEstado] = useState("todos");
@@ -596,6 +602,7 @@ export function TalentoHumanoPage() {
     setContratoEstado(null);
     setValorUrbano("");
     setValorRural("");
+    setValorMensual("");
     setFechaInicio(new Date().toISOString().slice(0, 10));
     await ejecutarAccion(`contrato-estado-${profesional.id}`, async () => {
       const data = await apiCall<{ contrato: ContratoEstado | null }>("GET", `/contratos/estado/${profesional.id}`);
@@ -611,17 +618,26 @@ export function TalentoHumanoPage() {
 
   async function generarContrato() {
     if (!contratoProfesional) return;
+    const contratoFijo = esContratoValorFijo(contratoProfesional.especialidad);
+    const mensual = Number(normalizarValorMoneda(valorMensual));
     const urbano = Number(normalizarValorMoneda(valorUrbano));
     const rural = Number(normalizarValorMoneda(valorRural));
-    if (!urbano || urbano <= 0 || !rural || rural <= 0 || !fechaInicio) {
-      setError("Ingresa valor urbano, valor rural y fecha de inicio para generar el contrato.");
+    if (!fechaInicio) {
+      setError("Ingresa la fecha de inicio para generar el contrato.");
+      return;
+    }
+    if (contratoFijo && (!mensual || mensual <= 0)) {
+      setError("Ingresa el valor mensual del contrato.");
+      return;
+    }
+    if (!contratoFijo && (!urbano || urbano <= 0 || !rural || rural <= 0)) {
+      setError("Ingresa valor urbano y valor rural para generar el contrato.");
       return;
     }
 
     await ejecutarAccion(`contrato-generar-${contratoProfesional.id}`, async () => {
       await apiCall("POST", `/contratos/generar/${contratoProfesional.id}`, {
-        valor_urbano: urbano,
-        valor_rural: rural,
+        ...(contratoFijo ? { valor_mensual: mensual } : { valor_urbano: urbano, valor_rural: rural }),
         fecha_inicio: fechaInicio,
       });
       const data = await apiCall<{ contrato: ContratoEstado | null }>("GET", `/contratos/estado/${contratoProfesional.id}`);
@@ -1052,24 +1068,38 @@ export function TalentoHumanoPage() {
               <p className="contract-regenerate-text">{textoRegenerarContrato(contratoEstado)}</p>
 
               <div className="contract-form-grid">
-                <label>
-                  Valor urbano <span>*</span>
-                  <input
-                    value={valorUrbano}
-                    onChange={(event) => setValorUrbano(formatearMoneda(event.target.value))}
-                    inputMode="numeric"
-                    placeholder="Ej: 50.000"
-                  />
-                </label>
-                <label>
-                  Valor rural <span>*</span>
-                  <input
-                    value={valorRural}
-                    onChange={(event) => setValorRural(formatearMoneda(event.target.value))}
-                    inputMode="numeric"
-                    placeholder="Ej: 65.000"
-                  />
-                </label>
+                {esContratoValorFijo(contratoProfesional.especialidad) ? (
+                  <label>
+                    Valor mensual del contrato <span>*</span>
+                    <input
+                      value={valorMensual}
+                      onChange={(event) => setValorMensual(formatearMoneda(event.target.value))}
+                      inputMode="numeric"
+                      placeholder="Ej: 600.000"
+                    />
+                  </label>
+                ) : (
+                  <>
+                    <label>
+                      Valor urbano <span>*</span>
+                      <input
+                        value={valorUrbano}
+                        onChange={(event) => setValorUrbano(formatearMoneda(event.target.value))}
+                        inputMode="numeric"
+                        placeholder="Ej: 50.000"
+                      />
+                    </label>
+                    <label>
+                      Valor rural <span>*</span>
+                      <input
+                        value={valorRural}
+                        onChange={(event) => setValorRural(formatearMoneda(event.target.value))}
+                        inputMode="numeric"
+                        placeholder="Ej: 65.000"
+                      />
+                    </label>
+                  </>
+                )}
                 <label className="contract-date-field">
                   Fecha de inicio del contrato <span>*</span>
                   <input value={fechaInicio} onChange={(event) => setFechaInicio(event.target.value)} type="date" />
@@ -1078,6 +1108,7 @@ export function TalentoHumanoPage() {
 
               <div className="contract-note">
                 La fecha indicada sera la fecha de inicio visible dentro del contrato. El backend calculara la fecha final segun la duracion configurada.
+                {esContratoValorFijo(contratoProfesional.especialidad) ? " Para este cargo el contrato se liquida por valor mensual fijo." : ""}
               </div>
 
               <div className="modal-actions contract-actions">
