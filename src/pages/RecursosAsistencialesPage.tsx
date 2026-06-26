@@ -2113,6 +2113,26 @@ export function RecursosAsistencialesPage() {
       }
       return;
     }
+    const loteFaltante = recepcionForm.detalles.some((detalle) => (
+      detalle.recurso_id &&
+      detalle.cumple &&
+      (numero(detalle.cantidad_recibida) || 0) > 0 &&
+      !detalle.lote.trim()
+    ));
+    if (loteFaltante) {
+      setError("Cada recurso recibido debe tener lote para guardar la recepción.");
+      return;
+    }
+    const invimaFaltante = recepcionForm.detalles.some((detalle) => (
+      detalle.recurso_id &&
+      detalle.cumple &&
+      (numero(detalle.cantidad_recibida) || 0) > 0 &&
+      !detalle.registro_sanitario_lote.trim()
+    ));
+    if (invimaFaltante) {
+      setError("Cada recurso recibido debe tener Registro INVIMA recibido para guardar la recepción.");
+      return;
+    }
     const excesoSinJustificar = recepcionForm.detalles.some((detalle) => {
       const cantidad = numero(detalle.cantidad_recibida) || 0;
       const pendiente = numero(detalle.cantidad_pendiente) || 0;
