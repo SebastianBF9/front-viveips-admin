@@ -229,6 +229,7 @@ type RecepcionDetalleForm = {
   lote: string;
   cantidad_recibida: string;
   fecha_vencimiento: string;
+  fecha_vencimiento_no_aplica: boolean;
   cantidad_pendiente: string;
   permitir_exceso: boolean;
   justificacion_exceso: string;
@@ -694,6 +695,7 @@ function detalleRecepcionInicial(): RecepcionDetalleForm {
     lote: "",
     cantidad_recibida: "1",
     fecha_vencimiento: "",
+    fecha_vencimiento_no_aplica: false,
     cantidad_pendiente: "",
     permitir_exceso: false,
     justificacion_exceso: "",
@@ -746,6 +748,7 @@ function recepcionAForm(recepcion: RecepcionRecurso): RecepcionForm {
       lote: detalle.lote || "",
       cantidad_recibida: detalle.cantidad_recibida != null ? String(detalle.cantidad_recibida) : "1",
       fecha_vencimiento: detalle.fecha_vencimiento || "",
+      fecha_vencimiento_no_aplica: !detalle.fecha_vencimiento,
       cantidad_pendiente: "",
       permitir_exceso: bool(detalle.permitir_exceso),
       justificacion_exceso: detalle.justificacion_exceso || "",
@@ -1615,7 +1618,13 @@ export function RecursosAsistencialesPage() {
   function actualizarDetalleRecepcion(index: number, campo: keyof RecepcionDetalleForm, valor: string | boolean) {
     setRecepcionForm((actual) => {
       if (!actual) return actual;
-      const detalles = actual.detalles.map((detalle, idx) => (idx === index ? { ...detalle, [campo]: valor } : detalle));
+      const detalles = actual.detalles.map((detalle, idx) => {
+        if (idx !== index) return detalle;
+        const actualizado = { ...detalle, [campo]: valor };
+        if (campo === "fecha_vencimiento_no_aplica" && valor === true) actualizado.fecha_vencimiento = "";
+        if (campo === "fecha_vencimiento" && typeof valor === "string" && valor) actualizado.fecha_vencimiento_no_aplica = false;
+        return actualizado;
+      });
       return { ...actual, detalles };
     });
   }
@@ -1831,7 +1840,8 @@ export function RecursosAsistencialesPage() {
           recurso_id: Number(detalle.recurso_id),
           lote: detalle.lote || null,
           cantidad_recibida: numero(detalle.cantidad_recibida) || 0,
-          fecha_vencimiento: detalle.fecha_vencimiento || null,
+          fecha_vencimiento: detalle.fecha_vencimiento_no_aplica ? null : detalle.fecha_vencimiento || null,
+          fecha_vencimiento_no_aplica: detalle.fecha_vencimiento_no_aplica,
           permitir_exceso: detalle.permitir_exceso,
           justificacion_exceso: detalle.justificacion_exceso || null,
           registro_sanitario_lote: detalle.registro_sanitario_lote || null,
@@ -2086,6 +2096,21 @@ export function RecursosAsistencialesPage() {
     }
     if (!recepcionForm.detalles.some((detalle) => detalle.recurso_id && (numero(detalle.cantidad_recibida) || 0) > 0)) {
       setError("Agrega al menos un recurso recibido con cantidad mayor a cero.");
+      return;
+    }
+    const vencimientoIncompleto = recepcionForm.detalles.find((detalle) => {
+      if (!detalle.recurso_id || !detalle.cumple || (numero(detalle.cantidad_recibida) || 0) <= 0) return false;
+      const recurso = recursos.find((item) => String(item.id) === String(detalle.recurso_id));
+      if (recurso?.tipo_recurso === "medicamento") return !detalle.fecha_vencimiento;
+      return !detalle.fecha_vencimiento && !detalle.fecha_vencimiento_no_aplica;
+    });
+    if (vencimientoIncompleto) {
+      const recurso = recursos.find((item) => String(item.id) === String(vencimientoIncompleto.recurso_id));
+      if (recurso?.tipo_recurso === "medicamento") {
+        setError("Los medicamentos requieren fecha de vencimiento para guardar la recepción.");
+      } else {
+        setError("Cada recurso recibido debe tener fecha de vencimiento o marcar No aplica vencimiento.");
+      }
       return;
     }
     const excesoSinJustificar = recepcionForm.detalles.some((detalle) => {
@@ -4223,9 +4248,18 @@ export function RecursosAsistencialesPage() {
                           <strong>{detalle.cantidad_pendiente}</strong>
                         </div>
                       )}
-                      <label>Fecha vencimiento
-                        <input type="date" value={detalle.fecha_vencimiento} onChange={(event) => actualizarDetalleRecepcion(index, "fecha_vencimiento", event.target.value)} />
-                      </label>
+                      <div className="recepcion-expiry-field">
+                        <label>Fecha vencimiento
+                          <input type="date" value={detalle.fecha_vencimiento} onChange={(event) => actualizarDetalleRecepcion(index, "fecha_vencimiento", event.target.value)} disabled={detalle.fecha_vencimiento_no_aplica} />
+                        </label>
+                        <button
+                          className={`expiry-na-btn ${detalle.fecha_vencimiento_no_aplica ? "active" : ""}`}
+                          type="button"
+                          onClick={() => actualizarDetalleRecepcion(index, "fecha_vencimiento_no_aplica", !detalle.fecha_vencimiento_no_aplica)}
+                        >
+                          No aplica vencimiento
+                        </button>
+                      </div>
                       <label>Registro INVIMA recibido
                         <input value={detalle.registro_sanitario_lote} onChange={(event) => actualizarDetalleRecepcion(index, "registro_sanitario_lote", event.target.value)} placeholder="Ej. INVIMA 2024M-..." />
                       </label>
