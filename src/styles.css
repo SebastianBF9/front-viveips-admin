@@ -912,10 +912,13 @@ td small { display: block; color: var(--muted); margin-top: 4px; }
 }
 .contract-modal {
   width: min(800px, 100%);
+  max-height: min(92vh, 900px);
   padding: 0;
   overflow: hidden;
   border-radius: 22px;
   gap: 0;
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr);
 }
 .contract-modal-header {
   padding: 22px 26px;
@@ -925,7 +928,9 @@ td small { display: block; color: var(--muted); margin-top: 4px; }
   justify-content: space-between;
   align-items: center;
   gap: 16px;
+  min-width: 0;
 }
+.contract-modal-header > div { min-width: 0; }
 .contract-modal-header h2 {
   margin: 0;
   color: #fff;
@@ -938,6 +943,7 @@ td small { display: block; color: var(--muted); margin-top: 4px; }
   color: rgba(255, 255, 255, .9);
   margin-top: 6px;
   font-weight: 800;
+  overflow-wrap: anywhere;
 }
 .modal-close-btn {
   width: 42px;
@@ -954,6 +960,9 @@ td small { display: block; color: var(--muted); margin-top: 4px; }
   padding: 28px 32px 32px;
   display: grid;
   gap: 18px;
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
 }
 .contract-state-box {
   border: 1px solid #d8e0eb;
@@ -963,13 +972,15 @@ td small { display: block; color: var(--muted); margin-top: 4px; }
   display: flex;
   gap: 12px;
   align-items: flex-start;
+  min-width: 0;
 }
+.contract-state-box > div { min-width: 0; }
 .contract-state-box svg { color: #64748b; margin-top: 1px; }
 .contract-state-box.pendiente-firma svg { color: #d97706; }
 .contract-state-box.firmado-profesional svg { color: #2563eb; }
 .contract-state-box.completo svg { color: #059669; }
 .contract-state-box strong { display: block; color: #334155; }
-.contract-state-box span { display: block; color: #64748b; margin-top: 10px; }
+.contract-state-box span { display: block; color: #64748b; margin-top: 10px; overflow-wrap: anywhere; }
 .contract-download-btn {
   margin-top: 16px;
   border: 1px solid #bfdbfe;
@@ -986,6 +997,7 @@ td small { display: block; color: var(--muted); margin-top: 4px; }
 .contract-regenerate-text {
   color: #334155;
   font-weight: 900;
+  overflow-wrap: anywhere;
 }
 .contract-form-grid {
   display: grid;
@@ -1014,10 +1026,12 @@ td small { display: block; color: var(--muted); margin-top: 4px; }
   border-radius: 14px;
   padding: 15px 18px;
   line-height: 1.45;
+  overflow-wrap: anywhere;
 }
 .contract-actions {
   margin-top: 12px;
   align-items: center;
+  flex-wrap: wrap;
 }
 .pill-btn {
   border-radius: 999px;
@@ -5831,6 +5845,7 @@ td small { display: block; color: var(--muted); margin-top: 4px; }
 
 @media (max-width: 680px) {
   .main { padding: 18px; }
+  .modal-backdrop { padding: 10px; place-items: center; }
   .page-header { display: grid; }
   .kpi-grid, .kpi-grid.four, .kpi-grid.five, .standards-grid, .form-grid, .detail-grid, .modal-docs-grid, .assigned-services-grid, .contract-form-grid, .create-user-form { grid-template-columns: 1fr; }
   .training-form-grid { grid-template-columns: 1fr; }
@@ -5846,7 +5861,40 @@ td small { display: block; color: var(--muted); margin-top: 4px; }
   }
   .system-info-grid { grid-template-columns: 1fr; }
   .assigned-service-card dl { grid-template-columns: 1fr; }
-  .contract-modal-body { padding: 22px; }
+  .contract-modal {
+    width: 100%;
+    max-height: calc(100dvh - 20px);
+    border-radius: 18px;
+  }
+  .contract-modal-header {
+    padding: 18px;
+    align-items: flex-start;
+  }
+  .contract-modal-header h2 { font-size: 20px; }
+  .contract-modal-header p { font-size: 14px; }
+  .modal-close-btn {
+    width: 38px;
+    height: 38px;
+    flex: 0 0 auto;
+  }
+  .contract-modal-body { padding: 18px; }
+  .contract-state-box {
+    padding: 16px;
+    border-radius: 14px;
+  }
+  .contract-form-grid input {
+    min-height: 52px;
+    font-size: 16px;
+  }
+  .contract-actions {
+    display: grid;
+    grid-template-columns: 1fr;
+  }
+  .contract-actions .pill-btn,
+  .contract-actions .gradient-btn {
+    width: 100%;
+    min-width: 0;
+  }
   .contract-date-field { grid-column: auto; }
   .password-row { grid-template-columns: 1fr; }
   .create-user-actions { display: grid; }
