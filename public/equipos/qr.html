@@ -51,7 +51,7 @@
       const esPruebas = host === "pruebas.portal.viveips.com.co" || host.includes("localhost") || host.includes("127.0.0.1") || host.includes("admin-pruebas");
       return esPruebas ? "https://pruebas.portal.viveips.com.co" : "https://portal.viveips.com.co";
     }
-    const urlConsulta = `${portalViejoBase()}/equipos/ver.html?codigo=${encodeURIComponent(codigo)}`;
+    const urlConsulta = `${portalViejoBase()}/equipos/ver?codigo=${encodeURIComponent(codigo)}`;
     const qrApi = `https://api.qrserver.com/v1/create-qr-code/?size=520x520&margin=10&data=${encodeURIComponent(urlConsulta)}`;
 
     async function cargar(){
