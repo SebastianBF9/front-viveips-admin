@@ -935,6 +935,15 @@ export async function obtenerHojaVidaEquipo(equipoId: number) {
   return apiCall<EquipoHojaVida>("GET", `/equipos/${equipoId}/hoja-vida`);
 }
 
+export async function obtenerEquipoQrPublico(codigo: string) {
+  const response = await fetch(`${API_URL}/qr/equipos/${encodeURIComponent(codigo)}`);
+  const data = await response.json().catch(() => ({}));
+  if (!response.ok) {
+    throw new Error(typeof data?.detail === "string" ? data.detail : "Equipo no encontrado");
+  }
+  return data as { success?: boolean; equipo?: EquipoBiomedico; asignado?: boolean; mensaje_privacidad?: string };
+}
+
 export async function crearEquipoBiomedico(payload: Partial<EquipoBiomedico>) {
   return apiCall<{ success: boolean; mensaje: string; equipo_id: number; codigo_interno?: string }>("POST", "/equipos", payload);
 }
