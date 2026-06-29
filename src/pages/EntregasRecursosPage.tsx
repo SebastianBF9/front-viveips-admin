@@ -152,7 +152,8 @@ export function EntregasRecursosPage() {
   }
 
   function abrirMiCarnet() {
-    window.open("/carnet", "_blank", "noopener,noreferrer");
+    const token = sessionStorage.getItem("viveips_token");
+    window.open(token ? `/carnet?token=${encodeURIComponent(token)}` : "/carnet", "_blank", "noopener,noreferrer");
   }
 
   async function descargarListadoAsignado() {

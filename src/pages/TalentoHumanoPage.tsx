@@ -543,7 +543,10 @@ export function TalentoHumanoPage() {
   }
 
   function abrirCarnet(profesional: ProfesionalAdmin) {
-    window.open(`/carnet?profesionalId=${encodeURIComponent(profesional.id)}`, "_blank", "noopener,noreferrer");
+    const params = new URLSearchParams({ profesionalId: String(profesional.id) });
+    const token = sessionStorage.getItem("viveips_token");
+    if (token) params.set("token", token);
+    window.open(`/carnet?${params.toString()}`, "_blank", "noopener,noreferrer");
   }
 
   async function abrirDetalleProfesional(profesional: ProfesionalAdmin) {

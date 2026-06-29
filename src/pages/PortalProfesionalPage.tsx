@@ -889,7 +889,8 @@ export function PortalProfesionalPage() {
   }
 
   function abrirMiCarnet() {
-    window.open("/carnet", "_blank", "noopener,noreferrer");
+    const token = sessionStorage.getItem("viveips_token");
+    window.open(token ? `/carnet?token=${encodeURIComponent(token)}` : "/carnet", "_blank", "noopener,noreferrer");
   }
 
   if (loading) return <Loading text="Cargando portal profesional..." />;
