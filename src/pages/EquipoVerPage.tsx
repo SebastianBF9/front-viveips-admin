@@ -57,7 +57,7 @@ export function EquipoVerPage() {
   }, [codigo]);
 
   function irAGestion() {
-    const next = encodeURIComponent("/infraestructura");
+    const next = encodeURIComponent(`/equipos/gestionar?codigo=${encodeURIComponent(codigo)}`);
     window.location.href = `/login?next=${next}`;
   }
 

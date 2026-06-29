@@ -5,6 +5,7 @@ import { AppLayout } from "./ui/AppLayout";
 import { AccesosPage } from "./pages/AccesosPage";
 import { CapacitacionesProfesionalPage } from "./pages/CapacitacionesProfesionalPage";
 import { EntregasRecursosPage } from "./pages/EntregasRecursosPage";
+import { EquipoGestionarPage } from "./pages/EquipoGestionarPage";
 import { EquipoQrPage } from "./pages/EquipoQrPage";
 import { EquipoVerPage } from "./pages/EquipoVerPage";
 import { EstandarPendientePage } from "./pages/EstandarPendientePage";
@@ -23,6 +24,7 @@ const router = createBrowserRouter([
   { path: "/login", element: <LoginPage /> },
   { path: "/equipos/qr", element: <EquipoQrPage /> },
   { path: "/equipos/ver", element: <EquipoVerPage /> },
+  { path: "/equipos/gestionar", element: <EquipoGestionarPage /> },
   { path: "/entregas-recursos", element: <EntregasRecursosPage /> },
   { path: "/portal-profesional", element: <PortalProfesionalPage /> },
   { path: "/portal-profesional/capacitaciones", element: <CapacitacionesProfesionalPage /> },
