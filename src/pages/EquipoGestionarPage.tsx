@@ -302,6 +302,15 @@ export function EquipoGestionarPage() {
     if (accion === "asignar" && !asignacion) abrirAsignacion();
   }, [accion, equipo?.id, loading, asignacion?.id]);
 
+  useEffect(() => {
+    if (!error && !success) return;
+    const timeout = window.setTimeout(() => {
+      setError("");
+      setSuccess("");
+    }, 6500);
+    return () => window.clearTimeout(timeout);
+  }, [error, success]);
+
   function mostrarError(mensaje: string) {
     setError(mensaje);
     setSuccess("");
@@ -310,6 +319,11 @@ export function EquipoGestionarPage() {
   function mostrarSuccess(mensaje: string) {
     setSuccess(mensaje);
     setError("");
+  }
+
+  function limpiarAlertas() {
+    setError("");
+    setSuccess("");
   }
 
   async function cargar() {
@@ -690,9 +704,9 @@ export function EquipoGestionarPage() {
   return (
     <main className="equipo-gestion-page">
       {modalAbierto && (error || success) && (
-        <div className={`equipo-gestion-alert equipo-gestion-floating-alert ${error ? "error" : "success"}`}>
+        <button type="button" className={`equipo-gestion-alert equipo-gestion-floating-alert ${error ? "error" : "success"}`} onClick={limpiarAlertas}>
           {error || success}
-        </div>
+        </button>
       )}
 
       <section className="equipo-gestion-card">
@@ -782,7 +796,7 @@ export function EquipoGestionarPage() {
 
       {asignarOpen && equipo && (
         <div className="equipo-gestion-modal-backdrop" onMouseDown={(event) => event.target === event.currentTarget && setAsignarOpen(false)}>
-          <form className="equipo-gestion-modal" onSubmit={guardarAsignacion}>
+          <form className="equipo-gestion-modal" onChange={limpiarAlertas} onSubmit={guardarAsignacion}>
             <ModalHead title="📦 Asignar equipo" subtitle={`${texto(equipo.codigo_interno)} · ${texto(equipo.nombre)}`} onClose={() => setAsignarOpen(false)} />
             <div className="equipo-gestion-modal-body">
               <div className="equipo-gestion-form-grid">
@@ -938,7 +952,7 @@ export function EquipoGestionarPage() {
 
       {devolucionOpen && asignacion && equipo && (
         <div className="equipo-gestion-modal-backdrop" onMouseDown={(event) => event.target === event.currentTarget && setDevolucionOpen(false)}>
-          <form className="equipo-gestion-modal" onSubmit={guardarDevolucion}>
+          <form className="equipo-gestion-modal" onChange={limpiarAlertas} onSubmit={guardarDevolucion}>
             <ModalHead title="↩ Registrar devolucion" subtitle={`${texto(equipo.codigo_interno)} · ${texto(equipo.nombre)}`} onClose={() => setDevolucionOpen(false)} />
             <div className="equipo-gestion-modal-body">
               <div className="equipo-gestion-summary-grid">
