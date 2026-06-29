@@ -1,11 +1,13 @@
-import { FormEvent, useEffect, useMemo, useRef, useState } from "react";
+import { FormEvent, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   asignarEquipoQr,
   buscarPacientesIpsHealthcare,
   clearSession,
   descargarPagareEquipo,
   downloadUrl,
+  listarDepartamentos,
   listarMantenimientosEquipo,
+  listarMunicipios,
   listarProfesionales,
   obtenerEquipoQrPublico,
   obtenerHojaVidaEquipo,
@@ -13,7 +15,15 @@ import {
   registrarDevolucionEquipoQr,
   verificarSesion,
 } from "../api";
-import type { EquipoAsignacion, EquipoBiomedico, EquipoHojaVida, PacienteIpsHealthcare, ProfesionalPerfil } from "../types";
+import type {
+  EquipoAsignacion,
+  EquipoBiomedico,
+  EquipoHojaVida,
+  PacienteIpsHealthcare,
+  ProfesionalPerfil,
+  UbicacionDepartamento,
+  UbicacionMunicipio,
+} from "../types";
 
 type ProfesionalOption = {
   id: number;
@@ -173,9 +183,14 @@ function calcularProximaDesdeBase(fechaBase?: string | null, periodicidad?: stri
 function usarCanvasFirma() {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const drawingRef = useRef(false);
+  const cleanupRef = useRef<(() => void) | null>(null);
+  const [firmado, setFirmado] = useState(false);
 
-  useEffect(() => {
-    const canvas = canvasRef.current;
+  const setCanvasRef = useCallback((canvas: HTMLCanvasElement | null) => {
+    cleanupRef.current?.();
+    cleanupRef.current = null;
+    canvasRef.current = canvas;
+    setFirmado(false);
     if (!canvas) return;
     const ctx = canvas.getContext("2d");
     if (!ctx) return;
@@ -205,6 +220,7 @@ function usarCanvasFirma() {
       const point = pos(event);
       ctx.lineTo(point.x, point.y);
       ctx.stroke();
+      setFirmado(true);
     };
     const end = () => {
       drawingRef.current = false;
@@ -217,7 +233,7 @@ function usarCanvasFirma() {
     canvas.addEventListener("touchmove", move, { passive: false });
     canvas.addEventListener("touchend", end);
 
-    return () => {
+    cleanupRef.current = () => {
       canvas.removeEventListener("mousedown", start);
       canvas.removeEventListener("mousemove", move);
       window.removeEventListener("mouseup", end);
@@ -227,17 +243,20 @@ function usarCanvasFirma() {
     };
   }, []);
 
+  useEffect(() => () => cleanupRef.current?.(), []);
+
   function limpiarFirma() {
     const canvas = canvasRef.current;
     const ctx = canvas?.getContext("2d");
     if (canvas && ctx) ctx.clearRect(0, 0, canvas.width, canvas.height);
+    setFirmado(false);
   }
 
   function firmaBase64() {
-    return canvasRef.current?.toDataURL("image/png") || "";
+    return firmado ? canvasRef.current?.toDataURL("image/png") || "" : "";
   }
 
-  return { canvasRef, limpiarFirma, firmaBase64 };
+  return { canvasRef: setCanvasRef, firmado, limpiarFirma, firmaBase64 };
 }
 
 export function EquipoGestionarPage() {
@@ -257,6 +276,8 @@ export function EquipoGestionarPage() {
   const [fechaDevHelp, setFechaDevHelp] = useState("");
   const [pacientes, setPacientes] = useState<PacienteIpsHealthcare[]>([]);
   const [profesionales, setProfesionales] = useState<ProfesionalOption[]>([]);
+  const [departamentos, setDepartamentos] = useState<UbicacionDepartamento[]>([]);
+  const [municipios, setMunicipios] = useState<UbicacionMunicipio[]>([]);
   const [receptor, setReceptor] = useState<ProfesionalPerfil | null>(null);
   const firmaAsignacion = usarCanvasFirma();
   const firmaDevolucion = usarCanvasFirma();
@@ -269,6 +290,8 @@ export function EquipoGestionarPage() {
     () => pacientes.find((paciente) => String(paciente.id_externo) === String(asignacionForm.pacienteId)) || null,
     [asignacionForm.pacienteId, pacientes],
   );
+  const puedeFirmarAsignacion = Boolean(asignacionForm.latitud && asignacionForm.longitud);
+  const puedeFirmarDevolucion = Boolean(devolucionForm.latitud && devolucionForm.longitud);
 
   useEffect(() => {
     cargar();
@@ -319,6 +342,96 @@ export function EquipoGestionarPage() {
   function logout() {
     clearSession();
     window.location.href = `/login?next=${encodeURIComponent(`${window.location.pathname}${window.location.search}`)}`;
+  }
+
+  async function cargarDepartamentosSiHaceFalta() {
+    if (departamentos.length) return departamentos;
+    const data = await listarDepartamentos();
+    const items = data.departamentos || [];
+    setDepartamentos(items);
+    return items;
+  }
+
+  function encontrarDepartamento(valor: string, lista = departamentos) {
+    const normalizado = normalizarTexto(valor);
+    if (!normalizado) return null;
+    return (
+      lista.find((dept) => normalizarTexto(dept.codigo_departamento) === normalizado || normalizarTexto(dept.nombre_departamento) === normalizado) || null
+    );
+  }
+
+  function nombreDepartamento(codigoDepartamento: string) {
+    return departamentos.find((dept) => String(dept.codigo_departamento) === String(codigoDepartamento))?.nombre_departamento || codigoDepartamento;
+  }
+
+  async function cargarMunicipiosDepartamento(codigoDepartamento: string) {
+    if (!codigoDepartamento) {
+      setMunicipios([]);
+      return [];
+    }
+    const data = await listarMunicipios(codigoDepartamento);
+    const items = data.municipios || [];
+    setMunicipios(items);
+    return items;
+  }
+
+  async function aplicarUbicacion(departamento?: string | null, ciudad?: string | null) {
+    try {
+      const deptos = await cargarDepartamentosSiHaceFalta();
+      const dept = encontrarDepartamento(departamento || "", deptos);
+      const codigoDept = dept?.codigo_departamento || "";
+      const municipiosDept = codigoDept ? await cargarMunicipiosDepartamento(codigoDept) : [];
+      const municipio = ciudad ? municipiosDept.find((mun) => normalizarTexto(mun.nombre_municipio) === normalizarTexto(ciudad)) : null;
+      setAsignacionForm((actual) => ({
+        ...actual,
+        departamento: codigoDept,
+        ciudad: municipio?.nombre_municipio || "",
+      }));
+    } catch (err) {
+      mostrarError(err instanceof Error ? err.message : "No fue posible cargar departamentos y ciudades.");
+    }
+  }
+
+  async function cambiarDepartamento(codigoDepartamento: string) {
+    setAsignacionForm((actual) => ({ ...actual, departamento: codigoDepartamento, ciudad: "" }));
+    try {
+      await cargarMunicipiosDepartamento(codigoDepartamento);
+    } catch (err) {
+      mostrarError(err instanceof Error ? err.message : "No fue posible cargar ciudades.");
+    }
+  }
+
+  function camposFaltantesAsignacion() {
+    const faltantes: string[] = [];
+    if (!asignacionForm.tipo) faltantes.push("tipo de asignacion");
+    if (!asignacionForm.fechaDev) faltantes.push("fecha estimada de devolucion");
+    if (asignacionForm.tipo === "profesional" && !asignacionForm.profesionalId) faltantes.push("profesional");
+    if (!asignacionForm.pacienteNombre) faltantes.push(asignacionForm.tipo === "profesional" ? "nombre del profesional" : "paciente / usuario");
+    if (!asignacionForm.pacienteDocumento) faltantes.push("documento paciente / profesional");
+    if (!asignacionForm.pacienteTelefono) faltantes.push("telefono paciente / profesional");
+    if (!asignacionForm.responsableNombre) faltantes.push("responsable");
+    if (!asignacionForm.responsableDocumento) faltantes.push("documento responsable");
+    if (!asignacionForm.responsableTelefono) faltantes.push("telefono responsable");
+    if (!asignacionForm.responsableEmail) faltantes.push("correo responsable");
+    if (!asignacionForm.departamento) faltantes.push("departamento");
+    if (!asignacionForm.ciudad) faltantes.push("ciudad");
+    if (!asignacionForm.direccion) faltantes.push("direccion de entrega");
+    if (!asignacionForm.latitud || !asignacionForm.longitud) faltantes.push("ubicacion GPS");
+    if (!asignacionForm.estadoEntrega) faltantes.push("estado del equipo al entregar");
+    if (!asignacionForm.observaciones) faltantes.push("observaciones");
+    if (!asignacionForm.acepta) faltantes.push("aceptacion de pagare/acta");
+    if (!firmaAsignacion.firmado) faltantes.push("firma del responsable");
+    return faltantes;
+  }
+
+  function camposFaltantesDevolucion() {
+    const faltantes: string[] = [];
+    if (!devolucionForm.estadoFinal) faltantes.push("estado final del equipo");
+    if (!devolucionForm.estadoRecibe) faltantes.push("estado fisico al recibir");
+    if (!devolucionForm.latitud || !devolucionForm.longitud) faltantes.push("ubicacion GPS");
+    if (!devolucionForm.observaciones) faltantes.push("observaciones de devolucion");
+    if (!firmaDevolucion.firmado) faltantes.push("firma de devolucion");
+    return faltantes;
   }
 
   async function calcularFechaTentativa(equipoId: number, hojaVida: EquipoHojaVida | null) {
@@ -387,8 +500,10 @@ export function EquipoGestionarPage() {
     if (!equipo?.id) return;
     setAsignacionForm(emptyAsignacionForm);
     setPacientes([]);
+    setMunicipios([]);
     setAsignarOpen(true);
     firmaAsignacion.limpiarFirma();
+    cargarDepartamentosSiHaceFalta().catch((err) => mostrarError(err instanceof Error ? err.message : "No fue posible cargar departamentos."));
     calcularFechaTentativa(equipo.id, hoja);
     setTimeout(() => capturarGPS("asignacion"), 150);
   }
@@ -419,7 +534,7 @@ export function EquipoGestionarPage() {
     }
   }
 
-  function seleccionarPaciente(idExterno: string) {
+  async function seleccionarPaciente(idExterno: string) {
     const paciente = pacientes.find((item) => String(item.id_externo) === String(idExterno));
     if (!paciente) {
       setAsignacionForm((actual) => ({ ...actual, pacienteId: idExterno }));
@@ -432,10 +547,9 @@ export function EquipoGestionarPage() {
       pacienteNombre: paciente.nombre || "",
       pacienteDocumento: paciente.documento || "",
       pacienteTelefono: telefono,
-      ciudad: paciente.ciudad || "",
-      departamento: paciente.departamento || "",
       direccion: paciente.direccion || "",
     }));
+    await aplicarUbicacion(paciente.departamento, paciente.ciudad);
   }
 
   async function cargarProfesionalesSiHaceFalta() {
@@ -466,7 +580,7 @@ export function EquipoGestionarPage() {
     if (tipo === "profesional") cargarProfesionalesSiHaceFalta();
   }
 
-  function seleccionarProfesional(id: string) {
+  async function seleccionarProfesional(id: string) {
     const profesional = profesionales.find((item) => String(item.id) === String(id));
     if (!profesional) {
       setAsignacionForm((actual) => ({ ...actual, profesionalId: id }));
@@ -483,22 +597,18 @@ export function EquipoGestionarPage() {
       responsableDocumento: documento,
       responsableTelefono: profesional.telefono || "",
       responsableEmail: profesional.email || "",
-      ciudad: profesional.ciudad || "",
-      departamento: profesional.departamento || "",
       direccion: profesional.direccion || "",
     }));
+    await aplicarUbicacion(profesional.departamento, profesional.ciudad);
   }
 
   async function guardarAsignacion(event: FormEvent) {
     event.preventDefault();
     if (!equipo?.id) return mostrarError("No se encontro el equipo.");
-    if (!asignacionForm.responsableNombre || !asignacionForm.responsableDocumento || !asignacionForm.direccion) {
-      return mostrarError("Responsable, documento y direccion son obligatorios.");
-    }
-    if (!asignacionForm.latitud || !asignacionForm.longitud) return mostrarError("Debes capturar la ubicacion GPS.");
-    if (!asignacionForm.acepta) return mostrarError("Debes aceptar las condiciones del pagare.");
+    const faltantes = camposFaltantesAsignacion();
+    if (faltantes.length) return mostrarError(`Faltan campos obligatorios: ${faltantes.join(", ")}.`);
     const firma = firmaAsignacion.firmaBase64();
-    if (!firma) return mostrarError("La firma del responsable es obligatoria.");
+    if (!firma) return mostrarError("La firma del responsable es obligatoria y debe realizarse despues de capturar la ubicacion GPS.");
 
     setBusy(true);
     try {
@@ -513,7 +623,7 @@ export function EquipoGestionarPage() {
         responsable_email: asignacionForm.responsableEmail || null,
         direccion_entrega: asignacionForm.direccion,
         ciudad: asignacionForm.ciudad || null,
-        departamento: asignacionForm.departamento || null,
+        departamento: nombreDepartamento(asignacionForm.departamento) || null,
         latitud_entrega: Number(asignacionForm.latitud),
         longitud_entrega: Number(asignacionForm.longitud),
         fecha_estimada_devolucion: asignacionForm.fechaDev || null,
@@ -535,10 +645,10 @@ export function EquipoGestionarPage() {
   async function guardarDevolucion(event: FormEvent) {
     event.preventDefault();
     if (!asignacion) return mostrarError("No se encontro la asignacion.");
-    if (!devolucionForm.estadoRecibe) return mostrarError("El estado fisico al recibir es obligatorio.");
-    if (!devolucionForm.latitud || !devolucionForm.longitud) return mostrarError("Debes capturar la ubicacion GPS.");
+    const faltantes = camposFaltantesDevolucion();
+    if (faltantes.length) return mostrarError(`Faltan campos obligatorios: ${faltantes.join(", ")}.`);
     const firma = firmaDevolucion.firmaBase64();
-    if (!firma) return mostrarError("La firma de devolucion es obligatoria.");
+    if (!firma) return mostrarError("La firma de devolucion es obligatoria y debe realizarse despues de capturar la ubicacion GPS.");
 
     setBusy(true);
     try {
@@ -753,8 +863,32 @@ export function EquipoGestionarPage() {
                 <Campo label="Documento responsable *" value={asignacionForm.responsableDocumento} onChange={(value) => setAsignacionForm((actual) => ({ ...actual, responsableDocumento: value }))} />
                 <Campo label="Telefono responsable" value={asignacionForm.responsableTelefono} onChange={(value) => setAsignacionForm((actual) => ({ ...actual, responsableTelefono: value }))} />
                 <Campo label="Correo responsable" type="email" value={asignacionForm.responsableEmail} onChange={(value) => setAsignacionForm((actual) => ({ ...actual, responsableEmail: value }))} />
-                <Campo label="Ciudad" value={asignacionForm.ciudad} onChange={(value) => setAsignacionForm((actual) => ({ ...actual, ciudad: value }))} />
-                <Campo label="Departamento" value={asignacionForm.departamento} onChange={(value) => setAsignacionForm((actual) => ({ ...actual, departamento: value }))} />
+                <label>
+                  Departamento *
+                  <select value={asignacionForm.departamento} onFocus={cargarDepartamentosSiHaceFalta} onChange={(event) => cambiarDepartamento(event.target.value)}>
+                    <option value="">Selecciona departamento</option>
+                    {departamentos.map((dept) => (
+                      <option key={dept.codigo_departamento} value={dept.codigo_departamento}>
+                        {dept.nombre_departamento}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+                <label>
+                  Ciudad *
+                  <select
+                    value={asignacionForm.ciudad}
+                    disabled={!asignacionForm.departamento}
+                    onChange={(event) => setAsignacionForm((actual) => ({ ...actual, ciudad: event.target.value }))}
+                  >
+                    <option value="">{asignacionForm.departamento ? "Selecciona ciudad" : "Selecciona primero departamento"}</option>
+                    {municipios.map((mun) => (
+                      <option key={mun.codigo_municipio || mun.nombre_municipio} value={mun.nombre_municipio}>
+                        {mun.nombre_municipio}
+                      </option>
+                    ))}
+                  </select>
+                </label>
                 <Campo label="Direccion entrega *" wide value={asignacionForm.direccion} onChange={(value) => setAsignacionForm((actual) => ({ ...actual, direccion: value }))} />
                 <Campo label="Latitud GPS *" readOnly value={asignacionForm.latitud} onChange={() => undefined} />
                 <Campo label="Longitud GPS *" readOnly value={asignacionForm.longitud} onChange={() => undefined} />
@@ -779,7 +913,10 @@ export function EquipoGestionarPage() {
               </label>
 
               <h4>Firma del responsable</h4>
-              <canvas ref={firmaAsignacion.canvasRef} width={760} height={220} className="equipo-gestion-signature" />
+              <div className={`equipo-gestion-signature-wrap ${puedeFirmarAsignacion ? "" : "disabled"}`}>
+                <canvas ref={firmaAsignacion.canvasRef} width={760} height={220} className="equipo-gestion-signature" />
+                {!puedeFirmarAsignacion && <div className="equipo-gestion-signature-lock">Captura primero la ubicacion GPS para habilitar la firma.</div>}
+              </div>
               <div className="equipo-gestion-signature-actions">
                 <button type="button" className="equipo-gestion-btn equipo-gestion-btn-secondary" onClick={firmaAsignacion.limpiarFirma}>
                   Limpiar firma
@@ -833,7 +970,10 @@ export function EquipoGestionarPage() {
               </div>
               <h4>Firma de devolucion</h4>
               <p className="equipo-gestion-muted">Firma de la persona que entrega/devuelve el equipo.</p>
-              <canvas ref={firmaDevolucion.canvasRef} width={760} height={220} className="equipo-gestion-signature" />
+              <div className={`equipo-gestion-signature-wrap ${puedeFirmarDevolucion ? "" : "disabled"}`}>
+                <canvas ref={firmaDevolucion.canvasRef} width={760} height={220} className="equipo-gestion-signature" />
+                {!puedeFirmarDevolucion && <div className="equipo-gestion-signature-lock">Captura primero la ubicacion GPS para habilitar la firma.</div>}
+              </div>
               <div className="equipo-gestion-signature-actions">
                 <button type="button" className="equipo-gestion-btn equipo-gestion-btn-secondary" onClick={firmaDevolucion.limpiarFirma}>
                   Limpiar firma
