@@ -37,6 +37,7 @@ function portalPublicoBase() {
 export function CarnetPage() {
   const params = new URLSearchParams(window.location.search);
   const profesionalId = params.get("profesionalId") || "";
+  const tokenParam = params.get("token") || "";
   const [perfil, setPerfil] = useState<CarnetPerfil | null>(null);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(true);
@@ -53,12 +54,13 @@ export function CarnetPage() {
   useEffect(() => {
     setLoading(true);
     setError("");
+    if (tokenParam) sessionStorage.setItem("viveips_token", tokenParam);
     const request = profesionalId ? obtenerProfesional(Number(profesionalId)).then((data) => data.perfil) : obtenerMiPerfilProfesional().then((data) => data.perfil);
     request
       .then((data) => setPerfil(data as CarnetPerfil))
       .catch((err) => setError(err instanceof Error ? err.message : "No fue posible cargar el carnet"))
       .finally(() => setLoading(false));
-  }, [profesionalId]);
+  }, [profesionalId, tokenParam]);
 
   async function descargar() {
     if (!perfil) return;
