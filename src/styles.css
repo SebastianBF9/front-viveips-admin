@@ -814,6 +814,30 @@ button, input, select, textarea { font: inherit; }
   width: 100%;
 }
 
+.equipo-gestion-signature-wrap {
+  position: relative;
+}
+
+.equipo-gestion-signature-wrap.disabled .equipo-gestion-signature {
+  background: #f8fafc;
+  pointer-events: none;
+}
+
+.equipo-gestion-signature-lock {
+  align-items: center;
+  background: rgba(248, 250, 252, .88);
+  border: 1.5px dashed #cbd5e1;
+  border-radius: 14px;
+  color: #64748b;
+  display: flex;
+  font-weight: 800;
+  inset: 0;
+  justify-content: center;
+  padding: 18px;
+  position: absolute;
+  text-align: center;
+}
+
 .equipo-gestion-signature-actions {
   display: flex;
   gap: 10px;
