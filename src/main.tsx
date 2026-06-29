@@ -6,6 +6,7 @@ import { AccesosPage } from "./pages/AccesosPage";
 import { CapacitacionesProfesionalPage } from "./pages/CapacitacionesProfesionalPage";
 import { EntregasRecursosPage } from "./pages/EntregasRecursosPage";
 import { EquipoQrPage } from "./pages/EquipoQrPage";
+import { EquipoVerPage } from "./pages/EquipoVerPage";
 import { EstandarPendientePage } from "./pages/EstandarPendientePage";
 import { GestionDocumentalPage } from "./pages/GestionDocumentalPage";
 import { InfraestructuraPage } from "./pages/InfraestructuraPage";
@@ -21,6 +22,7 @@ import "./styles.css";
 const router = createBrowserRouter([
   { path: "/login", element: <LoginPage /> },
   { path: "/equipos/qr", element: <EquipoQrPage /> },
+  { path: "/equipos/ver", element: <EquipoVerPage /> },
   { path: "/entregas-recursos", element: <EntregasRecursosPage /> },
   { path: "/portal-profesional", element: <PortalProfesionalPage /> },
   { path: "/portal-profesional/capacitaciones", element: <CapacitacionesProfesionalPage /> },
