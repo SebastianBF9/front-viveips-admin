@@ -685,8 +685,16 @@ export function EquipoGestionarPage() {
     }
   }
 
+  const modalAbierto = asignarOpen || devolucionOpen;
+
   return (
     <main className="equipo-gestion-page">
+      {modalAbierto && (error || success) && (
+        <div className={`equipo-gestion-alert equipo-gestion-floating-alert ${error ? "error" : "success"}`}>
+          {error || success}
+        </div>
+      )}
+
       <section className="equipo-gestion-card">
         <header className="equipo-gestion-head">
           <div>
@@ -699,8 +707,8 @@ export function EquipoGestionarPage() {
         </header>
 
         <div className="equipo-gestion-body">
-          {error && <div className="equipo-gestion-alert error">{error}</div>}
-          {success && <div className="equipo-gestion-alert success">{success}</div>}
+          {!modalAbierto && error && <div className="equipo-gestion-alert error">{error}</div>}
+          {!modalAbierto && success && <div className="equipo-gestion-alert success">{success}</div>}
 
           {loading && <div className="equipo-gestion-loading">Cargando equipo...</div>}
 
