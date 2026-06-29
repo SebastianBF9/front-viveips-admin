@@ -526,7 +526,8 @@ export function InfraestructuraPage() {
       setError("Este equipo no tiene codigo interno para generar QR.");
       return;
     }
-    window.open(`/equipos/qr.html?codigo=${encodeURIComponent(equipo.codigo_interno)}`, "_blank", "noopener,noreferrer");
+    const params = new URLSearchParams({ codigo: equipo.codigo_interno, nombre: equipo.nombre || "Equipo biomedico" });
+    window.open(`/equipos/qr?${params.toString()}`, "_blank", "noopener,noreferrer");
   }
 
   function imprimirHojaVida() {

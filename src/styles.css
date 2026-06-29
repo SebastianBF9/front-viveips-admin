@@ -21,6 +21,184 @@ body {
 
 button, input, select, textarea { font: inherit; }
 
+.equipo-qr-page {
+  align-items: center;
+  background: #f3f7f9;
+  color: #172033;
+  display: flex;
+  justify-content: center;
+  min-height: 100vh;
+  padding: 34px 24px;
+}
+
+.equipo-qr-label {
+  background: #fff;
+  border: 3px solid #0d7c73;
+  border-radius: 28px;
+  box-shadow: 0 22px 70px rgba(15, 23, 42, .08);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: min(610px, calc(100vw - 48px));
+  min-height: 900px;
+  padding: 92px 56px 42px;
+  text-align: center;
+}
+
+.equipo-qr-logo {
+  display: block;
+  width: 150px;
+  height: auto;
+  object-fit: contain;
+  margin: 0 auto 70px;
+}
+
+.equipo-qr-label h1 {
+  color: #0d7c73;
+  font-size: 31px;
+  font-weight: 900;
+  line-height: 1.1;
+  margin: 0 0 8px;
+}
+
+.equipo-qr-subtitle {
+  color: #66738a;
+  font-size: 18px;
+  font-weight: 600;
+  margin: 0 0 28px;
+}
+
+.equipo-qr-box {
+  align-items: center;
+  background: #fff;
+  border: 1.5px solid #e1e5ec;
+  border-radius: 18px;
+  display: flex;
+  height: 402px;
+  justify-content: center;
+  margin: 0 auto 20px;
+  padding: 20px;
+  width: 402px;
+}
+
+.equipo-qr-box img {
+  display: block;
+  height: 100%;
+  object-fit: contain;
+  width: 100%;
+}
+
+.equipo-qr-name {
+  color: #111a35;
+  display: block;
+  font-size: 27px;
+  font-weight: 900;
+  line-height: 1.15;
+  margin-top: 8px;
+  text-transform: uppercase;
+}
+
+.equipo-qr-code {
+  color: #1b3a6b;
+  display: block;
+  font-size: 23px;
+  font-weight: 900;
+  line-height: 1.2;
+  margin-top: 8px;
+}
+
+.equipo-qr-help {
+  color: #47566d;
+  font-size: 18px;
+  font-weight: 500;
+  line-height: 1.35;
+  margin: 24px 0 0;
+}
+
+.equipo-qr-actions {
+  display: flex;
+  gap: 16px;
+  justify-content: center;
+  margin-top: 38px;
+}
+
+.equipo-qr-actions button {
+  border: 0;
+  border-radius: 999px;
+  cursor: pointer;
+  font-size: 18px;
+  font-weight: 900;
+  min-width: 124px;
+  padding: 15px 28px;
+}
+
+.equipo-qr-secondary {
+  background: #e2e8f1;
+  color: #334155;
+}
+
+.equipo-qr-primary {
+  background: linear-gradient(135deg, #1B3A6B, #1BAAB5);
+  color: #fff;
+}
+
+@media (max-width: 640px) {
+  .equipo-qr-page {
+    padding: 18px 12px;
+  }
+  .equipo-qr-label {
+    border-radius: 24px;
+    min-height: auto;
+    padding: 52px 24px 32px;
+    width: min(100%, 420px);
+  }
+  .equipo-qr-logo {
+    margin-bottom: 44px;
+    width: 124px;
+  }
+  .equipo-qr-label h1 {
+    font-size: 26px;
+  }
+  .equipo-qr-subtitle {
+    font-size: 16px;
+  }
+  .equipo-qr-box {
+    height: min(312px, calc(100vw - 96px));
+    padding: 14px;
+    width: min(312px, calc(100vw - 96px));
+  }
+  .equipo-qr-name {
+    font-size: 24px;
+  }
+  .equipo-qr-code {
+    font-size: 21px;
+  }
+  .equipo-qr-help {
+    font-size: 16px;
+  }
+  .equipo-qr-actions {
+    gap: 12px;
+    margin-top: 28px;
+  }
+  .equipo-qr-actions button {
+    min-width: 110px;
+    padding: 13px 22px;
+  }
+}
+
+@media print {
+  .equipo-qr-page {
+    background: #fff;
+    padding: 0;
+  }
+  .equipo-qr-label {
+    box-shadow: none;
+  }
+  .equipo-qr-actions {
+    display: none;
+  }
+}
+
 .app-shell { min-height: 100vh; display: grid; grid-template-columns: 260px minmax(0, 1fr); }
 
 .sidebar {
