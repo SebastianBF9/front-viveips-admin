@@ -38,7 +38,7 @@ export function EquipoQrPage() {
 
   const urlConsulta = useMemo(() => {
     const base = portalPublicoBase();
-    return `${base}/equipos/ver.html?codigo=${encodeURIComponent(codigo)}`;
+    return `${base}/equipos/ver?codigo=${encodeURIComponent(codigo)}`;
   }, [codigo]);
   const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=520x520&margin=10&data=${encodeURIComponent(urlConsulta)}`;
 
