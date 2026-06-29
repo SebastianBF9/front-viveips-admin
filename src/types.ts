@@ -747,14 +747,19 @@ export interface EquipoAsignacion {
   tipo_asignacion?: string | null;
   paciente_nombre?: string | null;
   paciente_documento?: string | null;
+  paciente_telefono?: string | null;
   responsable_nombre?: string | null;
   responsable_documento?: string | null;
+  responsable_telefono?: string | null;
+  responsable_email?: string | null;
   direccion_entrega?: string | null;
   ciudad?: string | null;
   departamento?: string | null;
   fecha_entrega?: string | null;
   fecha_estimada_devolucion?: string | null;
   pagare_estado?: string | null;
+  valor_pagare?: string | number | null;
+  valor_pagare_letras?: string | null;
 }
 
 export interface EquipoHojaVida {

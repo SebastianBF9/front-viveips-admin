@@ -935,6 +935,10 @@ export async function obtenerHojaVidaEquipo(equipoId: number) {
   return apiCall<EquipoHojaVida>("GET", `/equipos/${equipoId}/hoja-vida`);
 }
 
+export async function listarMantenimientosEquipo(equipoId: number) {
+  return apiCall<{ success: boolean; mantenimientos: EquipoMantenimiento[] }>("GET", `/equipos/${equipoId}/mantenimientos`);
+}
+
 export async function obtenerEquipoQrPublico(codigo: string) {
   const response = await fetch(`${API_URL}/qr/equipos/${encodeURIComponent(codigo)}`);
   const data = await response.json().catch(() => ({}));
@@ -942,6 +946,54 @@ export async function obtenerEquipoQrPublico(codigo: string) {
     throw new Error(typeof data?.detail === "string" ? data.detail : "Equipo no encontrado");
   }
   return data as { success?: boolean; equipo?: EquipoBiomedico; asignado?: boolean; mensaje_privacidad?: string };
+}
+
+export async function asignarEquipoQr(
+  equipoId: number,
+  payload: {
+    tipo_asignacion: string;
+    paciente_nombre?: string | null;
+    paciente_documento?: string | null;
+    paciente_telefono?: string | null;
+    responsable_nombre: string;
+    responsable_documento: string;
+    responsable_telefono?: string | null;
+    responsable_email?: string | null;
+    direccion_entrega: string;
+    ciudad?: string | null;
+    departamento?: string | null;
+    latitud_entrega: number;
+    longitud_entrega: number;
+    fecha_estimada_devolucion?: string | null;
+    estado_equipo_entrega?: string | null;
+    observaciones_entrega?: string | null;
+    firma_base64: string;
+    acepta_pagare: boolean;
+  },
+) {
+  return apiCall<{ success: boolean; mensaje?: string }>("POST", `/equipos/${equipoId}/asignacion-qr`, payload);
+}
+
+export async function registrarDevolucionEquipoQr(
+  asignacionId: number,
+  payload: {
+    latitud_devolucion: number;
+    longitud_devolucion: number;
+    estado_equipo_devolucion: string;
+    observaciones_devolucion?: string | null;
+    firma_base64: string;
+    dejar_en_estado: string;
+  },
+) {
+  return apiCall<{ success: boolean; mensaje?: string; acta_devolucion_enviada_email?: boolean }>(
+    "POST",
+    `/equipos/asignaciones/${asignacionId}/devolucion-qr`,
+    payload,
+  );
+}
+
+export async function descargarPagareEquipo(asignacionId: number) {
+  return downloadBlob(`/equipos/asignaciones/${asignacionId}/pagare`, `pagare_asignacion_${asignacionId}.pdf`, true);
 }
 
 export async function crearEquipoBiomedico(payload: Partial<EquipoBiomedico>) {

@@ -420,6 +420,480 @@ button, input, select, textarea { font: inherit; }
   }
 }
 
+.equipo-gestion-page {
+  align-items: flex-start;
+  background: #f6fafb;
+  color: #1f2937;
+  display: flex;
+  justify-content: center;
+  min-height: 100vh;
+  padding: 24px;
+}
+
+.equipo-gestion-card {
+  background: #fff;
+  border-radius: 24px;
+  box-shadow: 0 20px 60px rgba(15, 23, 42, .12);
+  max-width: 980px;
+  min-height: calc(100vh - 72px);
+  overflow: hidden;
+  width: 100%;
+}
+
+.equipo-gestion-head {
+  align-items: center;
+  background: linear-gradient(135deg, #1B3A6B, #1BAAB5);
+  color: #fff;
+  display: flex;
+  gap: 14px;
+  justify-content: space-between;
+  padding: 24px;
+}
+
+.equipo-gestion-head h1,
+.equipo-gestion-modal-head h3 {
+  color: #fff;
+  font-size: 24px;
+  font-weight: 900;
+  line-height: 1.15;
+  margin: 0;
+}
+
+.equipo-gestion-head p,
+.equipo-gestion-modal-head p {
+  color: rgba(255, 255, 255, .9);
+  font-size: 15px;
+  margin: 5px 0 0;
+}
+
+.equipo-gestion-body {
+  padding: 24px;
+}
+
+.equipo-gestion-title-row {
+  align-items: flex-start;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 14px;
+  justify-content: space-between;
+}
+
+.equipo-gestion-title-row h2 {
+  color: #172033;
+  font-family: "Outfit", ui-sans-serif, system-ui, sans-serif;
+  font-size: 26px;
+  font-weight: 900;
+  margin: 0;
+}
+
+.equipo-gestion-title-row p {
+  color: #64748b;
+  font-size: 16px;
+  margin: 6px 0 0;
+}
+
+.equipo-gestion-grid {
+  display: grid;
+  gap: 14px;
+  grid-template-columns: 1fr 1fr;
+  margin-top: 16px;
+}
+
+.equipo-gestion-dato {
+  background: #f8fafc;
+  border: 1px solid #e5e7eb;
+  border-radius: 14px;
+  padding: 13px 18px;
+}
+
+.equipo-gestion-dato span,
+.equipo-gestion-compact span {
+  color: #64748b;
+  display: block;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: .4px;
+  text-transform: uppercase;
+}
+
+.equipo-gestion-dato strong {
+  color: #1f2937;
+  display: block;
+  font-size: 16px;
+  font-weight: 800;
+  margin-top: 5px;
+  word-break: break-word;
+}
+
+.equipo-gestion-compact {
+  margin-bottom: 8px;
+}
+
+.equipo-gestion-compact strong {
+  color: #1f2937;
+  display: block;
+  font-size: 14px;
+  font-weight: 800;
+  margin-top: 3px;
+  word-break: break-word;
+}
+
+.equipo-gestion-badge {
+  background: #dcfce7;
+  border-radius: 999px;
+  color: #166534;
+  display: inline-flex;
+  font-size: 15px;
+  font-weight: 900;
+  padding: 8px 14px;
+}
+
+.equipo-gestion-badge.asignado {
+  background: #fef3c7;
+  color: #92400e;
+}
+
+.equipo-gestion-section-title {
+  color: #1f2937;
+  font-family: "Outfit", ui-sans-serif, system-ui, sans-serif;
+  font-size: 18px;
+  font-weight: 900;
+  margin: 26px 0 10px;
+}
+
+.equipo-gestion-empty,
+.equipo-gestion-loading {
+  background: #f8fafc;
+  border: 1px dashed #cbd5e1;
+  border-radius: 14px;
+  color: #64748b;
+  padding: 18px;
+  text-align: center;
+}
+
+.equipo-gestion-loading {
+  padding: 40px;
+}
+
+.equipo-gestion-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 22px;
+}
+
+.equipo-gestion-btn {
+  align-items: center;
+  border-radius: 999px;
+  cursor: pointer;
+  display: inline-flex;
+  font-weight: 900;
+  gap: 8px;
+  justify-content: center;
+  min-height: 44px;
+  padding: 11px 18px;
+  text-decoration: none;
+}
+
+.equipo-gestion-btn:disabled {
+  cursor: wait;
+  opacity: .7;
+}
+
+.equipo-gestion-btn-primary {
+  background: linear-gradient(135deg, #1B3A6B, #1BAAB5);
+  border: 0;
+  color: #fff;
+}
+
+.equipo-gestion-btn-secondary {
+  background: #eff6ff;
+  border: 1px solid #bfdbfe;
+  color: #1d4ed8;
+}
+
+.equipo-gestion-btn-danger {
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+  color: #b91c1c;
+}
+
+.equipo-gestion-btn-ok {
+  background: #f0fdf4;
+  border: 1px solid #bbf7d0;
+  color: #166534;
+}
+
+.equipo-gestion-alert {
+  border-radius: 14px;
+  font-weight: 800;
+  margin-bottom: 16px;
+  padding: 13px 15px;
+}
+
+.equipo-gestion-alert.error {
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+  color: #b91c1c;
+}
+
+.equipo-gestion-alert.success {
+  background: #ecfdf5;
+  border: 1px solid #a7f3d0;
+  color: #047857;
+}
+
+.equipo-gestion-modal-backdrop {
+  align-items: center;
+  background: rgba(15, 23, 42, .58);
+  display: flex;
+  inset: 0;
+  justify-content: center;
+  padding: 18px;
+  position: fixed;
+  z-index: 9999;
+}
+
+.equipo-gestion-modal {
+  background: #fff;
+  border-radius: 22px;
+  box-shadow: 0 24px 80px rgba(15, 23, 42, .28);
+  max-width: 860px;
+  overflow: hidden;
+  width: 100%;
+}
+
+.equipo-gestion-modal-head {
+  align-items: center;
+  background: linear-gradient(135deg, #1B3A6B, #1BAAB5);
+  color: #fff;
+  display: flex;
+  gap: 12px;
+  justify-content: space-between;
+  padding: 20px 24px;
+}
+
+.equipo-gestion-modal-head h3 {
+  font-size: 20px;
+}
+
+.equipo-gestion-modal-head p {
+  font-size: 13px;
+}
+
+.equipo-gestion-modal-head button {
+  align-items: center;
+  background: rgba(255, 255, 255, .18);
+  border: 0;
+  border-radius: 50%;
+  color: #fff;
+  cursor: pointer;
+  display: flex;
+  flex: 0 0 auto;
+  font-size: 22px;
+  font-weight: 800;
+  height: 42px;
+  justify-content: center;
+  line-height: 1;
+  width: 42px;
+}
+
+.equipo-gestion-modal-body {
+  max-height: 75vh;
+  overflow: auto;
+  padding: 22px;
+}
+
+.equipo-gestion-form-grid {
+  display: grid;
+  gap: 14px;
+  grid-template-columns: 1fr 1fr;
+}
+
+.equipo-gestion-form-grid label,
+.equipo-gestion-patient-box {
+  color: #1f2937;
+  display: grid;
+  font-weight: 700;
+  gap: 6px;
+}
+
+.equipo-gestion-form-grid input,
+.equipo-gestion-form-grid select,
+.equipo-gestion-form-grid textarea,
+.equipo-gestion-patient-box input,
+.equipo-gestion-patient-box select {
+  background: #fff;
+  border: 1.5px solid #d8e0eb;
+  border-radius: 14px;
+  color: #1f2937;
+  min-height: 44px;
+  outline: none;
+  padding: 10px 13px;
+  width: 100%;
+}
+
+.equipo-gestion-form-grid input[readonly] {
+  background: #f8fafc;
+}
+
+.equipo-gestion-form-grid textarea {
+  resize: vertical;
+}
+
+.equipo-gestion-form-grid small {
+  color: #64748b;
+  font-size: 12px;
+  line-height: 1.35;
+}
+
+.equipo-gestion-wide,
+.equipo-gestion-patient-box {
+  grid-column: 1 / -1;
+}
+
+.equipo-gestion-patient-box {
+  background: #f8fbfd;
+  border: 1px solid #d8e0eb;
+  border-radius: 16px;
+  padding: 14px;
+}
+
+.equipo-gestion-search-row {
+  display: grid;
+  gap: 10px;
+  grid-template-columns: 1fr auto;
+}
+
+.equipo-gestion-selected {
+  background: #fff;
+  border: 1px solid #d8e0eb;
+  border-radius: 13px;
+  color: #334155;
+  font-size: 13px;
+  line-height: 1.4;
+  padding: 10px 12px;
+}
+
+.equipo-gestion-selected strong {
+  color: #0f172a;
+  display: block;
+  font-size: 14px;
+}
+
+.equipo-gestion-accept {
+  background: #fffbeb;
+  border: 1px solid #fed7aa;
+  border-radius: 14px;
+  color: #92400e;
+  display: flex;
+  font-size: 13px;
+  gap: 8px;
+  line-height: 1.45;
+  margin-top: 18px;
+  padding: 14px;
+}
+
+.equipo-gestion-accept input {
+  margin-top: 2px;
+}
+
+.equipo-gestion-modal-body h4 {
+  color: #1f2937;
+  font-size: 16px;
+  font-weight: 900;
+  margin: 18px 0 10px;
+}
+
+.equipo-gestion-signature {
+  background: #fff;
+  border: 1.5px solid #d8e0eb;
+  border-radius: 14px;
+  height: 220px;
+  touch-action: none;
+  width: 100%;
+}
+
+.equipo-gestion-signature-actions {
+  display: flex;
+  gap: 10px;
+  justify-content: flex-end;
+  margin-top: 10px;
+}
+
+.equipo-gestion-modal-actions {
+  border-top: 1px solid #e5e7eb;
+  display: flex;
+  gap: 10px;
+  justify-content: flex-end;
+  padding: 16px 22px;
+}
+
+.equipo-gestion-summary-grid {
+  display: grid;
+  gap: 14px;
+  grid-template-columns: 1fr 1fr;
+  margin-bottom: 16px;
+}
+
+.equipo-gestion-summary-card {
+  background: #f8fafc;
+  border: 1px solid #e5e7eb;
+  border-radius: 16px;
+  padding: 14px;
+}
+
+.equipo-gestion-summary-card h4 {
+  color: #1B3A6B;
+  font-size: 14px;
+  margin: 0 0 10px;
+}
+
+.equipo-gestion-info-box {
+  background: #e0f7f9;
+  border: 1px solid rgba(27, 170, 181, .35);
+  border-radius: 14px;
+  color: #1B3A6B;
+  font-size: 13px;
+  font-weight: 700;
+  line-height: 1.45;
+  margin-bottom: 16px;
+  padding: 13px 15px;
+}
+
+.equipo-gestion-muted {
+  color: #64748b;
+  font-size: 13px;
+  margin: 0 0 10px;
+}
+
+@media (max-width: 720px) {
+  .equipo-gestion-page {
+    padding: 16px 10px;
+  }
+  .equipo-gestion-card {
+    min-height: auto;
+  }
+  .equipo-gestion-head {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+  .equipo-gestion-grid,
+  .equipo-gestion-form-grid,
+  .equipo-gestion-summary-grid {
+    grid-template-columns: 1fr;
+  }
+  .equipo-gestion-search-row {
+    grid-template-columns: 1fr;
+  }
+  .equipo-gestion-modal-actions {
+    flex-direction: column-reverse;
+  }
+  .equipo-gestion-modal-actions .equipo-gestion-btn {
+    width: 100%;
+  }
+}
+
 .app-shell { min-height: 100vh; display: grid; grid-template-columns: 260px minmax(0, 1fr); }
 
 .sidebar {
