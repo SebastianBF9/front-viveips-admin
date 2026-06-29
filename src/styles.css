@@ -645,12 +645,16 @@ button, input, select, textarea { font: inherit; }
 
 .equipo-gestion-floating-alert {
   box-shadow: 0 18px 60px rgba(15, 23, 42, .24);
+  cursor: pointer;
+  display: block;
+  font: inherit;
   left: 50%;
   margin: 0;
   max-height: min(42vh, 320px);
   max-width: min(980px, calc(100vw - 32px));
   overflow: auto;
   position: fixed;
+  text-align: left;
   top: 18px;
   transform: translateX(-50%);
   width: max-content;
