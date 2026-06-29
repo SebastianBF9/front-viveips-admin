@@ -10,7 +10,7 @@ function texto(valor?: string | number | null) {
 function portalPublicoBase() {
   const host = window.location.hostname;
   const esPruebas = host === "pruebas.portal.viveips.com.co" || host.includes("localhost") || host.includes("127.0.0.1") || host.includes("admin-pruebas");
-  return esPruebas ? "https://pruebas.portal.viveips.com.co" : "https://portal.viveips.com.co";
+  return esPruebas ? "https://admin-pruebas.portal.viveips.com.co" : "https://admin.portal.viveips.com.co";
 }
 
 export function EquipoQrPage() {

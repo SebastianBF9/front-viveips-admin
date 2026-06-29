@@ -46,12 +46,12 @@
       : `${window.location.protocol}//api-pruebas.viveips.com.co`;
     const params = new URLSearchParams(window.location.search);
     const codigo = params.get("codigo") || "";
-    function portalViejoBase(){
+    function portalAdminBase(){
       const host = window.location.hostname;
       const esPruebas = host === "pruebas.portal.viveips.com.co" || host.includes("localhost") || host.includes("127.0.0.1") || host.includes("admin-pruebas");
-      return esPruebas ? "https://pruebas.portal.viveips.com.co" : "https://portal.viveips.com.co";
+      return esPruebas ? "https://admin-pruebas.portal.viveips.com.co" : "https://admin.portal.viveips.com.co";
     }
-    const urlConsulta = `${portalViejoBase()}/equipos/ver?codigo=${encodeURIComponent(codigo)}`;
+    const urlConsulta = `${portalAdminBase()}/equipos/ver?codigo=${encodeURIComponent(codigo)}`;
     const qrApi = `https://api.qrserver.com/v1/create-qr-code/?size=520x520&margin=10&data=${encodeURIComponent(urlConsulta)}`;
 
     async function cargar(){
