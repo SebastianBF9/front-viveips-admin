@@ -5,7 +5,6 @@ import {
   clearSession,
   confirmarMiEntregaRecurso,
   descargarMisDespachosAsignados,
-  downloadUrl,
   getToken,
   listarEnfermerasConfirmacionRecursos,
   listarMisEntregasRecursos,
@@ -153,7 +152,7 @@ export function EntregasRecursosPage() {
   }
 
   function abrirMiCarnet() {
-    window.open(downloadUrl("/carnet/mi-carnet"), "_blank", "noopener,noreferrer");
+    window.open("/carnet", "_blank", "noopener,noreferrer");
   }
 
   async function descargarListadoAsignado() {

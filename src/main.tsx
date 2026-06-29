@@ -4,6 +4,7 @@ import { Navigate, RouterProvider, createBrowserRouter } from "react-router-dom"
 import { AppLayout } from "./ui/AppLayout";
 import { AccesosPage } from "./pages/AccesosPage";
 import { CapacitacionesProfesionalPage } from "./pages/CapacitacionesProfesionalPage";
+import { CarnetPage } from "./pages/CarnetPage";
 import { EntregasRecursosPage } from "./pages/EntregasRecursosPage";
 import { EquipoGestionarPage } from "./pages/EquipoGestionarPage";
 import { EquipoQrPage } from "./pages/EquipoQrPage";
@@ -25,6 +26,7 @@ const router = createBrowserRouter([
   { path: "/equipos/qr", element: <EquipoQrPage /> },
   { path: "/equipos/ver", element: <EquipoVerPage /> },
   { path: "/equipos/gestionar", element: <EquipoGestionarPage /> },
+  { path: "/carnet", element: <CarnetPage /> },
   { path: "/entregas-recursos", element: <EntregasRecursosPage /> },
   { path: "/portal-profesional", element: <PortalProfesionalPage /> },
   { path: "/portal-profesional/capacitaciones", element: <CapacitacionesProfesionalPage /> },

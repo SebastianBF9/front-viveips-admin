@@ -17,7 +17,6 @@ import { useNavigate } from "react-router-dom";
 import {
   clearSession,
   downloadBlob,
-  downloadUrl,
   enviarExamenCapacitacion,
   listarMisCapacitaciones,
   obtenerArchivosCapacitacionProfesional,
@@ -136,7 +135,7 @@ export function CapacitacionesProfesionalPage() {
   }
 
   function abrirMiCarnet() {
-    window.open(downloadUrl("/carnet/mi-carnet"), "_blank", "noopener,noreferrer");
+    window.open("/carnet", "_blank", "noopener,noreferrer");
   }
 
   async function abrirMateriales(curso: CursoProfesionalCapacitacion) {
