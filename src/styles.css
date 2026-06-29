@@ -420,6 +420,242 @@ button, input, select, textarea { font: inherit; }
   }
 }
 
+.carnet-page {
+  align-items: center;
+  background: #f0f4f8;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  min-height: 100vh;
+  padding: 20px;
+}
+
+.carnet-card {
+  background: #fff;
+  border-radius: 24px;
+  box-shadow: 0 20px 60px rgba(27, 58, 107, .18);
+  overflow: hidden;
+  position: relative;
+  width: 320px;
+}
+
+.carnet-header {
+  background: linear-gradient(135deg, #1B3A6B 0%, #1BAAB5 100%);
+  padding: 20px 20px 30px;
+  position: relative;
+  text-align: center;
+}
+
+.carnet-header::after {
+  background: #fff;
+  border-radius: 50% 50% 0 0 / 100% 100% 0 0;
+  bottom: -20px;
+  content: "";
+  height: 40px;
+  left: 0;
+  position: absolute;
+  right: 0;
+}
+
+.carnet-logo-row {
+  align-items: center;
+  display: flex;
+  gap: 10px;
+  justify-content: space-between;
+  margin-bottom: 16px;
+  position: relative;
+  z-index: 1;
+}
+
+.carnet-logo-row img {
+  height: 48px;
+  max-width: 135px;
+  object-fit: contain;
+}
+
+.carnet-nit {
+  color: rgba(255, 255, 255, .86);
+  font-size: 10px;
+  font-weight: 700;
+  margin-top: 4px;
+  position: relative;
+  z-index: 1;
+}
+
+.carnet-body {
+  padding: 30px 20px 20px;
+  text-align: center;
+}
+
+.carnet-photo-wrap {
+  display: flex;
+  justify-content: center;
+  margin-bottom: 16px;
+}
+
+.carnet-photo {
+  border: 3px solid #1BAAB5;
+  border-radius: 50%;
+  height: 110px;
+  object-fit: cover;
+  width: 110px;
+}
+
+.carnet-photo.initials {
+  align-items: center;
+  background: linear-gradient(135deg, #1B3A6B, #1BAAB5);
+  color: #fff;
+  display: flex;
+  font-size: 36px;
+  font-weight: 900;
+  justify-content: center;
+}
+
+.carnet-body h1 {
+  color: #1B3A6B;
+  font-family: "Nunito", sans-serif;
+  font-size: 17px;
+  font-weight: 900;
+  line-height: 1.2;
+  margin: 0 0 4px;
+}
+
+.carnet-role {
+  color: #1BAAB5;
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 1px;
+  margin-bottom: 8px;
+  text-transform: uppercase;
+}
+
+.carnet-id {
+  color: #6b7280;
+  font-size: 12px;
+  margin-bottom: 14px;
+}
+
+.carnet-rh {
+  margin-top: -8px;
+}
+
+.carnet-status {
+  border-radius: 50px;
+  display: inline-block;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 1.5px;
+  margin-bottom: 16px;
+  padding: 4px 16px;
+}
+
+.carnet-status.active {
+  background: #dcfce7;
+  color: #16a34a;
+}
+
+.carnet-status.inactive {
+  background: #fee2e2;
+  color: #dc2626;
+}
+
+.carnet-divider {
+  background: #e5e7eb;
+  height: 1px;
+  margin: 0 0 16px;
+}
+
+.carnet-qr {
+  align-items: center;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.carnet-qr img {
+  border: 2px solid #e5e7eb;
+  border-radius: 10px;
+  height: 90px;
+  padding: 4px;
+  width: 90px;
+}
+
+.carnet-qr span {
+  color: #9ca3af;
+  font-size: 10px;
+  letter-spacing: .5px;
+}
+
+.carnet-footer {
+  background: #1B3A6B;
+  color: rgba(255, 255, 255, .7);
+  font-size: 10px;
+  letter-spacing: 1px;
+  padding: 10px;
+  text-align: center;
+}
+
+.carnet-download {
+  background: linear-gradient(135deg, #1B3A6B, #1BAAB5);
+  border: 0;
+  border-radius: 50px;
+  box-shadow: 0 4px 15px rgba(27, 58, 107, .3);
+  color: #fff;
+  cursor: pointer;
+  font-family: "Outfit", sans-serif;
+  font-size: 14px;
+  font-weight: 700;
+  margin-top: 24px;
+  padding: 12px 32px;
+}
+
+.carnet-download::before {
+  content: "📥 ";
+}
+
+.carnet-download:disabled {
+  cursor: wait;
+  opacity: .75;
+}
+
+.carnet-loading,
+.carnet-error {
+  background: #fff;
+  border: 1px solid #e5e7eb;
+  border-radius: 14px;
+  box-shadow: 0 10px 30px rgba(15, 23, 42, .08);
+  color: #64748b;
+  font-weight: 800;
+  padding: 18px 22px;
+}
+
+.carnet-error {
+  color: #b91c1c;
+}
+
+@media print {
+  @page {
+    size: 54mm 85.6mm;
+    margin: 0;
+  }
+  .carnet-page {
+    background: #fff;
+    display: block;
+    min-height: unset;
+    padding: 0;
+  }
+  .carnet-card {
+    border-radius: 0;
+    box-shadow: none;
+    overflow: hidden;
+    page-break-inside: avoid;
+    width: 54mm;
+  }
+  .carnet-download {
+    display: none;
+  }
+}
+
 .equipo-gestion-page {
   align-items: flex-start;
   background: #f6fafb;

@@ -543,7 +543,7 @@ export function TalentoHumanoPage() {
   }
 
   function abrirCarnet(profesional: ProfesionalAdmin) {
-    window.open(downloadUrl(`/carnet/generar/${profesional.id}`), "_blank", "noopener,noreferrer");
+    window.open(`/carnet?profesionalId=${encodeURIComponent(profesional.id)}`, "_blank", "noopener,noreferrer");
   }
 
   async function abrirDetalleProfesional(profesional: ProfesionalAdmin) {

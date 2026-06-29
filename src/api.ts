@@ -285,6 +285,16 @@ export async function obtenerMiPerfilProfesional() {
   return apiCall<{ success: boolean; perfil: ProfesionalPerfil }>("GET", "/profesionales/mi-perfil");
 }
 
+export async function descargarCarnetProfesional(profesionalId?: number | string, nombre = "profesional") {
+  const endpoint = profesionalId ? `/carnet/descargar-png/${profesionalId}` : "/carnet/descargar-png-profesional";
+  const anchor = document.createElement("a");
+  anchor.href = downloadUrl(endpoint);
+  anchor.download = `Carnet_${String(nombre || "profesional").replace(/\s+/g, "_")}.png`;
+  document.body.appendChild(anchor);
+  anchor.click();
+  anchor.remove();
+}
+
 export async function actualizarMiPerfilProfesional(payload: ProfesionalPerfilPayload) {
   return apiCall<{ success: boolean; mensaje: string }>("PUT", "/profesionales/mi-perfil", payload);
 }
