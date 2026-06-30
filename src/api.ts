@@ -91,6 +91,29 @@ export function downloadUrl(endpoint: string) {
   return `${API_URL}${endpoint}${token ? `${glue}token=${encodeURIComponent(token)}` : ""}`;
 }
 
+export function openAuthenticatedWindow(path: string) {
+  const token = getToken();
+  if (!token || typeof BroadcastChannel === "undefined") {
+    window.open(path, "_blank", "noopener,noreferrer");
+    return;
+  }
+
+  const url = new URL(path, window.location.origin);
+  const channelId = `viveips-auth-${Date.now()}-${Math.random().toString(36).slice(2)}`;
+  url.searchParams.set("authChannel", channelId);
+
+  const channel = new BroadcastChannel(channelId);
+  const cleanup = window.setTimeout(() => channel.close(), 10000);
+  channel.onmessage = (event) => {
+    if (event.data?.type !== "viveips-auth-ready") return;
+    channel.postMessage({ type: "viveips-auth-token", token });
+    window.clearTimeout(cleanup);
+    window.setTimeout(() => channel.close(), 500);
+  };
+
+  window.open(`${url.pathname}${url.search}${url.hash}`, "_blank", "noopener,noreferrer");
+}
+
 export async function downloadBlob(endpoint: string, filename: string, openInNewTab = false) {
   const token = getToken();
   const headers: Record<string, string> = {};
@@ -287,12 +310,7 @@ export async function obtenerMiPerfilProfesional() {
 
 export async function descargarCarnetProfesional(profesionalId?: number | string, nombre = "profesional") {
   const endpoint = profesionalId ? `/carnet/descargar-png/${profesionalId}` : "/carnet/descargar-png-profesional";
-  const anchor = document.createElement("a");
-  anchor.href = downloadUrl(endpoint);
-  anchor.download = `Carnet_${String(nombre || "profesional").replace(/\s+/g, "_")}.png`;
-  document.body.appendChild(anchor);
-  anchor.click();
-  anchor.remove();
+  await downloadBlob(endpoint, `Carnet_${String(nombre || "profesional").replace(/\s+/g, "_")}.png`);
 }
 
 export async function actualizarMiPerfilProfesional(payload: ProfesionalPerfilPayload) {

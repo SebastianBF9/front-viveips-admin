@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { descargarCarnetProfesional, obtenerMiPerfilProfesional, obtenerProfesional } from "../api";
+import { descargarCarnetProfesional, getToken, obtenerMiPerfilProfesional, obtenerProfesional } from "../api";
 
 const API_URL = import.meta.env.VITE_API_URL || "https://api-pruebas.viveips.com.co";
 
@@ -37,7 +37,7 @@ function portalPublicoBase() {
 export function CarnetPage() {
   const params = new URLSearchParams(window.location.search);
   const profesionalId = params.get("profesionalId") || "";
-  const tokenParam = params.get("token") || "";
+  const authChannel = params.get("authChannel") || "";
   const [perfil, setPerfil] = useState<CarnetPerfil | null>(null);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(true);
@@ -52,15 +52,50 @@ export function CarnetPage() {
   const qrImg = `https://api.qrserver.com/v1/create-qr-code/?size=180x180&margin=2&color=1B3A6B&bgcolor=FFFFFF&data=${encodeURIComponent(qrUrl)}`;
 
   useEffect(() => {
-    setLoading(true);
-    setError("");
-    if (tokenParam) sessionStorage.setItem("viveips_token", tokenParam);
-    const request = profesionalId ? obtenerProfesional(Number(profesionalId)).then((data) => data.perfil) : obtenerMiPerfilProfesional().then((data) => data.perfil);
-    request
-      .then((data) => setPerfil(data as CarnetPerfil))
-      .catch((err) => setError(err instanceof Error ? err.message : "No fue posible cargar el carnet"))
-      .finally(() => setLoading(false));
-  }, [profesionalId, tokenParam]);
+    let cancelado = false;
+
+    async function sincronizarSesion() {
+      if (!authChannel || getToken() || typeof BroadcastChannel === "undefined") return;
+
+      await new Promise<void>((resolve) => {
+        const channel = new BroadcastChannel(authChannel);
+        const timeout = window.setTimeout(() => {
+          channel.close();
+          resolve();
+        }, 2500);
+
+        channel.onmessage = (event) => {
+          if (event.data?.type !== "viveips-auth-token" || !event.data?.token) return;
+          sessionStorage.setItem("viveips_token", event.data.token);
+          window.clearTimeout(timeout);
+          channel.close();
+          resolve();
+        };
+
+        channel.postMessage({ type: "viveips-auth-ready" });
+      });
+    }
+
+    async function cargarCarnet() {
+      setLoading(true);
+      setError("");
+      await sincronizarSesion();
+      if (cancelado) return;
+
+      const request = profesionalId ? obtenerProfesional(Number(profesionalId)).then((data) => data.perfil) : obtenerMiPerfilProfesional().then((data) => data.perfil);
+      request
+        .then((data) => setPerfil(data as CarnetPerfil))
+        .catch((err) => setError(err instanceof Error ? err.message : "No fue posible cargar el carnet"))
+        .finally(() => {
+          if (!cancelado) setLoading(false);
+        });
+    }
+
+    cargarCarnet();
+    return () => {
+      cancelado = true;
+    };
+  }, [profesionalId, authChannel]);
 
   async function descargar() {
     if (!perfil) return;

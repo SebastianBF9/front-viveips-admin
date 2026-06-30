@@ -22,6 +22,7 @@ import {
   obtenerArchivosCapacitacionProfesional,
   obtenerExamenCapacitacion,
   obtenerMiPerfilProfesional,
+  openAuthenticatedWindow,
 } from "../api";
 import type {
   ArchivoCapacitacionProfesional,
@@ -135,8 +136,7 @@ export function CapacitacionesProfesionalPage() {
   }
 
   function abrirMiCarnet() {
-    const token = sessionStorage.getItem("viveips_token");
-    window.open(token ? `/carnet?token=${encodeURIComponent(token)}` : "/carnet", "_blank", "noopener,noreferrer");
+    openAuthenticatedWindow("/carnet");
   }
 
   async function abrirMateriales(curso: CursoProfesionalCapacitacion) {

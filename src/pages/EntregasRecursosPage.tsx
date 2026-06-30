@@ -10,6 +10,7 @@ import {
   listarMisEntregasRecursos,
   obtenerMiEntregaRecurso,
   obtenerMiPerfilProfesional,
+  openAuthenticatedWindow,
   registrarMiEntregaFallida,
   subirEvidenciaMiEntrega,
 } from "../api";
@@ -152,8 +153,7 @@ export function EntregasRecursosPage() {
   }
 
   function abrirMiCarnet() {
-    const token = sessionStorage.getItem("viveips_token");
-    window.open(token ? `/carnet?token=${encodeURIComponent(token)}` : "/carnet", "_blank", "noopener,noreferrer");
+    openAuthenticatedWindow("/carnet");
   }
 
   async function descargarListadoAsignado() {
