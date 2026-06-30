@@ -50,6 +50,7 @@ import {
   obtenerMiAcceso,
   obtenerMiPerfilProfesional,
   obtenerMisServiciosProfesional,
+  openAuthenticatedWindow,
   subirFirmaContratoProfesional,
   subirDocumentoProfesional,
   subirFotoProfesional,
@@ -889,8 +890,7 @@ export function PortalProfesionalPage() {
   }
 
   function abrirMiCarnet() {
-    const token = sessionStorage.getItem("viveips_token");
-    window.open(token ? `/carnet?token=${encodeURIComponent(token)}` : "/carnet", "_blank", "noopener,noreferrer");
+    openAuthenticatedWindow("/carnet");
   }
 
   if (loading) return <Loading text="Cargando portal profesional..." />;

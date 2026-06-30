@@ -10,6 +10,7 @@ import {
   obtenerFormacionProfesional,
   obtenerProfesional,
   obtenerServiciosProfesional,
+  openAuthenticatedWindow,
 } from "../api";
 import type {
   DocumentoProfesional,
@@ -544,9 +545,7 @@ export function TalentoHumanoPage() {
 
   function abrirCarnet(profesional: ProfesionalAdmin) {
     const params = new URLSearchParams({ profesionalId: String(profesional.id) });
-    const token = sessionStorage.getItem("viveips_token");
-    if (token) params.set("token", token);
-    window.open(`/carnet?${params.toString()}`, "_blank", "noopener,noreferrer");
+    openAuthenticatedWindow(`/carnet?${params.toString()}`);
   }
 
   async function abrirDetalleProfesional(profesional: ProfesionalAdmin) {
