@@ -4,8 +4,29 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Política de Tratamiento de Datos Personales — VIVE IPS</title>
-  <link rel="stylesheet" href="css/main.css">
   <style>
+    :root {
+      --azul: #1B3A6B;
+      --azul-light: #eef5ff;
+      --teal-dark: #0f766e;
+      --teal-light: #dff7f4;
+      --gris: #f0f4f8;
+      --gris-borde: #dfe7f1;
+      --texto: #1f2937;
+      --texto-suave: #66758c;
+      --blanco: #ffffff;
+      --gradiente: linear-gradient(135deg, #1B3A6B 0%, #1BAAB5 100%);
+      --radio-md: 14px;
+      --radio-lg: 22px;
+      --radio-xl: 28px;
+      --sombra-md: 0 16px 42px rgba(27,58,107,.10);
+      --sombra-lg: 0 24px 56px rgba(27,58,107,.18);
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    }
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body { margin: 0; }
+    a { text-decoration: none; }
     body { background: radial-gradient(circle at top left, rgba(27,170,181,.16), transparent 34%), var(--gris); color: var(--texto); }
     .policy-shell { max-width: 1120px; margin: 0 auto; padding: 28px 18px 64px; }
     .policy-hero { background: var(--gradiente); color: var(--blanco); border-radius: var(--radio-xl); padding: 30px; box-shadow: var(--sombra-lg); position: relative; overflow: hidden; }
@@ -13,7 +34,7 @@
     .policy-brand { display: flex; align-items: center; gap: 18px; position: relative; z-index: 1; }
     .policy-brand img { width: 108px; background: var(--blanco); border-radius: 18px; padding: 10px; box-shadow: 0 14px 34px rgba(0,0,0,.18); }
     .policy-kicker { display: inline-block; background: rgba(255,255,255,.18); border: 1px solid rgba(255,255,255,.28); padding: 6px 12px; border-radius: 999px; font-size: 12px; font-weight: 800; letter-spacing: .8px; text-transform: uppercase; margin-bottom: 10px; }
-    .policy-hero h1 { font-family: 'Nunito', sans-serif; font-size: clamp(28px, 4vw, 44px); line-height: 1.05; margin: 0 0 10px; }
+    .policy-hero h1 { font-size: clamp(28px, 4vw, 44px); line-height: 1.05; margin: 0 0 10px; }
     .policy-hero p { margin: 0; max-width: 720px; opacity: .94; line-height: 1.6; }
     .policy-meta { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 22px; position: relative; z-index: 1; }
     .policy-pill { background: rgba(255,255,255,.16); border: 1px solid rgba(255,255,255,.25); border-radius: 999px; padding: 8px 13px; font-size: 13px; font-weight: 700; }
@@ -28,7 +49,7 @@
     .summary-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; margin: 20px 0 8px; }
     .summary-card { background: var(--azul-light); border: 1px solid rgba(27,58,107,.12); border-radius: var(--radio-md); padding: 16px; }
     .summary-card strong { display:block; color: var(--azul); margin-bottom: 6px; }
-    .policy-content h2 { color: var(--azul); font-family: 'Nunito', sans-serif; font-size: 23px; margin: 30px 0 10px; padding-top: 4px; }
+    .policy-content h2 { color: var(--azul); font-size: 23px; margin: 30px 0 10px; padding-top: 4px; }
     .policy-content ul { list-style: disc; padding-left: 22px; margin: 10px 0 0; }
     .policy-content li { margin-bottom: 7px; }
     .btn-row { display:flex; gap: 10px; flex-wrap: wrap; margin-top: 28px; padding-top: 20px; border-top: 1px solid var(--gris-borde); }
@@ -43,7 +64,7 @@
   <main class="policy-shell">
     <section class="policy-hero">
       <div class="policy-brand">
-        <img src="img/logo_carnet.png" alt="VIVE IPS">
+        <img src="/logo_carnet.png" alt="VIVE IPS">
         <div>
           <span class="policy-kicker">Protección de datos personales</span>
           <h1>Política de Tratamiento de Datos Personales</h1>
@@ -53,7 +74,7 @@
       <div class="policy-meta">
         <span class="policy-pill">GRUPO MÉDICO INTEGRAL VIVE IPS S.A.S.</span>
         <span class="policy-pill">Versión 2026-05-12-v1</span>
-        <span class="policy-pill">Portal de pruebas</span>
+        <span class="policy-pill">Portal profesional</span>
       </div>
     </section>
 
@@ -134,8 +155,8 @@
         <p>Para ejercer sus derechos, el titular podrá comunicarse al canal dispuesto por VIVE IPS indicando su nombre completo, número de identificación, solicitud concreta, datos de contacto y soportes cuando sean necesarios.</p>
 
         <div class="btn-row">
-          <a class="btn-policy btn-primary-policy" href="portal-profesionales/panel.html">Volver al portal</a>
-          <a class="btn-policy btn-secondary-policy" href="index.html">Ir al inicio</a>
+          <a class="btn-policy btn-primary-policy" href="/portal-profesional">Volver al portal</a>
+          <a class="btn-policy btn-secondary-policy" href="/login">Ir al inicio</a>
         </div>
       </section>
     </div>
