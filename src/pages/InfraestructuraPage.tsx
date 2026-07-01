@@ -40,6 +40,7 @@ import {
   marcarAnexoNoAplica,
   obtenerAlertasEquipos,
   obtenerHojaVidaEquipo,
+  obtenerMiPerfilProfesional,
   registrarCalibracionEquipo,
   registrarMantenimientoEquipo,
   subirAnexoEquipo,
@@ -55,6 +56,7 @@ import type {
   EquipoDocumento,
   EquipoHojaVida,
   EquipoMantenimiento,
+  ProfesionalPerfil,
   ServicioIps,
 } from "../types";
 import { Loading } from "../ui/Loading";
@@ -180,11 +182,13 @@ type MantenimientoForm = {
   fecha_mantenimiento: string;
   hora_servicio: string;
   clase_servicio: string;
+  periodicidad_mantenimiento: string;
   proxima_fecha: string;
   responsable: string;
   requerimiento: string;
   descripcion: string;
   inspeccion_tecnica: Record<string, string>;
+  inspeccion_diagnosticos: Record<string, string>;
   diagnostico: string;
   mediciones_reparaciones: string;
   pruebas_cualitativas: Record<string, string>;
@@ -273,6 +277,23 @@ function sumarMeses(fechaBase: string, meses: string) {
   if (Number.isNaN(fecha.getTime())) return null;
   fecha.setMonth(fecha.getMonth() + n);
   return fecha.toISOString().slice(0, 10);
+}
+
+function mesesPorPeriodicidad(periodicidad?: string | null) {
+  const valor = normalizar(periodicidad);
+  if (valor.includes("mensual")) return "1";
+  if (valor.includes("bimestral")) return "2";
+  if (valor.includes("trimestral")) return "3";
+  if (valor.includes("cuatrimestral")) return "4";
+  if (valor.includes("semestral")) return "6";
+  if (valor.includes("anual")) return "12";
+  if (valor.includes("2 anos") || valor.includes("cada 2")) return "24";
+  return "";
+}
+
+function calcularProximaPorPeriodicidad(fecha: string, periodicidad: string) {
+  const meses = mesesPorPeriodicidad(periodicidad);
+  return meses ? sumarMeses(fecha, meses) || "" : "";
 }
 
 function estadoLabel(estado?: string | null) {
@@ -369,18 +390,21 @@ function inicialForm(equipo?: EquipoBiomedico | null, hoja?: EquipoHojaVida | nu
   };
 }
 
-function inicialMantenimiento(): MantenimientoForm {
+function inicialMantenimiento(responsable = "", periodicidad = ""): MantenimientoForm {
   const revisionInicial = (items: string[], valor = "pasa") => Object.fromEntries(items.map((item) => [item, valor]));
+  const fechaMantenimiento = new Date().toISOString().slice(0, 10);
   return {
     tipo: "preventivo",
-    fecha_mantenimiento: new Date().toISOString().slice(0, 10),
+    fecha_mantenimiento: fechaMantenimiento,
     hora_servicio: new Date().toTimeString().slice(0, 5),
     clase_servicio: "inspeccion",
-    proxima_fecha: "",
-    responsable: "",
+    periodicidad_mantenimiento: periodicidad,
+    proxima_fecha: calcularProximaPorPeriodicidad(fechaMantenimiento, periodicidad),
+    responsable,
     requerimiento: "Se realiza mantenimiento preventivo segun cronograma",
     descripcion: "",
     inspeccion_tecnica: revisionInicial(INSPECCION_TECNICA_ITEMS),
+    inspeccion_diagnosticos: revisionInicial(INSPECCION_TECNICA_ITEMS, ""),
     diagnostico: "",
     mediciones_reparaciones: "Se realiza mantenimiento preventivo segun protocolo.\nSe revisa equipo, accesorios y condiciones generales de funcionamiento.",
     pruebas_cualitativas: revisionInicial(PRUEBAS_CUALITATIVAS_ITEMS),
@@ -433,6 +457,7 @@ export function InfraestructuraPage() {
   const [equipos, setEquipos] = useState<EquipoBiomedico[]>([]);
   const [categorias, setCategorias] = useState<string[]>(CATEGORIAS_FALLBACK);
   const [serviciosIps, setServiciosIps] = useState<ServicioIps[]>([]);
+  const [perfilActivo, setPerfilActivo] = useState<ProfesionalPerfil | null>(null);
   const [alertas, setAlertas] = useState<EquipoAlertaResumen | null>(null);
   const [query, setQuery] = useState("");
   const [estado, setEstado] = useState("");
@@ -463,6 +488,9 @@ export function InfraestructuraPage() {
         listarCategoriasEquipo().catch(() => ({ categorias: [] })),
         listarServiciosIps().catch(() => ({ servicios: [] })),
       ]);
+      obtenerMiPerfilProfesional()
+        .then((data) => setPerfilActivo(data.perfil || null))
+        .catch(() => setPerfilActivo(null));
       setEquipos(inventario.equipos || []);
       setServiciosIps(
         (serviciosData.servicios || [])
@@ -520,6 +548,10 @@ export function InfraestructuraPage() {
     return String(valor || "").trim().replace(/\s+/g, " ").toUpperCase();
   }
 
+  function responsableMantenimiento() {
+    return perfilActivo?.nombre || "";
+  }
+
   function actualizarForm(campo: keyof EquipoForm, valor: string | boolean | File | null) {
     setForm((actual) => {
       if (!actual) return actual;
@@ -534,7 +566,16 @@ export function InfraestructuraPage() {
   }
 
   function actualizarMantenimiento(campo: keyof MantenimientoForm, valor: string) {
-    setMantenimiento((actual) => ({ ...actual, [campo]: valor }));
+    setMantenimiento((actual) => {
+      const siguiente = { ...actual, [campo]: valor };
+      if (campo === "fecha_mantenimiento" || campo === "periodicidad_mantenimiento") {
+        siguiente.proxima_fecha = calcularProximaPorPeriodicidad(
+          campo === "fecha_mantenimiento" ? valor : actual.fecha_mantenimiento,
+          campo === "periodicidad_mantenimiento" ? valor : actual.periodicidad_mantenimiento,
+        );
+      }
+      return siguiente;
+    });
   }
 
   function actualizarRevisionMantenimiento(campo: "inspeccion_tecnica" | "pruebas_cualitativas" | "pruebas_cuantitativas", item: string, valor: string) {
@@ -542,6 +583,20 @@ export function InfraestructuraPage() {
       ...actual,
       [campo]: { ...actual[campo], [item]: valor },
     }));
+  }
+
+  function actualizarDiagnosticoInspeccion(item: string, valor: string) {
+    setMantenimiento((actual) => ({
+      ...actual,
+      inspeccion_diagnosticos: { ...actual.inspeccion_diagnosticos, [item]: valor },
+    }));
+  }
+
+  function diagnosticoMantenimiento() {
+    const porInspeccion = INSPECCION_TECNICA_ITEMS.map((item) => mantenimiento.inspeccion_diagnosticos[item]?.trim())
+      .filter(Boolean)
+      .join("\n");
+    return limpio(porInspeccion || mantenimiento.diagnostico);
   }
 
   function actualizarRepuestoMantenimiento(index: number, campo: "cantidad" | "descripcion", valor: string) {
@@ -612,13 +667,19 @@ export function InfraestructuraPage() {
     }
   }
 
-  function abrirMantenimiento(equipo: EquipoBiomedico) {
+  async function abrirMantenimiento(equipo: EquipoBiomedico) {
     setMenuEquipo(null);
     setForm(null);
     setHojaVida(null);
     setCalibracionEquipo(null);
     setMantenimientoEquipo(equipo);
-    setMantenimiento(inicialMantenimiento());
+    setMantenimiento(inicialMantenimiento(responsableMantenimiento()));
+    obtenerHojaVidaEquipo(equipo.id)
+      .then((hv) => {
+        const periodicidad = hv.apoyo_tecnico?.periodicidad_mantenimiento || "";
+        setMantenimiento(inicialMantenimiento(responsableMantenimiento(), periodicidad));
+      })
+      .catch(() => undefined);
   }
 
   function abrirCalibracion(equipo: EquipoBiomedico) {
@@ -936,7 +997,7 @@ export function InfraestructuraPage() {
             <col class="check-col"><col class="mark-col"><col class="mark-col"><col class="mark-col"><col class="diag-col">
           </colgroup>
           <tr><th colspan="4">Inspeccion tecnica</th><th>Diagnostico</th></tr>
-          <tr><th>Check list</th><th>P</th><th>F</th><th>N/A</th><td rowspan="${INSPECCION_TECNICA_ITEMS.length + 1}" class="diagnostico">${escapeHtml(mantenimientoItem.diagnostico || "-")}</td></tr>
+          <tr><th>Check list</th><th>P</th><th>F</th><th>N/A</th><td rowspan="${INSPECCION_TECNICA_ITEMS.length + 1}" class="diagnostico">${escapeHtml(mantenimientoItem.diagnostico || "-").replaceAll("\n", "<br>")}</td></tr>
           ${filasRevision(INSPECCION_TECNICA_ITEMS, inspeccion)}
         </table>
         <table style="margin-top:6px;">
@@ -1191,11 +1252,11 @@ export function InfraestructuraPage() {
         hora_servicio: limpio(mantenimiento.hora_servicio),
         clase_servicio: limpio(mantenimiento.clase_servicio),
         proxima_fecha: limpio(mantenimiento.proxima_fecha),
-        responsable: limpio(mantenimiento.responsable),
+        responsable: limpio(responsableMantenimiento() || mantenimiento.responsable),
         requerimiento: limpio(mantenimiento.requerimiento),
         descripcion: limpio(mantenimiento.descripcion),
         inspeccion_tecnica: mantenimiento.inspeccion_tecnica,
-        diagnostico: limpio(mantenimiento.diagnostico),
+        diagnostico: diagnosticoMantenimiento(),
         mediciones_reparaciones: limpio(mantenimiento.mediciones_reparaciones),
         pruebas_cualitativas: mantenimiento.pruebas_cualitativas,
         pruebas_cuantitativas: mantenimiento.pruebas_cuantitativas,
@@ -1818,12 +1879,23 @@ export function InfraestructuraPage() {
               <input value={mantenimiento.hora_servicio} onChange={(event) => actualizarMantenimiento("hora_servicio", event.target.value)} type="time" />
             </label>
             <label>
+              Periodicidad
+              <select value={mantenimiento.periodicidad_mantenimiento} onChange={(event) => actualizarMantenimiento("periodicidad_mantenimiento", event.target.value)}>
+                <option value="">Selecciona periodicidad</option>
+                {PERIODICIDADES.map((periodicidad) => (
+                  <option key={periodicidad} value={periodicidad}>
+                    {periodicidad}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <label>
               Proxima fecha
-              <input value={mantenimiento.proxima_fecha} onChange={(event) => actualizarMantenimiento("proxima_fecha", event.target.value)} type="date" />
+              <input value={mantenimiento.proxima_fecha} type="date" readOnly />
             </label>
             <label>
               Responsable
-              <input value={mantenimiento.responsable} onChange={(event) => actualizarMantenimiento("responsable", event.target.value)} />
+              <input value={responsableMantenimiento() || mantenimiento.responsable || "Usuario autenticado"} readOnly />
             </label>
             <label>
               Estado posterior
@@ -1832,10 +1904,6 @@ export function InfraestructuraPage() {
             <label className="wide-field">
               Requerimiento
               <textarea value={mantenimiento.requerimiento} onChange={(event) => actualizarMantenimiento("requerimiento", event.target.value)} rows={2} />
-            </label>
-            <label className="wide-field">
-              Diagnostico
-              <textarea value={mantenimiento.diagnostico} onChange={(event) => actualizarMantenimiento("diagnostico", event.target.value)} rows={3} />
             </label>
             <label className="wide-field">
               Mediciones y reparaciones efectuadas
@@ -1872,8 +1940,8 @@ export function InfraestructuraPage() {
               </div>
               <div className="maintenance-check-grid">
                 {INSPECCION_TECNICA_ITEMS.map((item) => (
-                  <label key={item}>
-                    {item}
+                  <label key={item} className="maintenance-inspection-item">
+                    <span>{item}</span>
                     <select value={mantenimiento.inspeccion_tecnica[item] || "na"} onChange={(event) => actualizarRevisionMantenimiento("inspeccion_tecnica", item, event.target.value)}>
                       {OPCIONES_REVISION.map((opcion) => (
                         <option key={opcion} value={opcion}>
@@ -1881,6 +1949,12 @@ export function InfraestructuraPage() {
                         </option>
                       ))}
                     </select>
+                    <textarea
+                      value={mantenimiento.inspeccion_diagnosticos[item] || ""}
+                      onChange={(event) => actualizarDiagnosticoInspeccion(item, event.target.value)}
+                      placeholder="Diagnostico para el formato"
+                      rows={2}
+                    />
                   </label>
                 ))}
               </div>
