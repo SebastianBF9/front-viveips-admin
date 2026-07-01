@@ -4808,6 +4808,14 @@ td small { display: block; color: var(--muted); margin-top: 4px; }
   color: #6d28d9;
 }
 
+.infra-actions button.icon-only {
+  width: 42px;
+  min-width: 42px;
+  min-height: 38px;
+  justify-content: center;
+  padding: 7px;
+}
+
 .infra-menu-wrap {
   position: relative;
   display: inline-flex;
@@ -7485,7 +7493,8 @@ td small { display: block; color: var(--muted); margin-top: 4px; }
 }
 
 .infra-modal .modal-actions .infra-save-btn,
-.infra-small-modal .modal-actions .infra-save-btn {
+.infra-small-modal .modal-actions .infra-save-btn,
+.infra-inline-actions .infra-save-btn {
   border: 0;
   min-height: 40px;
   padding: 9px 18px;
@@ -7504,14 +7513,16 @@ td small { display: block; color: var(--muted); margin-top: 4px; }
 }
 
 .infra-modal .modal-actions .infra-save-btn:hover,
-.infra-small-modal .modal-actions .infra-save-btn:hover {
+.infra-small-modal .modal-actions .infra-save-btn:hover,
+.infra-inline-actions .infra-save-btn:hover {
   transform: translateY(-1px);
   box-shadow: 0 14px 26px rgba(27, 58, 107, .20);
   filter: brightness(.99);
 }
 
 .infra-modal .modal-actions .infra-save-btn svg,
-.infra-small-modal .modal-actions .infra-save-btn svg {
+.infra-small-modal .modal-actions .infra-save-btn svg,
+.infra-inline-actions .infra-save-btn svg {
   width: 16px;
   height: 16px;
   stroke-width: 3;
