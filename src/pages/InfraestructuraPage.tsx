@@ -870,7 +870,7 @@ export function InfraestructuraPage() {
         .spacer td{height:13px;}
         .two{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-top:5px;}
         .footer{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-top:5px;}
-        .signature{height:56px;vertical-align:bottom;}
+        .signature{height:44px;vertical-align:bottom;font-size:6px;line-height:1.15;font-weight:600;}
         .signature-line{height:34px;}
         .xcell{font-weight:900;text-align:center;font-size:6.8px;}
         .obs{height:34px;font-weight:800;vertical-align:top;}
@@ -891,6 +891,10 @@ export function InfraestructuraPage() {
         .test-table .test-comment-col{width:42%;}
         .test-name{font-size:5.8px;line-height:1.1;font-weight:700;overflow-wrap:anywhere;}
         .test-comment{font-size:5.8px;}
+        .summary-table th,.summary-table td{height:13px;padding:1.5px 3px;font-size:5.8px;line-height:1.1;}
+        .summary-table .status-value{width:28%;font-size:6.2px;font-weight:900;text-align:center;}
+        .summary-table .status-label{font-weight:700;}
+        .summary-table .obs{height:44px;font-size:5.8px;line-height:1.12;font-weight:700;}
         @media print{body{-webkit-print-color-adjust:exact;print-color-adjust:exact;}}
       </style></head><body><main class="page">
         <header class="top">
@@ -961,23 +965,23 @@ export function InfraestructuraPage() {
           </div>
         </div>
         <div class="two">
-          <table>
+          <table class="summary-table">
             <tr><th colspan="2">Estado final del equipo</th></tr>
-            <tr><td>Funcionando correctamente</td><td class="center">${normalizar(mantenimientoItem.estado_equipo_posterior) === "disponible" ? "SI" : ""}</td></tr>
-            <tr><td>Funcionando con observaciones</td><td class="center">${normalizar(mantenimientoItem.estado_equipo_posterior).includes("observ") ? "SI" : "NO"}</td></tr>
-            <tr><td>Fuera de servicio</td><td class="center">${normalizar(mantenimientoItem.estado_equipo_posterior).includes("fuera") ? "SI" : "NO"}</td></tr>
+            <tr><td class="status-label">Funcionando correctamente</td><td class="status-value">${normalizar(mantenimientoItem.estado_equipo_posterior) === "disponible" ? "SI" : ""}</td></tr>
+            <tr><td class="status-label">Funcionando con observaciones</td><td class="status-value">${normalizar(mantenimientoItem.estado_equipo_posterior).includes("observ") ? "SI" : "NO"}</td></tr>
+            <tr><td class="status-label">Fuera de servicio</td><td class="status-value">${normalizar(mantenimientoItem.estado_equipo_posterior).includes("fuera") ? "SI" : "NO"}</td></tr>
           </table>
-          <table>
+          <table class="summary-table">
             <tr><th>Conclusiones y observaciones</th></tr>
             <tr><td class="obs">${escapeHtml(mantenimientoItem.conclusiones_observaciones || mantenimientoItem.descripcion || "-").replaceAll("\n", "<br>")}</td></tr>
           </table>
         </div>
         <div class="footer">
-          <table>
+          <table class="summary-table">
             <tr><th>Servicio realizado por</th></tr>
             <tr><td class="signature">Nombre: ${escapeHtml(mantenimientoItem.responsable || mantenimientoItem.firmado_por || "-")}<br>Cargo: ${escapeHtml(mantenimientoItem.responsable ? "Responsable tecnico" : "-")}<br>Firma: ________________________</td></tr>
           </table>
-          <table>
+          <table class="summary-table">
             <tr><th>Servicio recibido y aprobado por</th></tr>
             <tr><td class="signature">Nombre: ${escapeHtml(mantenimientoItem.recibido_por_nombre || "-")}<br>Cargo: ${escapeHtml(mantenimientoItem.recibido_por_cargo || "-")}<br>C.C.: ${escapeHtml(mantenimientoItem.recibido_por_cc || "-")}<br>Firma: ________________________</td></tr>
           </table>
