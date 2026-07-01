@@ -5100,6 +5100,15 @@ td small { display: block; color: var(--muted); margin-top: 4px; }
   min-height: 38px;
 }
 
+.maintenance-inspection-item {
+  align-content: start;
+}
+
+.maintenance-inspection-item textarea {
+  min-height: 62px;
+  resize: vertical;
+}
+
 .maintenance-part-row {
   display: grid;
   grid-template-columns: 90px minmax(0, 1fr) 42px;
