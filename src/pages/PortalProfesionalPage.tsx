@@ -71,7 +71,7 @@ import type {
 } from "../types";
 import { Loading } from "../ui/Loading";
 
-const API_URL = import.meta.env.VITE_API_URL || "https://api-pruebas.viveips.com.co";
+const API_URL = import.meta.env.VITE_API_URL || "https://api.viveips.com.co";
 
 const DOCUMENTOS_PERSONALES = ["cedula", "hoja_vida", "rut", "cert_bancaria"];
 const DOCUMENTOS_ACADEMICOS = ["tarjeta_prof", "rethus"];
