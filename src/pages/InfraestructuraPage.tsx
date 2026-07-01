@@ -817,7 +817,7 @@ export function InfraestructuraPage() {
     return items
       .map(
         (item) =>
-          `<tr><td>${escapeHtml(item)}</td><td>${marcaRevision(datos[item], "pasa")}</td><td>${marcaRevision(datos[item], "falla")}</td><td>${marcaRevision(datos[item], "na")}</td><td></td></tr>`,
+          `<tr><td>${escapeHtml(item)}</td><td class="xcell">${marcaRevision(datos[item], "pasa")}</td><td class="xcell">${marcaRevision(datos[item], "falla")}</td><td class="xcell">${marcaRevision(datos[item], "na")}</td></tr>`,
       )
       .join("");
   }
@@ -848,32 +848,35 @@ export function InfraestructuraPage() {
     win.document.write(`
       <html><head><title>Reporte de servicio - ${escapeHtml(mantenimientoItem.numero_reporte || equipo.codigo_interno || "")}</title>
       <style>
-        @page{size:A4;margin:8mm;}
+        @page{size:A4;margin:7mm;}
         *{box-sizing:border-box;}
         html,body{margin:0;padding:0;background:#fff;}
-        body{font-family:Arial,sans-serif;color:#263645;font-size:9px;-webkit-print-color-adjust:exact;print-color-adjust:exact;}
-        .page{border:1px solid #7b8794;padding:6px;}
-        .top{display:grid;grid-template-columns:1fr 1.3fr .9fr;align-items:center;gap:8px;margin-bottom:6px;}
-        .brand{display:flex;gap:8px;align-items:center;border:1px solid #7b8794;padding:5px;min-height:58px;}
-        .brand img{width:76px;max-height:42px;object-fit:contain;}
-        .brand strong{display:block;color:#1B3A6B;font-size:8.5px;line-height:1.2;}
-        .brand span{display:block;color:#64748b;font-size:7.5px;line-height:1.25;}
-        .company{text-align:center;color:#334155;font-weight:800;line-height:1.25;font-size:10px;}
-        .report{border:1px solid #7b8794;text-align:center;padding:6px;font-weight:900;font-size:11px;color:#334155;}
+        body{font-family:Arial,sans-serif;color:#263645;font-size:7.2px;line-height:1.12;-webkit-print-color-adjust:exact;print-color-adjust:exact;}
+        .page{border:1px solid #7b8794;padding:5px;}
+        .top{display:grid;grid-template-columns:1fr 1.25fr .85fr;align-items:center;gap:6px;margin-bottom:5px;}
+        .brand{display:flex;gap:6px;align-items:center;border:1px solid #7b8794;padding:4px;min-height:46px;}
+        .brand img{width:62px;max-height:32px;object-fit:contain;}
+        .brand strong{display:block;color:#1B3A6B;font-size:6.8px;line-height:1.15;}
+        .brand span{display:block;color:#64748b;font-size:6.2px;line-height:1.2;}
+        .company{text-align:center;color:#334155;font-weight:800;line-height:1.18;font-size:7.4px;}
+        .report{border:1px solid #7b8794;text-align:center;padding:5px;font-weight:900;font-size:8px;color:#334155;}
         table{width:100%;border-collapse:collapse;table-layout:fixed;}
-        th,td{border:1px solid #8c98a4;padding:3px 4px;vertical-align:middle;min-height:17px;}
-        th{background:#e8edf2;color:#334155;text-transform:uppercase;font-size:8px;text-align:center;font-weight:900;}
-        td.label{background:#f2f5f8;color:#334155;text-transform:uppercase;font-weight:900;width:13%;}
+        th,td{border:1px solid #8c98a4;padding:2px 3px;vertical-align:middle;min-height:13px;overflow-wrap:anywhere;word-break:normal;}
+        th{background:#e8edf2;color:#334155;text-transform:uppercase;font-size:6.7px;line-height:1.08;text-align:center;font-weight:900;}
+        td.label{background:#f2f5f8;color:#334155;text-transform:uppercase;font-weight:900;font-size:6.8px;line-height:1.08;}
         td.center{text-align:center;}
         .section-title{background:#dfe6ed;text-align:center;text-transform:uppercase;font-weight:900;color:#334155;}
         .muted{color:#64748b;}
-        .spacer td{height:18px;}
-        .two{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:6px;}
-        .footer{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:6px;}
-        .signature{height:70px;vertical-align:bottom;}
+        .spacer td{height:13px;}
+        .two{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-top:5px;}
+        .footer{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-top:5px;}
+        .signature{height:56px;vertical-align:bottom;}
         .signature-line{height:34px;}
-        .xcell{font-weight:900;text-align:center;font-size:12px;}
-        .obs{height:42px;font-weight:800;}
+        .xcell{font-weight:900;text-align:center;font-size:7.8px;}
+        .obs{height:34px;font-weight:800;vertical-align:top;}
+        .diagnostico{height:96px;vertical-align:top;font-size:7.2px;line-height:1.18;}
+        .info-table td{height:18px;}
+        .info-table td.label{width:auto;}
         @media print{body{-webkit-print-color-adjust:exact;print-color-adjust:exact;}}
       </style></head><body><main class="page">
         <header class="top">
@@ -893,7 +896,7 @@ export function InfraestructuraPage() {
           </div>
           <div class="report">REPORTE DE SERVICIO<br>N ${escapeHtml(mantenimientoItem.numero_reporte || "-")}</div>
         </header>
-        <table>
+        <table class="info-table">
           <tr><th colspan="4">Informacion del cliente</th><th colspan="4">Informacion del equipo</th><th colspan="4">Informacion del servicio</th></tr>
           <tr><td class="label">Nombre</td><td colspan="3">VIVE IPS - GRUPO MEDICO INTEGRAL</td><td class="label">Nombre</td><td colspan="3">${escapeHtml(equipo.nombre)}</td><td class="label">Fecha</td><td>${escapeHtml(formatearFecha(mantenimientoItem.fecha_mantenimiento))}</td><td class="label">Hora</td><td>${escapeHtml(mantenimientoItem.hora_servicio || "-")}</td></tr>
           <tr><td class="label">Ciudad</td><td colspan="3">${escapeHtml(equipo.ubicacion_actual || "-")}</td><td class="label">Marca</td><td colspan="3">${escapeHtml(equipo.marca)}</td><td class="label" colspan="2">Clase servicio</td><td colspan="2">${escapeHtml(mantenimientoItem.clase_servicio || mantenimientoItem.tipo || "-")}</td></tr>
@@ -905,8 +908,8 @@ export function InfraestructuraPage() {
           <tr class="spacer"><td colspan="12"></td></tr>
         </table>
         <table style="margin-top:6px;">
-          <tr><th colspan="5">Inspeccion tecnica</th><th colspan="7">Diagnostico</th></tr>
-          <tr><th>Check list</th><th>P</th><th>F</th><th>N/A</th><th>Comentarios</th><td colspan="7" rowspan="${INSPECCION_TECNICA_ITEMS.length + 1}" class="obs">${escapeHtml(mantenimientoItem.diagnostico || "-")}</td></tr>
+          <tr><th colspan="4">Inspeccion tecnica</th><th colspan="8">Diagnostico</th></tr>
+          <tr><th>Check list</th><th>P</th><th>F</th><th>N/A</th><td colspan="8" rowspan="${INSPECCION_TECNICA_ITEMS.length + 1}" class="diagnostico">${escapeHtml(mantenimientoItem.diagnostico || "-")}</td></tr>
           ${filasRevision(INSPECCION_TECNICA_ITEMS, inspeccion)}
         </table>
         <table style="margin-top:6px;">
