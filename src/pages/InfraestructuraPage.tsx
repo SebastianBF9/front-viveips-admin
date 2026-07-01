@@ -874,6 +874,7 @@ export function InfraestructuraPage() {
         .signature-line{height:34px;}
         .xcell{font-weight:900;text-align:center;font-size:6.8px;}
         .obs{height:34px;font-weight:800;vertical-align:top;}
+        .work-notes{height:26px;vertical-align:top;font-size:5.8px;line-height:1.12;font-weight:700;}
         .diagnostico{height:58px;vertical-align:top;font-size:6px;line-height:1.12;font-weight:700;}
         .info-table td{height:18px;}
         .info-table td:not(.label):not(.xcell){font-size:5.6px;line-height:1.05;font-weight:500;}
@@ -940,7 +941,7 @@ export function InfraestructuraPage() {
         </table>
         <table style="margin-top:6px;">
           <tr><th>Mediciones y reparaciones efectuadas</th></tr>
-          <tr><td class="obs">${escapeHtml(mantenimientoItem.mediciones_reparaciones || mantenimientoItem.descripcion || "-").replaceAll("\n", "<br>")}</td></tr>
+          <tr><td class="work-notes">${escapeHtml(mantenimientoItem.mediciones_reparaciones || mantenimientoItem.descripcion || "-").replaceAll("\n", "<br>")}</td></tr>
         </table>
         <div class="two">
           <table class="test-table">
