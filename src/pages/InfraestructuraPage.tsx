@@ -895,6 +895,11 @@ export function InfraestructuraPage() {
         .summary-table .status-value{width:28%;font-size:6.2px;font-weight:900;text-align:center;}
         .summary-table .status-label{font-weight:700;}
         .summary-table .obs{height:44px;font-size:5.8px;line-height:1.12;font-weight:700;}
+        .parts-table{margin-top:6px;table-layout:auto;}
+        .parts-table th,.parts-table td{height:13px;padding:1.5px 3px;font-size:5.8px;line-height:1.1;}
+        .parts-table .qty-col{width:24%;}
+        .parts-table .part-qty{text-align:center;font-weight:700;}
+        .parts-table .part-desc{font-weight:700;}
         @media print{body{-webkit-print-color-adjust:exact;print-color-adjust:exact;}}
       </style></head><body><main class="page">
         <header class="top">
@@ -953,12 +958,15 @@ export function InfraestructuraPage() {
               <tr><th>Pasa</th><th>Falla</th><th>Test cuantitativo</th><th>N/A</th><th>Comentarios</th></tr>
               ${filasPruebas(PRUEBAS_CUANTITATIVAS_ITEMS, cuantitativas)}
             </table>
-            <table style="margin-top:6px;">
+            <table class="parts-table">
+              <colgroup>
+                <col class="qty-col"><col>
+              </colgroup>
               <tr><th colspan="2">Repuestos utilizados</th></tr>
               <tr><th>Cant.</th><th>Descripcion</th></tr>
               ${
                 repuestosUsados.length
-                  ? repuestosUsados.map((repuesto) => `<tr><td>${escapeHtml(repuesto.cantidad || "")}</td><td>${escapeHtml(repuesto.descripcion || "")}</td></tr>`).join("")
+                  ? repuestosUsados.map((repuesto) => `<tr><td class="part-qty">${escapeHtml(repuesto.cantidad || "")}</td><td class="part-desc">${escapeHtml(repuesto.descripcion || "")}</td></tr>`).join("")
                   : `<tr><td colspan="2">No se registraron repuestos.</td></tr>`
               }
             </table>
