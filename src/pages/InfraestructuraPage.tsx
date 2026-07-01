@@ -1898,8 +1898,8 @@ export function InfraestructuraPage() {
             <button className="secondary-btn" type="button" onClick={() => setMantenimientoEquipo(null)}>
               Cancelar
             </button>
-            <button className="primary-btn" type="button" onClick={guardarMantenimiento} disabled={accion === "mantenimiento"}>
-              Guardar mantenimiento
+            <button className="primary-btn infra-save-btn" type="button" onClick={guardarMantenimiento} disabled={accion === "mantenimiento"}>
+              <Save size={16} /> Guardar mantenimiento
             </button>
           </div>
         </SimpleModal>
@@ -1937,8 +1937,8 @@ export function InfraestructuraPage() {
             <button className="secondary-btn" type="button" onClick={() => setCalibracionEquipo(null)}>
               Cancelar
             </button>
-            <button className="primary-btn" type="button" onClick={guardarCalibracion} disabled={accion === "calibracion"}>
-              Guardar calibracion
+            <button className="primary-btn infra-save-btn" type="button" onClick={guardarCalibracion} disabled={accion === "calibracion"}>
+              <Save size={16} /> Guardar calibracion
             </button>
           </div>
         </SimpleModal>
