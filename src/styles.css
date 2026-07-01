@@ -5051,6 +5051,67 @@ td small { display: block; color: var(--muted); margin-top: 4px; }
   line-height: 1.4;
 }
 
+.maintenance-check-section,
+.maintenance-parts-section {
+  display: grid;
+  gap: 12px;
+  border: 1px solid #dbe7f2;
+  border-radius: 8px;
+  padding: 14px;
+  background: #f8fbfe;
+}
+
+.maintenance-check-section > div:first-child,
+.maintenance-parts-section > div:first-child {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.maintenance-check-section strong,
+.maintenance-parts-section strong {
+  color: #08243a;
+  font-family: "Nunito", sans-serif;
+  font-size: 15px;
+  font-weight: 900;
+}
+
+.maintenance-check-section span {
+  display: block;
+  color: #64748b;
+  font-size: 12px;
+  font-weight: 800;
+  margin-top: 2px;
+}
+
+.maintenance-check-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.maintenance-check-grid label {
+  gap: 6px;
+  font-size: 12px;
+}
+
+.maintenance-check-grid select {
+  min-height: 38px;
+}
+
+.maintenance-part-row {
+  display: grid;
+  grid-template-columns: 90px minmax(0, 1fr) 42px;
+  gap: 8px;
+}
+
+.maintenance-part-row button {
+  min-width: 0;
+  padding: 0;
+  justify-content: center;
+}
+
 .infra-category-row {
   display: grid;
   grid-template-columns: minmax(0, 1fr) 42px;
@@ -7578,6 +7639,18 @@ td small { display: block; color: var(--muted); margin-top: 4px; }
   .infra-form-grid {
     grid-template-columns: 1fr;
   }
+
+  .maintenance-check-grid,
+  .maintenance-part-row {
+    grid-template-columns: 1fr;
+  }
+
+  .maintenance-check-section > div:first-child,
+  .maintenance-parts-section > div:first-child {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
   .patient-search-row {
     grid-template-columns: 1fr;
   }

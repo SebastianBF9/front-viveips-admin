@@ -84,6 +84,36 @@ const CATEGORIAS_FALLBACK = [
   "GLUCOMETRO",
   "ULTRASONIDO",
 ];
+const OPCIONES_REVISION = ["pasa", "falla", "na"] as const;
+const INSPECCION_TECNICA_ITEMS = [
+  "Inspeccion fisica",
+  "Insp. condiciones ambientales",
+  "Insp. sistema mecanico",
+  "Insp. sistema electronico",
+  "Insp. sistema electrico",
+  "Insp. sistema neumatico",
+  "Insp. sistema hidraulico",
+  "Insp. sistema optico",
+  "Inspeccion de accesorios",
+];
+const PRUEBAS_CUALITATIVAS_ITEMS = [
+  "Chasis / Carcasa",
+  "Soporte",
+  "Enchufe / Receptaculo",
+  "Cable de alimentacion",
+  "Anclaje del cordon",
+  "Proteccion / Fusible",
+  "Tubos / Mangueras",
+  "Cables",
+  "Resistencias",
+  "Controles / Switches",
+  "Valvula, Electrovalvulas",
+  "Ventilador / Compresor",
+  "Sensor",
+  "Bateria / Cargador",
+  "Indicadores / Displays",
+];
+const PRUEBAS_CUANTITATIVAS_ITEMS = ["Resistencia de tierra (O)", "Corriente de fuga (uA)", "Presion de trabajo (lb, mmHg)"];
 
 type EquipoForm = {
   id?: number;
@@ -145,15 +175,28 @@ type EquipoForm = {
 type MantenimientoForm = {
   tipo: string;
   fecha_mantenimiento: string;
+  hora_servicio: string;
+  clase_servicio: string;
   proxima_fecha: string;
   responsable: string;
+  requerimiento: string;
   descripcion: string;
+  inspeccion_tecnica: Record<string, string>;
+  diagnostico: string;
+  mediciones_reparaciones: string;
+  pruebas_cualitativas: Record<string, string>;
+  pruebas_cuantitativas: Record<string, string>;
   horas_hombre: string;
   horas_paro: string;
   repuestos: string;
+  repuestos_utilizados: Array<{ cantidad: string; descripcion: string }>;
   costo_repuesto: string;
   costo: string;
   estado_equipo_posterior: string;
+  conclusiones_observaciones: string;
+  recibido_por_nombre: string;
+  recibido_por_cargo: string;
+  recibido_por_cc: string;
 };
 
 type CalibracionForm = {
@@ -324,18 +367,32 @@ function inicialForm(equipo?: EquipoBiomedico | null, hoja?: EquipoHojaVida | nu
 }
 
 function inicialMantenimiento(): MantenimientoForm {
+  const revisionInicial = (items: string[], valor = "pasa") => Object.fromEntries(items.map((item) => [item, valor]));
   return {
     tipo: "preventivo",
     fecha_mantenimiento: new Date().toISOString().slice(0, 10),
+    hora_servicio: new Date().toTimeString().slice(0, 5),
+    clase_servicio: "inspeccion",
     proxima_fecha: "",
     responsable: "",
+    requerimiento: "Se realiza mantenimiento preventivo segun cronograma",
     descripcion: "",
+    inspeccion_tecnica: revisionInicial(INSPECCION_TECNICA_ITEMS),
+    diagnostico: "",
+    mediciones_reparaciones: "Se realiza mantenimiento preventivo segun protocolo.\nSe revisa equipo, accesorios y condiciones generales de funcionamiento.",
+    pruebas_cualitativas: revisionInicial(PRUEBAS_CUALITATIVAS_ITEMS),
+    pruebas_cuantitativas: revisionInicial(PRUEBAS_CUANTITATIVAS_ITEMS),
     horas_hombre: "",
     horas_paro: "",
     repuestos: "",
+    repuestos_utilizados: [{ cantidad: "", descripcion: "" }],
     costo_repuesto: "",
     costo: "",
     estado_equipo_posterior: "disponible",
+    conclusiones_observaciones: "Se entrega el equipo en buen estado y funcionando correctamente.",
+    recibido_por_nombre: "",
+    recibido_por_cargo: "",
+    recibido_por_cc: "",
   };
 }
 
@@ -475,6 +532,39 @@ export function InfraestructuraPage() {
 
   function actualizarMantenimiento(campo: keyof MantenimientoForm, valor: string) {
     setMantenimiento((actual) => ({ ...actual, [campo]: valor }));
+  }
+
+  function actualizarRevisionMantenimiento(campo: "inspeccion_tecnica" | "pruebas_cualitativas" | "pruebas_cuantitativas", item: string, valor: string) {
+    setMantenimiento((actual) => ({
+      ...actual,
+      [campo]: { ...actual[campo], [item]: valor },
+    }));
+  }
+
+  function actualizarRepuestoMantenimiento(index: number, campo: "cantidad" | "descripcion", valor: string) {
+    setMantenimiento((actual) => ({
+      ...actual,
+      repuestos_utilizados: actual.repuestos_utilizados.map((repuesto, repuestoIndex) =>
+        repuestoIndex === index ? { ...repuesto, [campo]: valor } : repuesto,
+      ),
+    }));
+  }
+
+  function agregarRepuestoMantenimiento() {
+    setMantenimiento((actual) => ({
+      ...actual,
+      repuestos_utilizados: [...actual.repuestos_utilizados, { cantidad: "", descripcion: "" }],
+    }));
+  }
+
+  function quitarRepuestoMantenimiento(index: number) {
+    setMantenimiento((actual) => ({
+      ...actual,
+      repuestos_utilizados:
+        actual.repuestos_utilizados.length > 1
+          ? actual.repuestos_utilizados.filter((_, repuestoIndex) => repuestoIndex !== index)
+          : [{ cantidad: "", descripcion: "" }],
+    }));
   }
 
   function actualizarCalibracion(campo: keyof CalibracionForm, valor: string) {
@@ -648,6 +738,176 @@ export function InfraestructuraPage() {
       ${seccionTabla("Calibraciones", ["Fecha","Proxima","Certificado","Entidad","Resultado","Observaciones"], hojaVida.calibraciones.map((c) => [formatearFecha(c.fecha_calibracion), formatearFecha(c.proxima_calibracion), c.certificado, c.entidad_calibradora, c.resultado, c.observaciones]))}
       ${seccionTabla("Movimientos", ["Fecha","Tipo","Descripcion","Ubicacion"], hojaVida.movimientos.map((m) => [formatearFecha(m.created_at), m.tipo_movimiento, m.descripcion, m.ubicacion_texto]))}
       ${seccionAsignacion(hojaVida.asignacion_activa)}
+      </main></body></html>`);
+    win.document.close();
+    win.focus();
+    win.setTimeout(() => win.print(), 400);
+  }
+
+  function jsonMantenimiento(valor: unknown) {
+    if (!valor) return {};
+    if (typeof valor === "string") {
+      try {
+        return JSON.parse(valor) as Record<string, unknown>;
+      } catch {
+        return {};
+      }
+    }
+    if (typeof valor === "object") return valor as Record<string, unknown>;
+    return {};
+  }
+
+  function repuestosMantenimiento(valor: EquipoMantenimiento["repuestos_utilizados"]) {
+    if (!valor) return [];
+    if (typeof valor === "string") {
+      try {
+        const parsed = JSON.parse(valor);
+        return Array.isArray(parsed) ? parsed : [];
+      } catch {
+        return [];
+      }
+    }
+    return Array.isArray(valor) ? valor : [];
+  }
+
+  function marcaRevision(valor: unknown, esperado: string) {
+    return String(valor || "").toLowerCase() === esperado ? "X" : "";
+  }
+
+  function filasRevision(items: string[], datos: Record<string, unknown>) {
+    return items
+      .map(
+        (item) =>
+          `<tr><td>${escapeHtml(item)}</td><td>${marcaRevision(datos[item], "pasa")}</td><td>${marcaRevision(datos[item], "falla")}</td><td>${marcaRevision(datos[item], "na")}</td><td></td></tr>`,
+      )
+      .join("");
+  }
+
+  function filasPruebas(items: string[], datos: Record<string, unknown>) {
+    return items
+      .map(
+        (item) =>
+          `<tr><td>${marcaRevision(datos[item], "pasa")}</td><td>${marcaRevision(datos[item], "falla")}</td><td>${escapeHtml(item)}</td><td>${marcaRevision(datos[item], "na")}</td><td></td></tr>`,
+      )
+      .join("");
+  }
+
+  function imprimirMantenimiento(mantenimientoItem: EquipoMantenimiento) {
+    if (!hojaVida) return;
+    const equipo = hojaVida.equipo;
+    const fechaImpresion = new Date().toLocaleDateString("es-CO");
+    const inspeccion = jsonMantenimiento(mantenimientoItem.inspeccion_tecnica);
+    const cualitativas = jsonMantenimiento(mantenimientoItem.pruebas_cualitativas);
+    const cuantitativas = jsonMantenimiento(mantenimientoItem.pruebas_cuantitativas);
+    const repuestosUsados = repuestosMantenimiento(mantenimientoItem.repuestos_utilizados);
+    const win = window.open("", "_blank");
+    if (!win) {
+      setError("El navegador bloqueo la ventana de impresion. Permite ventanas emergentes para este sitio.");
+      return;
+    }
+    win.opener = null;
+    win.document.write(`
+      <html><head><title>Reporte de servicio - ${escapeHtml(mantenimientoItem.numero_reporte || equipo.codigo_interno || "")}</title>
+      <style>
+        @page{size:A4;margin:8mm;}
+        *{box-sizing:border-box;}
+        html,body{margin:0;padding:0;background:#fff;}
+        body{font-family:Arial,sans-serif;color:#263645;font-size:9px;-webkit-print-color-adjust:exact;print-color-adjust:exact;}
+        .page{border:1px solid #7b8794;padding:6px;}
+        .top{display:grid;grid-template-columns:1fr 1.3fr .9fr;align-items:start;gap:8px;margin-bottom:6px;}
+        .brand{font-size:24px;color:#334155;line-height:.95;font-weight:700;}
+        .brand span{color:#b03a48;}
+        .company{text-align:center;color:#334155;font-weight:800;line-height:1.25;font-size:10px;}
+        .report{border:1px solid #7b8794;text-align:center;padding:6px;font-weight:900;font-size:11px;color:#334155;}
+        table{width:100%;border-collapse:collapse;table-layout:fixed;}
+        th,td{border:1px solid #8c98a4;padding:3px 4px;vertical-align:middle;min-height:17px;}
+        th{background:#e8edf2;color:#334155;text-transform:uppercase;font-size:8px;text-align:center;font-weight:900;}
+        td.label{background:#f2f5f8;color:#334155;text-transform:uppercase;font-weight:900;width:13%;}
+        td.center{text-align:center;}
+        .section-title{background:#dfe6ed;text-align:center;text-transform:uppercase;font-weight:900;color:#334155;}
+        .muted{color:#64748b;}
+        .spacer td{height:18px;}
+        .two{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:6px;}
+        .footer{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:6px;}
+        .signature{height:70px;vertical-align:bottom;}
+        .signature-line{height:34px;}
+        .xcell{font-weight:900;text-align:center;font-size:12px;}
+        .obs{height:42px;font-weight:800;}
+        @media print{body{-webkit-print-color-adjust:exact;print-color-adjust:exact;}}
+      </style></head><body><main class="page">
+        <header class="top">
+          <div class="brand"><span>Medical</span><br>Solutions</div>
+          <div class="company">
+            J&amp;H MEDICAL SOLUTIONS<br>
+            INGENIERIA BIOMEDICA<br>
+            COMERCIALIZACION Y MANTENIMIENTO DE EQUIPOS BIOMEDICOS<br>
+            <span class="muted">Reporte generado por VIVE IPS - ${escapeHtml(fechaImpresion)}</span>
+          </div>
+          <div class="report">REPORTE DE SERVICIO<br>N ${escapeHtml(mantenimientoItem.numero_reporte || "-")}</div>
+        </header>
+        <table>
+          <tr><th colspan="4">Informacion del cliente</th><th colspan="4">Informacion del equipo</th><th colspan="4">Informacion del servicio</th></tr>
+          <tr><td class="label">Nombre</td><td colspan="3">VIVE IPS - GRUPO MEDICO INTEGRAL</td><td class="label">Nombre</td><td colspan="3">${escapeHtml(equipo.nombre)}</td><td class="label">Fecha</td><td>${escapeHtml(formatearFecha(mantenimientoItem.fecha_mantenimiento))}</td><td class="label">Hora</td><td>${escapeHtml(mantenimientoItem.hora_servicio || "-")}</td></tr>
+          <tr><td class="label">Ciudad</td><td colspan="3">${escapeHtml(equipo.ubicacion_actual || "-")}</td><td class="label">Marca</td><td colspan="3">${escapeHtml(equipo.marca)}</td><td class="label" colspan="2">Clase servicio</td><td colspan="2">${escapeHtml(mantenimientoItem.clase_servicio || mantenimientoItem.tipo || "-")}</td></tr>
+          <tr><td class="label">Sede</td><td colspan="3">${escapeHtml(equipo.area || "-")}</td><td class="label">Modelo</td><td colspan="3">${escapeHtml(equipo.modelo)}</td><td class="label">M. preventivo</td><td class="xcell">${marcaRevision(mantenimientoItem.tipo, "preventivo")}</td><td class="label">Inspeccion</td><td class="xcell">${marcaRevision(mantenimientoItem.clase_servicio, "inspeccion")}</td></tr>
+          <tr><td class="label">Telefono</td><td colspan="3">-</td><td class="label">Serie</td><td colspan="3">${escapeHtml(equipo.serie)}</td><td class="label">M. correctivo</td><td class="xcell">${marcaRevision(mantenimientoItem.tipo, "correctivo")}</td><td class="label">Validacion</td><td class="xcell">${marcaRevision(mantenimientoItem.clase_servicio, "validacion")}</td></tr>
+          <tr><td class="label">Direccion</td><td colspan="3">-</td><td class="label">Area / Dpto</td><td colspan="3">${escapeHtml(equipo.servicio || equipo.area || "-")}</td><td class="label">Instalacion</td><td class="xcell">${marcaRevision(mantenimientoItem.clase_servicio, "instalacion")}</td><td class="label">Capacitacion</td><td class="xcell">${marcaRevision(mantenimientoItem.clase_servicio, "capacitacion")}</td></tr>
+          <tr><td class="label">Contacto</td><td colspan="3">VIVE IPS</td><td class="label">Ubicacion</td><td colspan="3">${escapeHtml(equipo.ubicacion_actual || "-")}</td><td class="label">Cortesia</td><td class="xcell" colspan="3">${marcaRevision(mantenimientoItem.clase_servicio, "cortesia")}</td></tr>
+          <tr><td class="label">Requerimiento</td><td colspan="11">${escapeHtml(mantenimientoItem.requerimiento || mantenimientoItem.descripcion || "-")}</td></tr>
+          <tr class="spacer"><td colspan="12"></td></tr>
+        </table>
+        <table style="margin-top:6px;">
+          <tr><th colspan="5">Inspeccion tecnica</th><th colspan="7">Diagnostico</th></tr>
+          <tr><th>Check list</th><th>P</th><th>F</th><th>N/A</th><th>Comentarios</th><td colspan="7" rowspan="${INSPECCION_TECNICA_ITEMS.length + 1}" class="obs">${escapeHtml(mantenimientoItem.diagnostico || "-")}</td></tr>
+          ${filasRevision(INSPECCION_TECNICA_ITEMS, inspeccion)}
+        </table>
+        <table style="margin-top:6px;">
+          <tr><th>Mediciones y reparaciones efectuadas</th></tr>
+          <tr><td class="obs">${escapeHtml(mantenimientoItem.mediciones_reparaciones || mantenimientoItem.descripcion || "-").replaceAll("\n", "<br>")}</td></tr>
+        </table>
+        <div class="two">
+          <table>
+            <tr><th>Pasa</th><th>Falla</th><th>Prueba cualitativa</th><th>N/A</th><th>Comentarios</th></tr>
+            ${filasPruebas(PRUEBAS_CUALITATIVAS_ITEMS, cualitativas)}
+          </table>
+          <div>
+            <table>
+              <tr><th>Pasa</th><th>Falla</th><th>Test cuantitativo</th><th>N/A</th><th>Comentarios</th></tr>
+              ${filasPruebas(PRUEBAS_CUANTITATIVAS_ITEMS, cuantitativas)}
+            </table>
+            <table style="margin-top:6px;">
+              <tr><th colspan="2">Repuestos utilizados</th></tr>
+              <tr><th>Cant.</th><th>Descripcion</th></tr>
+              ${
+                repuestosUsados.length
+                  ? repuestosUsados.map((repuesto) => `<tr><td>${escapeHtml(repuesto.cantidad || "")}</td><td>${escapeHtml(repuesto.descripcion || "")}</td></tr>`).join("")
+                  : `<tr><td colspan="2">No se registraron repuestos.</td></tr>`
+              }
+            </table>
+          </div>
+        </div>
+        <div class="two">
+          <table>
+            <tr><th colspan="2">Estado final del equipo</th></tr>
+            <tr><td>Funcionando correctamente</td><td class="center">${normalizar(mantenimientoItem.estado_equipo_posterior) === "disponible" ? "SI" : ""}</td></tr>
+            <tr><td>Funcionando con observaciones</td><td class="center">${normalizar(mantenimientoItem.estado_equipo_posterior).includes("observ") ? "SI" : "NO"}</td></tr>
+            <tr><td>Fuera de servicio</td><td class="center">${normalizar(mantenimientoItem.estado_equipo_posterior).includes("fuera") ? "SI" : "NO"}</td></tr>
+          </table>
+          <table>
+            <tr><th>Conclusiones y observaciones</th></tr>
+            <tr><td class="obs">${escapeHtml(mantenimientoItem.conclusiones_observaciones || mantenimientoItem.descripcion || "-").replaceAll("\n", "<br>")}</td></tr>
+          </table>
+        </div>
+        <div class="footer">
+          <table>
+            <tr><th>Servicio realizado por</th></tr>
+            <tr><td class="signature">Nombre: ${escapeHtml(mantenimientoItem.responsable || mantenimientoItem.firmado_por || "-")}<br>Cargo: ${escapeHtml(mantenimientoItem.responsable ? "Responsable tecnico" : "-")}<br>Firma: ________________________</td></tr>
+          </table>
+          <table>
+            <tr><th>Servicio recibido y aprobado por</th></tr>
+            <tr><td class="signature">Nombre: ${escapeHtml(mantenimientoItem.recibido_por_nombre || "-")}<br>Cargo: ${escapeHtml(mantenimientoItem.recibido_por_cargo || "-")}<br>C.C.: ${escapeHtml(mantenimientoItem.recibido_por_cc || "-")}<br>Firma: ________________________</td></tr>
+          </table>
+        </div>
       </main></body></html>`);
     win.document.close();
     win.focus();
@@ -841,15 +1101,28 @@ export function InfraestructuraPage() {
         tipo: mantenimiento.tipo,
         numero_reporte: null,
         fecha_mantenimiento: mantenimiento.fecha_mantenimiento,
+        hora_servicio: limpio(mantenimiento.hora_servicio),
+        clase_servicio: limpio(mantenimiento.clase_servicio),
         proxima_fecha: limpio(mantenimiento.proxima_fecha),
         responsable: limpio(mantenimiento.responsable),
+        requerimiento: limpio(mantenimiento.requerimiento),
         descripcion: limpio(mantenimiento.descripcion),
+        inspeccion_tecnica: mantenimiento.inspeccion_tecnica,
+        diagnostico: limpio(mantenimiento.diagnostico),
+        mediciones_reparaciones: limpio(mantenimiento.mediciones_reparaciones),
+        pruebas_cualitativas: mantenimiento.pruebas_cualitativas,
+        pruebas_cuantitativas: mantenimiento.pruebas_cuantitativas,
         horas_hombre: numero(mantenimiento.horas_hombre),
         horas_paro: numero(mantenimiento.horas_paro),
         repuestos: limpio(mantenimiento.repuestos),
+        repuestos_utilizados: mantenimiento.repuestos_utilizados.filter((repuesto) => repuesto.cantidad.trim() || repuesto.descripcion.trim()),
         costo_repuesto: numero(mantenimiento.costo_repuesto),
         costo: numero(mantenimiento.costo),
         estado_equipo_posterior: limpio(mantenimiento.estado_equipo_posterior),
+        conclusiones_observaciones: limpio(mantenimiento.conclusiones_observaciones),
+        recibido_por_nombre: limpio(mantenimiento.recibido_por_nombre),
+        recibido_por_cargo: limpio(mantenimiento.recibido_por_cargo),
+        recibido_por_cc: limpio(mantenimiento.recibido_por_cc),
       });
       setMantenimientoEquipo(null);
       setMantenimiento(inicialMantenimiento());
@@ -1445,8 +1718,22 @@ export function InfraestructuraPage() {
               </select>
             </label>
             <label>
+              Clase de servicio
+              <select value={mantenimiento.clase_servicio} onChange={(event) => actualizarMantenimiento("clase_servicio", event.target.value)}>
+                <option value="inspeccion">Inspeccion</option>
+                <option value="validacion">Validacion</option>
+                <option value="cortesia">Cortesia</option>
+                <option value="capacitacion">Capacitacion</option>
+                <option value="instalacion">Instalacion</option>
+              </select>
+            </label>
+            <label>
               Fecha mantenimiento *
               <input value={mantenimiento.fecha_mantenimiento} onChange={(event) => actualizarMantenimiento("fecha_mantenimiento", event.target.value)} type="date" />
+            </label>
+            <label>
+              Hora
+              <input value={mantenimiento.hora_servicio} onChange={(event) => actualizarMantenimiento("hora_servicio", event.target.value)} type="time" />
             </label>
             <label>
               Proxima fecha
@@ -1459,6 +1746,22 @@ export function InfraestructuraPage() {
             <label>
               Estado posterior
               <input value={mantenimiento.estado_equipo_posterior} onChange={(event) => actualizarMantenimiento("estado_equipo_posterior", event.target.value)} />
+            </label>
+            <label className="wide-field">
+              Requerimiento
+              <textarea value={mantenimiento.requerimiento} onChange={(event) => actualizarMantenimiento("requerimiento", event.target.value)} rows={2} />
+            </label>
+            <label className="wide-field">
+              Diagnostico
+              <textarea value={mantenimiento.diagnostico} onChange={(event) => actualizarMantenimiento("diagnostico", event.target.value)} rows={3} />
+            </label>
+            <label className="wide-field">
+              Mediciones y reparaciones efectuadas
+              <textarea
+                value={mantenimiento.mediciones_reparaciones}
+                onChange={(event) => actualizarMantenimiento("mediciones_reparaciones", event.target.value)}
+                rows={3}
+              />
             </label>
             <label>
               Horas hombre
@@ -1480,9 +1783,111 @@ export function InfraestructuraPage() {
               Repuestos
               <textarea value={mantenimiento.repuestos} onChange={(event) => actualizarMantenimiento("repuestos", event.target.value)} rows={2} />
             </label>
+            <div className="wide-field maintenance-check-section">
+              <div>
+                <strong>Inspeccion tecnica</strong>
+                <span>Marca cada punto como pasa, falla o no aplica.</span>
+              </div>
+              <div className="maintenance-check-grid">
+                {INSPECCION_TECNICA_ITEMS.map((item) => (
+                  <label key={item}>
+                    {item}
+                    <select value={mantenimiento.inspeccion_tecnica[item] || "na"} onChange={(event) => actualizarRevisionMantenimiento("inspeccion_tecnica", item, event.target.value)}>
+                      {OPCIONES_REVISION.map((opcion) => (
+                        <option key={opcion} value={opcion}>
+                          {opcion === "na" ? "N/A" : opcion === "pasa" ? "Pasa" : "Falla"}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+                ))}
+              </div>
+            </div>
+            <div className="wide-field maintenance-check-section">
+              <div>
+                <strong>Prueba cualitativa</strong>
+                <span>Condicion visual y funcional de componentes.</span>
+              </div>
+              <div className="maintenance-check-grid">
+                {PRUEBAS_CUALITATIVAS_ITEMS.map((item) => (
+                  <label key={item}>
+                    {item}
+                    <select value={mantenimiento.pruebas_cualitativas[item] || "na"} onChange={(event) => actualizarRevisionMantenimiento("pruebas_cualitativas", item, event.target.value)}>
+                      {OPCIONES_REVISION.map((opcion) => (
+                        <option key={opcion} value={opcion}>
+                          {opcion === "na" ? "N/A" : opcion === "pasa" ? "Pasa" : "Falla"}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+                ))}
+              </div>
+            </div>
+            <div className="wide-field maintenance-check-section">
+              <div>
+                <strong>Prueba cuantitativa</strong>
+                <span>Mediciones del equipo cuando apliquen.</span>
+              </div>
+              <div className="maintenance-check-grid">
+                {PRUEBAS_CUANTITATIVAS_ITEMS.map((item) => (
+                  <label key={item}>
+                    {item}
+                    <select value={mantenimiento.pruebas_cuantitativas[item] || "na"} onChange={(event) => actualizarRevisionMantenimiento("pruebas_cuantitativas", item, event.target.value)}>
+                      {OPCIONES_REVISION.map((opcion) => (
+                        <option key={opcion} value={opcion}>
+                          {opcion === "na" ? "N/A" : opcion === "pasa" ? "Pasa" : "Falla"}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+                ))}
+              </div>
+            </div>
+            <div className="wide-field maintenance-parts-section">
+              <div>
+                <strong>Repuestos utilizados</strong>
+                <button className="secondary-btn" type="button" onClick={agregarRepuestoMantenimiento}>
+                  <Plus size={14} /> Agregar
+                </button>
+              </div>
+              {mantenimiento.repuestos_utilizados.map((repuesto, index) => (
+                <div className="maintenance-part-row" key={index}>
+                  <input
+                    value={repuesto.cantidad}
+                    onChange={(event) => actualizarRepuestoMantenimiento(index, "cantidad", event.target.value)}
+                    placeholder="Cant."
+                    inputMode="numeric"
+                  />
+                  <input
+                    value={repuesto.descripcion}
+                    onChange={(event) => actualizarRepuestoMantenimiento(index, "descripcion", event.target.value)}
+                    placeholder="Descripcion"
+                  />
+                  <button className="secondary-btn" type="button" onClick={() => quitarRepuestoMantenimiento(index)} aria-label="Quitar repuesto">
+                    <X size={14} />
+                  </button>
+                </div>
+              ))}
+            </div>
             <label className="wide-field">
               Descripcion
               <textarea value={mantenimiento.descripcion} onChange={(event) => actualizarMantenimiento("descripcion", event.target.value)} rows={3} />
+            </label>
+            <label className="wide-field">
+              Conclusiones y observaciones
+              <textarea value={mantenimiento.conclusiones_observaciones} onChange={(event) => actualizarMantenimiento("conclusiones_observaciones", event.target.value)} rows={3} />
+            </label>
+            <label>
+              Recibido por
+              <input value={mantenimiento.recibido_por_nombre} onChange={(event) => actualizarMantenimiento("recibido_por_nombre", event.target.value)} />
+            </label>
+            <label>
+              Cargo recibido
+              <input value={mantenimiento.recibido_por_cargo} onChange={(event) => actualizarMantenimiento("recibido_por_cargo", event.target.value)} />
+            </label>
+            <label>
+              C.C. recibido
+              <input value={mantenimiento.recibido_por_cc} onChange={(event) => actualizarMantenimiento("recibido_por_cc", event.target.value)} />
             </label>
           </div>
           <div className="infra-signed-note">
@@ -1820,7 +2225,7 @@ function HojaVidaModal({
               </div>
               <DataTable
                 empty="Sin mantenimientos registrados."
-                headers={["Tipo", "Reporte", "Fecha", "Proxima", "Responsable", "Costo", "Estado posterior"]}
+                headers={["Tipo", "Reporte", "Fecha", "Proxima", "Responsable", "Costo", "Estado posterior", "Acciones"]}
                 rows={hojaVida.mantenimientos.map((m) => [
                   m.tipo,
                   m.numero_reporte,
@@ -1829,6 +2234,9 @@ function HojaVidaModal({
                   m.responsable,
                   formatearMoneda(m.costo),
                   m.estado_equipo_posterior,
+                  <button className="secondary-btn" type="button" onClick={() => imprimirMantenimiento(m)}>
+                    <Printer size={14} /> Imprimir
+                  </button>,
                 ])}
               />
               <DataTable
@@ -1858,7 +2266,7 @@ function HojaVidaModal({
   );
 }
 
-function DataTable({ empty, headers, rows }: { empty: string; headers: string[]; rows: Array<Array<string | number | null | undefined>> }) {
+function DataTable({ empty, headers, rows }: { empty: string; headers: string[]; rows: Array<Array<ReactNode>> }) {
   if (!rows.length) return <div className="empty-state">{empty}</div>;
   return (
     <div className="infra-subtable">
@@ -1874,7 +2282,7 @@ function DataTable({ empty, headers, rows }: { empty: string; headers: string[];
           {rows.map((row, index) => (
             <tr key={index}>
               {row.map((cell, cellIndex) => (
-                <td key={cellIndex}>{texto(cell)}</td>
+                <td key={cellIndex}>{typeof cell === "string" || typeof cell === "number" || cell === null || cell === undefined ? texto(cell) : cell}</td>
               ))}
             </tr>
           ))}
