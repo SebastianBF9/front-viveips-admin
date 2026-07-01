@@ -1740,6 +1740,7 @@ export function InfraestructuraPage() {
           hojaTab={hojaTab}
           hojaVida={hojaVida}
           imprimirHojaVida={imprimirHojaVida}
+          imprimirMantenimiento={imprimirMantenimiento}
           noAplicaAnexo={noAplicaAnexo}
           setCalibracionEquipo={abrirCalibracion}
           setHojaTab={setHojaTab}
@@ -2055,6 +2056,7 @@ function HojaVidaModal({
   hojaTab,
   hojaVida,
   imprimirHojaVida,
+  imprimirMantenimiento,
   noAplicaAnexo,
   setCalibracionEquipo,
   setHojaTab,
@@ -2069,6 +2071,7 @@ function HojaVidaModal({
   hojaTab: string;
   hojaVida: EquipoHojaVida;
   imprimirHojaVida: () => void;
+  imprimirMantenimiento: (mantenimientoItem: EquipoMantenimiento) => void;
   noAplicaAnexo: (doc: EquipoDocumento) => void;
   setCalibracionEquipo: (equipo: EquipoBiomedico) => void;
   setHojaTab: (tab: string) => void;
