@@ -201,11 +201,6 @@ function boolEquipo(valor: unknown) {
   return valor === true || valor === 1 || valor === "1";
 }
 
-function extensionDesdeRuta(ruta?: string | null, fallback = ".pdf") {
-  const match = String(ruta || "").match(/\.([A-Za-z0-9]+)(?:[?#].*)?$/);
-  return match ? `.${match[1].toLowerCase()}` : fallback;
-}
-
 function formatearFecha(valor?: string | null) {
   if (!valor) return "-";
   const fecha = new Date(`${valor}`.includes("T") ? valor : `${valor}T00:00:00`);
@@ -804,18 +799,6 @@ export function InfraestructuraPage() {
     );
   }
 
-  function descargarArchivoHojaVida(equipo: EquipoBiomedico, tipo: "foto" | "manual-usuario" | "manual-tecnico") {
-    const nombres = {
-      foto: `foto_equipo_${equipo.codigo_interno || equipo.id}${extensionDesdeRuta(equipo.foto_equipo, ".jpg")}`,
-      "manual-usuario": `manual_usuario_${equipo.codigo_interno || equipo.id}${extensionDesdeRuta(equipo.manual_usuario)}`,
-      "manual-tecnico": `manual_tecnico_${equipo.codigo_interno || equipo.id}${extensionDesdeRuta(equipo.manual_tecnico)}`,
-    };
-
-    ejecutar(`archivo-${tipo}-${equipo.id}`, async () => {
-      await downloadBlob(`/equipos/${equipo.id}/${tipo}/descargar`, nombres[tipo]);
-    });
-  }
-
   function puedeDarBaja(equipo: EquipoBiomedico) {
     return !["asignado", "asignacion_en_proceso", "dado_de_baja"].includes(equipo.estado);
   }
@@ -1291,7 +1274,6 @@ export function InfraestructuraPage() {
           accion={accion}
           anexos={anexos}
           descargaAnexo={descargarAnexo}
-          descargarArchivoHojaVida={descargarArchivoHojaVida}
           hojaTab={hojaTab}
           hojaVida={hojaVida}
           imprimirHojaVida={imprimirHojaVida}
@@ -1480,7 +1462,6 @@ function HojaVidaModal({
   accion,
   anexos,
   descargaAnexo,
-  descargarArchivoHojaVida,
   hojaTab,
   hojaVida,
   imprimirHojaVida,
@@ -1494,7 +1475,6 @@ function HojaVidaModal({
   accion: string;
   anexos: EquipoDocumento[];
   descargaAnexo: (doc: EquipoDocumento) => void;
-  descargarArchivoHojaVida: (equipo: EquipoBiomedico, tipo: "foto" | "manual-usuario" | "manual-tecnico") => void;
   hojaTab: string;
   hojaVida: EquipoHojaVida;
   imprimirHojaVida: () => void;
@@ -1553,28 +1533,6 @@ function HojaVidaModal({
                   <div>
                     <strong>{equipo.nombre}</strong>
                     <span>{texto(equipo.codigo_interno)} - {texto(equipo.marca)} {texto(equipo.modelo)}</span>
-                  </div>
-                </div>
-              )}
-              {(equipo.foto_equipo || equipo.manual_usuario || equipo.manual_tecnico) && (
-                <div className="infra-file-actions">
-                  <strong>Archivos del equipo</strong>
-                  <div>
-                    {equipo.foto_equipo && (
-                      <button type="button" onClick={() => descargarArchivoHojaVida(equipo, "foto")} disabled={accion === `archivo-foto-${equipo.id}`}>
-                        <Download size={15} /> Foto
-                      </button>
-                    )}
-                    {equipo.manual_usuario && (
-                      <button type="button" onClick={() => descargarArchivoHojaVida(equipo, "manual-usuario")} disabled={accion === `archivo-manual-usuario-${equipo.id}`}>
-                        <Download size={15} /> Manual de usuario
-                      </button>
-                    )}
-                    {equipo.manual_tecnico && (
-                      <button type="button" onClick={() => descargarArchivoHojaVida(equipo, "manual-tecnico")} disabled={accion === `archivo-manual-tecnico-${equipo.id}`}>
-                        <Download size={15} /> Manual tecnico
-                      </button>
-                    )}
                   </div>
                 </div>
               )}
