@@ -826,7 +826,7 @@ export function InfraestructuraPage() {
     return items
       .map(
         (item) =>
-          `<tr><td>${marcaRevision(datos[item], "pasa")}</td><td>${marcaRevision(datos[item], "falla")}</td><td>${escapeHtml(item)}</td><td>${marcaRevision(datos[item], "na")}</td><td></td></tr>`,
+          `<tr><td class="xcell">${marcaRevision(datos[item], "pasa")}</td><td class="xcell">${marcaRevision(datos[item], "falla")}</td><td class="test-name">${escapeHtml(item)}</td><td class="xcell">${marcaRevision(datos[item], "na")}</td><td class="test-comment"></td></tr>`,
       )
       .join("");
   }
@@ -876,6 +876,7 @@ export function InfraestructuraPage() {
         .obs{height:34px;font-weight:800;vertical-align:top;}
         .diagnostico{height:58px;vertical-align:top;font-size:6px;line-height:1.12;font-weight:700;}
         .info-table td{height:18px;}
+        .info-table td:not(.label):not(.xcell){font-size:5.6px;line-height:1.05;font-weight:500;}
         .info-table td.label{width:auto;}
         .inspection-table{table-layout:auto;margin-top:5px;}
         .inspection-table th,.inspection-table td{height:13px;padding:1.5px 3px;overflow-wrap:normal;word-break:normal;}
@@ -883,6 +884,13 @@ export function InfraestructuraPage() {
         .inspection-table .mark-col{width:4.5%;}
         .inspection-table .diag-col{width:58.5%;}
         .check-name{white-space:nowrap;font-size:5.8px;text-transform:uppercase;font-weight:700;}
+        .test-table{table-layout:auto;}
+        .test-table th,.test-table td{height:13px;padding:1.5px 3px;overflow-wrap:normal;word-break:normal;}
+        .test-table .test-mark-col{width:8%;}
+        .test-table .test-name-col{width:34%;}
+        .test-table .test-comment-col{width:42%;}
+        .test-name{font-size:5.8px;line-height:1.1;font-weight:700;overflow-wrap:anywhere;}
+        .test-comment{font-size:5.8px;}
         @media print{body{-webkit-print-color-adjust:exact;print-color-adjust:exact;}}
       </style></head><body><main class="page">
         <header class="top">
@@ -926,12 +934,18 @@ export function InfraestructuraPage() {
           <tr><td class="obs">${escapeHtml(mantenimientoItem.mediciones_reparaciones || mantenimientoItem.descripcion || "-").replaceAll("\n", "<br>")}</td></tr>
         </table>
         <div class="two">
-          <table>
+          <table class="test-table">
+            <colgroup>
+              <col class="test-mark-col"><col class="test-mark-col"><col class="test-name-col"><col class="test-mark-col"><col class="test-comment-col">
+            </colgroup>
             <tr><th>Pasa</th><th>Falla</th><th>Prueba cualitativa</th><th>N/A</th><th>Comentarios</th></tr>
             ${filasPruebas(PRUEBAS_CUALITATIVAS_ITEMS, cualitativas)}
           </table>
           <div>
-            <table>
+            <table class="test-table">
+              <colgroup>
+                <col class="test-mark-col"><col class="test-mark-col"><col class="test-name-col"><col class="test-mark-col"><col class="test-comment-col">
+              </colgroup>
               <tr><th>Pasa</th><th>Falla</th><th>Test cuantitativo</th><th>N/A</th><th>Comentarios</th></tr>
               ${filasPruebas(PRUEBAS_CUANTITATIVAS_ITEMS, cuantitativas)}
             </table>
