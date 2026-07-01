@@ -949,10 +949,12 @@ export function PortalProfesionalPage() {
             </button>
           )}
           <button className="topbar-soft-btn active" type="button" onClick={() => { setMobileMenuOpen(false); navigate("/portal-profesional"); }}>Mi portal</button>
-          <button className={`topbar-soft-btn topbar-delivery-btn ${totalEntregasPendientes ? "has-pending" : ""}`} type="button" onClick={() => { setMobileMenuOpen(false); navigate("/entregas-recursos"); }}>
-            <Truck size={15} /> Entregas
-            {totalEntregasPendientes > 0 && <span>{totalEntregasPendientes}</span>}
-          </button>
+          {totalEntregasPendientes > 0 && (
+            <button className="topbar-soft-btn topbar-delivery-btn has-pending" type="button" onClick={() => { setMobileMenuOpen(false); navigate("/entregas-recursos"); }}>
+              <Truck size={15} /> Entregas
+              <span>{totalEntregasPendientes}</span>
+            </button>
+          )}
           <button className="topbar-soft-btn" type="button" onClick={() => { setMobileMenuOpen(false); navigate("/portal-profesional/capacitaciones"); }}>Capacitaciones</button>
           <button className="topbar-soft-btn navy" type="button" onClick={() => { setMobileMenuOpen(false); abrirMiCarnet(); }}>Mi Carnet</button>
           <button className="topbar-logout" type="button" onClick={cerrarSesion}><LogOut size={16} /> Salir</button>
@@ -986,22 +988,20 @@ export function PortalProfesionalPage() {
             </button>
           </div>
         )}
-        <div className={`portal-delivery-alert ${totalEntregasPendientes ? "has-pending" : ""}`}>
-          <div className="portal-delivery-alert-icon">
-            <Truck size={24} />
+        {totalEntregasPendientes > 0 && (
+          <div className="portal-delivery-alert has-pending">
+            <div className="portal-delivery-alert-icon">
+              <Truck size={24} />
+            </div>
+            <div>
+              <strong>{textoEntregasPendientes}</strong>
+              <span>Tienes despachos en camino asignados para confirmar entrega, registrar firma o reportar novedades.</span>
+            </div>
+            <button className="primary-btn" type="button" onClick={() => navigate("/entregas-recursos")}>
+              <PenLine size={16} /> Gestionar entregas
+            </button>
           </div>
-          <div>
-            <strong>{totalEntregasPendientes ? textoEntregasPendientes : "Entregas de recursos"}</strong>
-            <span>
-              {totalEntregasPendientes
-                ? "Tienes despachos en camino asignados para confirmar entrega, registrar firma o reportar novedades."
-                : "Desde aquí puedes revisar tus entregas asignadas cuando Recursos Asistenciales programe despachos para tu ruta."}
-            </span>
-          </div>
-          <button className={totalEntregasPendientes ? "primary-btn" : "secondary-btn"} type="button" onClick={() => navigate("/entregas-recursos")}>
-            <PenLine size={16} /> {totalEntregasPendientes ? "Gestionar entregas" : "Ver entregas"}
-          </button>
-        </div>
+        )}
 
         <section className="professional-welcome">
           <div>
