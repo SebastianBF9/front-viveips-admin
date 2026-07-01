@@ -177,15 +177,6 @@ function texto(valor?: string | number | null) {
   return valor ? String(valor) : "-";
 }
 
-function escapeHtml(valor?: string | number | null) {
-  return texto(valor)
-    .replaceAll("&", "&amp;")
-    .replaceAll("<", "&lt;")
-    .replaceAll(">", "&gt;")
-    .replaceAll('"', "&quot;")
-    .replaceAll("'", "&#039;");
-}
-
 function limpio(valor: string) {
   const v = String(valor || "").trim();
   return v ? v : null;
@@ -542,23 +533,18 @@ export function InfraestructuraPage() {
   function imprimirHojaVida() {
     if (!hojaVida) return;
     const equipo = hojaVida.equipo;
-    const win = window.open("", "_blank");
-    if (!win) {
-      setError("El navegador bloqueo la ventana de impresion. Permite ventanas emergentes para este sitio.");
-      return;
-    }
-    win.opener = null;
+    const win = window.open("", "_blank", "noopener,noreferrer");
+    if (!win) return;
     win.document.write(`
-      <html><head><title>Hoja de vida ${escapeHtml(equipo.codigo_interno || "")}</title>
+      <html><head><title>Hoja de vida ${equipo.codigo_interno || ""}</title>
       <style>
         body{font-family:Arial,sans-serif;color:#111827;padding:28px;}
         h1{color:#1B3A6B;margin:0 0 6px;} h2{color:#1B3A6B;margin-top:24px;border-bottom:1px solid #dbe6f0;padding-bottom:6px;}
         table{width:100%;border-collapse:collapse;margin-top:10px;} td,th{border:1px solid #dbe6f0;padding:8px;text-align:left;font-size:12px;} th{background:#f8fafc;}
         .grid{display:grid;grid-template-columns:repeat(2,1fr);gap:8px;} .item{border:1px solid #dbe6f0;padding:9px;border-radius:8px;} .item span{display:block;color:#64748b;font-size:11px;}
-        @media print{body{-webkit-print-color-adjust:exact;print-color-adjust:exact;}}
       </style></head><body>
       <h1>Hoja de vida de equipo biomedico</h1>
-      <p>${escapeHtml(equipo.codigo_interno)} - ${escapeHtml(equipo.nombre)}</p>
+      <p>${texto(equipo.codigo_interno)} - ${texto(equipo.nombre)}</p>
       <h2>Datos generales</h2>
       <div class="grid">
         ${[
@@ -571,7 +557,7 @@ export function InfraestructuraPage() {
           ["Estado", estadoLabel(equipo.estado)],
           ["Requiere calibracion", boolEquipo(equipo.requiere_calibracion) ? "Si" : "No"],
         ]
-          .map(([label, value]) => `<div class="item"><span>${escapeHtml(label)}</span><strong>${escapeHtml(value)}</strong></div>`)
+          .map(([label, value]) => `<div class="item"><span>${label}</span><strong>${texto(value)}</strong></div>`)
           .join("")}
       </div>
       <h2>Adquisicion</h2>${tablaDetalle(hojaVida.adquisicion || {})}
@@ -581,20 +567,19 @@ export function InfraestructuraPage() {
       <h2>Calibraciones</h2>${tablaFilas(["Fecha","Proxima","Entidad","Resultado"], hojaVida.calibraciones.map((c) => [formatearFecha(c.fecha_calibracion), formatearFecha(c.proxima_calibracion), c.entidad_calibradora, c.resultado]))}
       </body></html>`);
     win.document.close();
-    win.focus();
-    win.setTimeout(() => win.print(), 400);
+    win.print();
   }
 
   function tablaDetalle(obj: Record<string, unknown>) {
     const entradas = Object.entries(obj).filter(([key]) => !["id", "equipo_id", "created_at", "updated_at"].includes(key));
     if (!entradas.length) return "<p>Sin informacion registrada.</p>";
-    return `<table><tbody>${entradas.map(([key, value]) => `<tr><th>${escapeHtml(key.replaceAll("_", " "))}</th><td>${escapeHtml(value as string)}</td></tr>`).join("")}</tbody></table>`;
+    return `<table><tbody>${entradas.map(([key, value]) => `<tr><th>${key.replaceAll("_", " ")}</th><td>${texto(value as string)}</td></tr>`).join("")}</tbody></table>`;
   }
 
   function tablaFilas(headers: string[], rows: Array<Array<string | number | null | undefined>>) {
     if (!rows.length) return "<p>Sin registros.</p>";
-    return `<table><thead><tr>${headers.map((h) => `<th>${escapeHtml(h)}</th>`).join("")}</tr></thead><tbody>${rows
-      .map((row) => `<tr>${row.map((cell) => `<td>${escapeHtml(cell)}</td>`).join("")}</tr>`)
+    return `<table><thead><tr>${headers.map((h) => `<th>${h}</th>`).join("")}</tr></thead><tbody>${rows
+      .map((row) => `<tr>${row.map((cell) => `<td>${texto(cell)}</td>`).join("")}</tr>`)
       .join("")}</tbody></table>`;
   }
 
