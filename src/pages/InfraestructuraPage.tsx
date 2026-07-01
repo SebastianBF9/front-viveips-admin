@@ -817,7 +817,7 @@ export function InfraestructuraPage() {
     return items
       .map(
         (item) =>
-          `<tr><td>${escapeHtml(item)}</td><td class="xcell">${marcaRevision(datos[item], "pasa")}</td><td class="xcell">${marcaRevision(datos[item], "falla")}</td><td class="xcell">${marcaRevision(datos[item], "na")}</td></tr>`,
+          `<tr><td class="check-name">${escapeHtml(item)}</td><td class="xcell">${marcaRevision(datos[item], "pasa")}</td><td class="xcell">${marcaRevision(datos[item], "falla")}</td><td class="xcell">${marcaRevision(datos[item], "na")}</td></tr>`,
       )
       .join("");
   }
@@ -851,7 +851,7 @@ export function InfraestructuraPage() {
         @page{size:A4;margin:7mm;}
         *{box-sizing:border-box;}
         html,body{margin:0;padding:0;background:#fff;}
-        body{font-family:Arial,sans-serif;color:#263645;font-size:7.2px;line-height:1.12;-webkit-print-color-adjust:exact;print-color-adjust:exact;}
+        body{font-family:Arial,sans-serif;color:#263645;font-size:6.4px;line-height:1.1;-webkit-print-color-adjust:exact;print-color-adjust:exact;}
         .page{border:1px solid #7b8794;padding:5px;}
         .top{display:grid;grid-template-columns:1fr 1.25fr .85fr;align-items:center;gap:6px;margin-bottom:5px;}
         .brand{display:flex;gap:6px;align-items:center;border:1px solid #7b8794;padding:4px;min-height:46px;}
@@ -861,9 +861,9 @@ export function InfraestructuraPage() {
         .company{text-align:center;color:#334155;font-weight:800;line-height:1.18;font-size:7.4px;}
         .report{border:1px solid #7b8794;text-align:center;padding:5px;font-weight:900;font-size:8px;color:#334155;}
         table{width:100%;border-collapse:collapse;table-layout:fixed;}
-        th,td{border:1px solid #8c98a4;padding:2px 3px;vertical-align:middle;min-height:13px;overflow-wrap:anywhere;word-break:normal;}
-        th{background:#e8edf2;color:#334155;text-transform:uppercase;font-size:6.7px;line-height:1.08;text-align:center;font-weight:900;}
-        td.label{background:#f2f5f8;color:#334155;text-transform:uppercase;font-weight:900;font-size:6.8px;line-height:1.08;}
+        th,td{border:1px solid #8c98a4;padding:1.8px 3px;vertical-align:middle;min-height:12px;overflow-wrap:anywhere;word-break:normal;}
+        th{background:#e8edf2;color:#334155;text-transform:uppercase;font-size:6.2px;line-height:1.05;text-align:center;font-weight:900;}
+        td.label{background:#f2f5f8;color:#334155;text-transform:uppercase;font-weight:900;font-size:6.1px;line-height:1.05;}
         td.center{text-align:center;}
         .section-title{background:#dfe6ed;text-align:center;text-transform:uppercase;font-weight:900;color:#334155;}
         .muted{color:#64748b;}
@@ -872,11 +872,17 @@ export function InfraestructuraPage() {
         .footer{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-top:5px;}
         .signature{height:56px;vertical-align:bottom;}
         .signature-line{height:34px;}
-        .xcell{font-weight:900;text-align:center;font-size:7.8px;}
+        .xcell{font-weight:900;text-align:center;font-size:6.8px;}
         .obs{height:34px;font-weight:800;vertical-align:top;}
-        .diagnostico{height:96px;vertical-align:top;font-size:7.2px;line-height:1.18;}
+        .diagnostico{height:58px;vertical-align:top;font-size:6px;line-height:1.12;font-weight:700;}
         .info-table td{height:18px;}
         .info-table td.label{width:auto;}
+        .inspection-table{table-layout:auto;margin-top:5px;}
+        .inspection-table th,.inspection-table td{height:13px;padding:1.5px 3px;overflow-wrap:normal;word-break:normal;}
+        .inspection-table .check-col{width:28%;}
+        .inspection-table .mark-col{width:4.5%;}
+        .inspection-table .diag-col{width:58.5%;}
+        .check-name{white-space:nowrap;font-size:5.8px;text-transform:uppercase;font-weight:700;}
         @media print{body{-webkit-print-color-adjust:exact;print-color-adjust:exact;}}
       </style></head><body><main class="page">
         <header class="top">
@@ -907,9 +913,12 @@ export function InfraestructuraPage() {
           <tr><td class="label">Requerimiento</td><td colspan="11">${escapeHtml(mantenimientoItem.requerimiento || mantenimientoItem.descripcion || "-")}</td></tr>
           <tr class="spacer"><td colspan="12"></td></tr>
         </table>
-        <table style="margin-top:6px;">
-          <tr><th colspan="4">Inspeccion tecnica</th><th colspan="8">Diagnostico</th></tr>
-          <tr><th>Check list</th><th>P</th><th>F</th><th>N/A</th><td colspan="8" rowspan="${INSPECCION_TECNICA_ITEMS.length + 1}" class="diagnostico">${escapeHtml(mantenimientoItem.diagnostico || "-")}</td></tr>
+        <table class="inspection-table">
+          <colgroup>
+            <col class="check-col"><col class="mark-col"><col class="mark-col"><col class="mark-col"><col class="diag-col">
+          </colgroup>
+          <tr><th colspan="4">Inspeccion tecnica</th><th>Diagnostico</th></tr>
+          <tr><th>Check list</th><th>P</th><th>F</th><th>N/A</th><td rowspan="${INSPECCION_TECNICA_ITEMS.length + 1}" class="diagnostico">${escapeHtml(mantenimientoItem.diagnostico || "-")}</td></tr>
           ${filasRevision(INSPECCION_TECNICA_ITEMS, inspeccion)}
         </table>
         <table style="margin-top:6px;">
