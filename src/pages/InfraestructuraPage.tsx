@@ -585,12 +585,18 @@ export function InfraestructuraPage() {
   }
 
   async function abrirCrear() {
+    setMantenimientoEquipo(null);
+    setCalibracionEquipo(null);
+    setHojaVida(null);
     setFormMode("crear");
     setForm(inicialForm());
   }
 
   async function abrirEditar(equipo: EquipoBiomedico) {
     setMenuEquipo(null);
+    setMantenimientoEquipo(null);
+    setCalibracionEquipo(null);
+    setHojaVida(null);
     setAccion(`editar-${equipo.id}`);
     try {
       const hv = await obtenerHojaVidaEquipo(equipo.id);
@@ -603,8 +609,29 @@ export function InfraestructuraPage() {
     }
   }
 
+  function abrirMantenimiento(equipo: EquipoBiomedico) {
+    setMenuEquipo(null);
+    setForm(null);
+    setHojaVida(null);
+    setCalibracionEquipo(null);
+    setMantenimientoEquipo(equipo);
+    setMantenimiento(inicialMantenimiento());
+  }
+
+  function abrirCalibracion(equipo: EquipoBiomedico) {
+    setMenuEquipo(null);
+    setForm(null);
+    setHojaVida(null);
+    setMantenimientoEquipo(null);
+    setCalibracionEquipo(equipo);
+    setCalibracion(inicialCalibracion());
+  }
+
   async function abrirHojaVida(equipo: EquipoBiomedico) {
     setMenuEquipo(null);
+    setForm(null);
+    setMantenimientoEquipo(null);
+    setCalibracionEquipo(null);
     setAccion(`hv-${equipo.id}`);
     setHojaTab("general");
     try {
@@ -1232,11 +1259,11 @@ export function InfraestructuraPage() {
           </button>
           {menuEquipo === equipo.id && (
             <div className="infra-menu">
-              <button type="button" onClick={() => setMantenimientoEquipo(equipo)}>
+              <button type="button" onClick={() => abrirMantenimiento(equipo)}>
                 <Wrench size={14} /> Mantenimiento
               </button>
               {boolEquipo(equipo.requiere_calibracion) && (
-                <button type="button" onClick={() => setCalibracionEquipo(equipo)}>
+                <button type="button" onClick={() => abrirCalibracion(equipo)}>
                   <CalendarClock size={14} /> Calibracion
                 </button>
               )}
@@ -1693,16 +1720,10 @@ export function InfraestructuraPage() {
           hojaVida={hojaVida}
           imprimirHojaVida={imprimirHojaVida}
           noAplicaAnexo={noAplicaAnexo}
-          setCalibracionEquipo={(equipo) => {
-            setCalibracionEquipo(equipo);
-            setCalibracion(inicialCalibracion());
-          }}
+          setCalibracionEquipo={abrirCalibracion}
           setHojaTab={setHojaTab}
           setHojaVida={setHojaVida}
-          setMantenimientoEquipo={(equipo) => {
-            setMantenimientoEquipo(equipo);
-            setMantenimiento(inicialMantenimiento());
-          }}
+          setMantenimientoEquipo={abrirMantenimiento}
           subirAnexo={subirAnexo}
         />
       )}
