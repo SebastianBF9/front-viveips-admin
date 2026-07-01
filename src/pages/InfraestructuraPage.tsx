@@ -4,7 +4,6 @@ import {
   BadgeCheck,
   Box,
   CalendarClock,
-  ChevronDown,
   ClipboardList,
   Download,
   Edit3,
@@ -12,6 +11,7 @@ import {
   FileCheck2,
   FileText,
   MapPin,
+  MoreVertical,
   Plus,
   Printer,
   QrCode,
@@ -1375,12 +1375,12 @@ export function InfraestructuraPage() {
         <button className="qr" type="button" onClick={() => abrirQR(equipo)} title="Abrir QR imprimible">
           <QrCode size={15} /> QR
         </button>
-        <button type="button" onClick={() => abrirHojaVida(equipo)} disabled={accion === `hv-${equipo.id}`}>
-          <Eye size={15} /> Hoja de vida
+        <button className="icon-only" type="button" onClick={() => abrirHojaVida(equipo)} disabled={accion === `hv-${equipo.id}`} title="Hoja de vida" aria-label="Hoja de vida">
+          <Eye size={18} />
         </button>
         <div className="infra-menu-wrap">
-          <button type="button" onClick={() => setMenuEquipo(menuEquipo === equipo.id ? null : equipo.id)}>
-            Opciones <ChevronDown size={14} />
+          <button className="icon-only" type="button" onClick={() => setMenuEquipo(menuEquipo === equipo.id ? null : equipo.id)} title="Opciones" aria-label="Opciones">
+            <MoreVertical size={18} />
           </button>
           {menuEquipo === equipo.id && (
             <div className="infra-menu">
@@ -2376,7 +2376,7 @@ function HojaVidaModal({
           {hojaTab === "mantenimientos" && (
             <div className="infra-history-section">
               <div className="infra-inline-actions">
-                <button className="primary-btn" type="button" onClick={() => setMantenimientoEquipo(equipo)}>
+                <button className="primary-btn infra-save-btn" type="button" onClick={() => setMantenimientoEquipo(equipo)}>
                   <Wrench size={16} /> Registrar mantenimiento
                 </button>
                 {boolEquipo(equipo.requiere_calibracion) && (
