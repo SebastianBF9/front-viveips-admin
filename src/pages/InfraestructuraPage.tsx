@@ -60,6 +60,9 @@ import type {
 import { Loading } from "../ui/Loading";
 
 const UBICACION_INICIAL = "Oficina / Bodega principal VIVE IPS";
+const EMPRESA_NOMBRE = "GRUPO MEDICO INTEGRAL VIVE IPS S.A.S";
+const EMPRESA_NIT = "NIT 900924678-3";
+const EMPRESA_CONTACTO = "Cra 5 No 9-30 - Facatativa, Cundinamarca";
 const PERIODICIDADES = ["Mensual", "Bimestral", "Trimestral", "Cuatrimestral", "Semestral", "Anual", "Cada 2 anos", "No aplica"];
 const CLASIFICACIONES_BIOMEDICAS = [
   "Equipo biomedico",
@@ -684,9 +687,12 @@ export function InfraestructuraPage() {
         html,body{margin:0;padding:0;background:white;}
         body{font-family:Arial,sans-serif;color:#1f2937;font-size:11px;-webkit-print-color-adjust:exact;print-color-adjust:exact;}
         .print-page{padding:0 4px;}
-        .pdf-header{display:flex;justify-content:space-between;gap:18px;align-items:flex-start;border-bottom:3px solid #0f766e;padding-bottom:9px;margin-bottom:12px;break-inside:avoid;page-break-inside:avoid;}
+        .pdf-header{display:grid;grid-template-columns:130px 1fr auto;gap:14px;align-items:center;border-bottom:3px solid #0f766e;padding-bottom:9px;margin-bottom:12px;break-inside:avoid;page-break-inside:avoid;}
+        .pdf-logo{height:54px;max-width:125px;object-fit:contain;}
         .pdf-header h1{margin:0;color:#0f766e;font-size:22px;line-height:1.1;}
         .pdf-header p{margin:4px 0 0;color:#64748b;font-size:13px;}
+        .pdf-company{color:#1B3A6B;font-size:10.5px;line-height:1.35;font-weight:700;text-transform:uppercase;}
+        .pdf-company span{display:block;color:#64748b;font-weight:700;text-transform:none;}
         .pdf-meta{text-align:right;color:#64748b;font-size:11px;line-height:1.35;white-space:nowrap;}
         .pdf-meta strong{display:block;color:#1B3A6B;font-size:12px;}
         .hero{display:flex;gap:14px;align-items:center;margin:10px 0 16px;break-inside:avoid;page-break-inside:avoid;}
@@ -718,9 +724,15 @@ export function InfraestructuraPage() {
         @media print{body{-webkit-print-color-adjust:exact;print-color-adjust:exact;}}
       </style></head><body><main class="print-page">
       <header class="pdf-header">
+        <img class="pdf-logo" src="/logo_carnet.png" alt="VIVE IPS">
         <div>
           <h1>Hoja de vida del equipo biomedico</h1>
-          <p>VIVE IPS - Modulo de Tecnovigilancia</p>
+          <p>Modulo de Tecnovigilancia</p>
+          <div class="pdf-company">
+            ${EMPRESA_NOMBRE}
+            <span>${EMPRESA_NIT}</span>
+            <span>${EMPRESA_CONTACTO}</span>
+          </div>
         </div>
         <div class="pdf-meta"><strong>${escapeHtml(equipo.codigo_interno)}</strong>${escapeHtml(fechaImpresion)}</div>
       </header>
@@ -841,9 +853,11 @@ export function InfraestructuraPage() {
         html,body{margin:0;padding:0;background:#fff;}
         body{font-family:Arial,sans-serif;color:#263645;font-size:9px;-webkit-print-color-adjust:exact;print-color-adjust:exact;}
         .page{border:1px solid #7b8794;padding:6px;}
-        .top{display:grid;grid-template-columns:1fr 1.3fr .9fr;align-items:start;gap:8px;margin-bottom:6px;}
-        .brand{font-size:24px;color:#334155;line-height:.95;font-weight:700;}
-        .brand span{color:#b03a48;}
+        .top{display:grid;grid-template-columns:1fr 1.3fr .9fr;align-items:center;gap:8px;margin-bottom:6px;}
+        .brand{display:flex;gap:8px;align-items:center;border:1px solid #7b8794;padding:5px;min-height:58px;}
+        .brand img{width:76px;max-height:42px;object-fit:contain;}
+        .brand strong{display:block;color:#1B3A6B;font-size:8.5px;line-height:1.2;}
+        .brand span{display:block;color:#64748b;font-size:7.5px;line-height:1.25;}
         .company{text-align:center;color:#334155;font-weight:800;line-height:1.25;font-size:10px;}
         .report{border:1px solid #7b8794;text-align:center;padding:6px;font-weight:900;font-size:11px;color:#334155;}
         table{width:100%;border-collapse:collapse;table-layout:fixed;}
@@ -863,11 +877,18 @@ export function InfraestructuraPage() {
         @media print{body{-webkit-print-color-adjust:exact;print-color-adjust:exact;}}
       </style></head><body><main class="page">
         <header class="top">
-          <div class="brand"><span>Medical</span><br>Solutions</div>
+          <div class="brand">
+            <img src="/logo_carnet.png" alt="VIVE IPS">
+            <div>
+              <strong>${EMPRESA_NOMBRE}</strong>
+              <span>${EMPRESA_NIT}</span>
+              <span>${EMPRESA_CONTACTO}</span>
+            </div>
+          </div>
           <div class="company">
-            J&amp;H MEDICAL SOLUTIONS<br>
+            REPORTE DE SERVICIO TECNICO<br>
             INGENIERIA BIOMEDICA<br>
-            COMERCIALIZACION Y MANTENIMIENTO DE EQUIPOS BIOMEDICOS<br>
+            MANTENIMIENTO DE EQUIPOS BIOMEDICOS<br>
             <span class="muted">Reporte generado por VIVE IPS - ${escapeHtml(fechaImpresion)}</span>
           </div>
           <div class="report">REPORTE DE SERVICIO<br>N ${escapeHtml(mantenimientoItem.numero_reporte || "-")}</div>

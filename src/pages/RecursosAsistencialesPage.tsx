@@ -109,6 +109,10 @@ import type {
 } from "../types";
 import { Loading } from "../ui/Loading";
 
+const EMPRESA_NOMBRE = "GRUPO MEDICO INTEGRAL VIVE IPS S.A.S";
+const EMPRESA_NIT = "NIT 900924678-3";
+const EMPRESA_CONTACTO = "Cra 5 No 9-30 - Facatativa, Cundinamarca";
+
 const TIPOS_RECURSO = [
   { value: "medicamento", label: "Medicamento" },
   { value: "dispositivo_medico", label: "Dispositivo medico" },
@@ -1114,6 +1118,10 @@ export function RecursosAsistencialesPage() {
       <!doctype html><html><head><title>Informe temperatura humedad ${nombreMes(mes)} ${anio}</title>
       <style>
         body{font-family:Arial,sans-serif;color:#111827;padding:20px;}
+        .brand-header{display:grid;grid-template-columns:150px 1fr;gap:16px;align-items:center;border:2px solid #111;border-bottom:0;padding:10px 12px;}
+        .brand-header img{width:130px;max-height:58px;object-fit:contain;}
+        .brand-title{font-weight:900;color:#1B3A6B;font-size:14px;line-height:1.25;text-transform:uppercase;}
+        .brand-title span{display:block;color:#4b5563;font-size:11px;font-weight:700;text-transform:none;}
         .header{border:3px solid #111;margin-bottom:18px;}
         .header div{border-bottom:1px solid #111;padding:8px 10px;font-weight:700;background:#d9dcff;}
         .header div:last-child{border-bottom:0;}
@@ -1123,6 +1131,14 @@ export function RecursosAsistencialesPage() {
         .params{margin:12px 0;display:grid;grid-template-columns:1fr 1fr;gap:12px;}
         .ok{color:#047857}.bad{color:#dc2626}
       </style></head><body>
+      <div class="brand-header">
+        <img src="/logo_carnet.png" alt="VIVE IPS">
+        <div class="brand-title">
+          ${EMPRESA_NOMBRE}
+          <span>${EMPRESA_NIT}</span>
+          <span>${EMPRESA_CONTACTO}</span>
+        </div>
+      </div>
       <div class="header">
         <div>FORMATO PARA REGISTRO DE CONDICIONES DE ALMACENAMIENTO DE MEDICAMENTOS Y DISPOSITIVOS MÉDICOS</div>
         <div>PROCESO: ALMACENAMIENTO</div>
