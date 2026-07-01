@@ -552,6 +552,10 @@ export function InfraestructuraPage() {
     return perfilActivo?.nombre || "";
   }
 
+  function cargoResponsableMantenimiento() {
+    return perfilActivo?.especialidad || "";
+  }
+
   function actualizarForm(campo: keyof EquipoForm, valor: string | boolean | File | null) {
     setForm((actual) => {
       if (!actual) return actual;
@@ -1049,7 +1053,7 @@ export function InfraestructuraPage() {
         <div class="footer">
           <table class="summary-table">
             <tr><th>Servicio realizado por</th></tr>
-            <tr><td class="signature">Nombre: ${escapeHtml(mantenimientoItem.responsable || mantenimientoItem.firmado_por || "-")}<br>Cargo: ${escapeHtml(mantenimientoItem.responsable ? "Responsable tecnico" : "-")}<br>Firma: ________________________</td></tr>
+            <tr><td class="signature">Nombre: ${escapeHtml(mantenimientoItem.responsable || mantenimientoItem.firmado_por || "-")}<br>Cargo: ${escapeHtml(cargoResponsableMantenimiento() || "-")}<br>Firma: ________________________</td></tr>
           </table>
           <table class="summary-table">
             <tr><th>Servicio recibido y aprobado por</th></tr>
