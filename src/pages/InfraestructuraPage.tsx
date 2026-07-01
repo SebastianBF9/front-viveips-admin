@@ -49,6 +49,7 @@ import type {
   EquipoAdquisicion,
   EquipoAlertaResumen,
   EquipoApoyoTecnico,
+  EquipoAsignacion,
   EquipoBiomedico,
   EquipoDatosTecnicos,
   EquipoDocumento,
@@ -547,6 +548,11 @@ export function InfraestructuraPage() {
   function imprimirHojaVida() {
     if (!hojaVida) return;
     const equipo = hojaVida.equipo;
+    const documentos = anexos.length ? anexos : hojaVida.documentos || [];
+    const fechaImpresion = new Date().toLocaleDateString("es-CO");
+    const fotoSrc = equipo.foto_equipo && equipo.codigo_interno
+      ? downloadUrl(`/qr/equipos/${encodeURIComponent(equipo.codigo_interno)}/archivo/foto`)
+      : "";
     const win = window.open("", "_blank");
     if (!win) {
       setError("El navegador bloqueo la ventana de impresion. Permite ventanas emergentes para este sitio.");
@@ -554,40 +560,158 @@ export function InfraestructuraPage() {
     }
     win.opener = null;
     win.document.write(`
-      <html><head><title>Hoja de vida ${escapeHtml(equipo.codigo_interno || "")}</title>
+      <html><head><title>Hoja de vida - ${escapeHtml(equipo.codigo_interno || "")}</title>
       <style>
-        body{font-family:Arial,sans-serif;color:#111827;padding:28px;}
-        h1{color:#1B3A6B;margin:0 0 6px;} h2{color:#1B3A6B;margin-top:24px;border-bottom:1px solid #dbe6f0;padding-bottom:6px;}
-        table{width:100%;border-collapse:collapse;margin-top:10px;} td,th{border:1px solid #dbe6f0;padding:8px;text-align:left;font-size:12px;} th{background:#f8fafc;}
-        .grid{display:grid;grid-template-columns:repeat(2,1fr);gap:8px;} .item{border:1px solid #dbe6f0;padding:9px;border-radius:8px;} .item span{display:block;color:#64748b;font-size:11px;}
+        @page{size:A4;margin:11mm;}
+        *{box-sizing:border-box;}
+        html,body{margin:0;padding:0;background:white;}
+        body{font-family:Arial,sans-serif;color:#1f2937;font-size:11px;-webkit-print-color-adjust:exact;print-color-adjust:exact;}
+        .print-page{padding:0 4px;}
+        .pdf-header{display:flex;justify-content:space-between;gap:18px;align-items:flex-start;border-bottom:3px solid #0f766e;padding-bottom:9px;margin-bottom:12px;break-inside:avoid;page-break-inside:avoid;}
+        .pdf-header h1{margin:0;color:#0f766e;font-size:22px;line-height:1.1;}
+        .pdf-header p{margin:4px 0 0;color:#64748b;font-size:13px;}
+        .pdf-meta{text-align:right;color:#64748b;font-size:11px;line-height:1.35;white-space:nowrap;}
+        .pdf-meta strong{display:block;color:#1B3A6B;font-size:12px;}
+        .hero{display:flex;gap:14px;align-items:center;margin:10px 0 16px;break-inside:avoid;page-break-inside:avoid;}
+        .hero-icon{width:42px;height:42px;border-radius:999px;background:#0f766e;color:white;display:flex;align-items:center;justify-content:center;font-size:20px;font-weight:900;flex:0 0 auto;}
+        .hero h2{margin:0;color:#1f2937;font-size:19px;line-height:1.1;}
+        .hero p{margin:4px 0 0;color:#64748b;font-size:13px;}
+        .photo-strip{display:flex;align-items:center;gap:18px;margin:0 0 16px;break-inside:avoid;page-break-inside:avoid;}
+        .photo-box{width:130px;height:92px;border:1px solid #dbe3ea;border-radius:8px;background:#fff;display:flex;align-items:center;justify-content:center;overflow:hidden;flex:0 0 auto;}
+        .photo-box img{max-width:100%;max-height:100%;object-fit:contain;display:block;}
+        .photo-empty{color:#94a3b8;font-weight:700;font-size:11px;text-align:center;padding:8px;}
+        .photo-title span{display:block;color:#1f2937;font-size:12px;font-weight:900;letter-spacing:.04em;text-transform:uppercase;}
+        .photo-title strong{display:block;color:#1f2937;font-size:18px;line-height:1.15;margin-top:4px;}
+        .photo-title p{margin:4px 0 0;color:#1f2937;font-size:14px;}
+        .section{margin:15px 0 18px;}
+        .section h3{margin:0 0 9px;color:#111827;font-size:16px;line-height:1.2;break-after:avoid;page-break-after:avoid;}
+        .card-grid{display:grid;grid-template-columns:1fr 1fr;gap:7px;background:#f8fafc;border:1px solid #dbe3ea;border-radius:8px;padding:9px;break-inside:auto;page-break-inside:auto;}
+        .field-card{background:#fff;border:1px solid #dbe3ea;border-radius:7px;padding:8px 9px;min-height:44px;break-inside:avoid;page-break-inside:avoid;}
+        .field-card span{display:block;color:#1f2937;font-size:11px;font-weight:900;letter-spacing:.06em;text-transform:uppercase;line-height:1.2;}
+        .field-card strong{display:block;color:#1f2937;font-size:16px;line-height:1.15;margin-top:5px;overflow-wrap:anywhere;}
+        .wide{grid-column:1 / -1;}
+        table{width:100%;border-collapse:collapse;margin-top:8px;break-inside:auto;page-break-inside:auto;}
+        thead{display:table-header-group;}
+        tr{break-inside:avoid;page-break-inside:avoid;}
+        th{background:#eef2f7;color:#334155;text-align:left;font-size:10px;text-transform:uppercase;padding:7px;border:1px solid #dbe3ea;}
+        td{padding:7px;border:1px solid #dbe3ea;vertical-align:top;font-size:11px;}
+        .empty-box{border:1px dashed #cbd5e1;border-radius:8px;padding:13px;color:#64748b;font-weight:700;}
+        .assignment{border:1px dashed #cbd5e1;border-radius:8px;padding:13px;color:#64748b;font-size:12px;line-height:1.35;}
+        .assignment strong{color:#1f2937;}
         @media print{body{-webkit-print-color-adjust:exact;print-color-adjust:exact;}}
-      </style></head><body>
-      <h1>Hoja de vida de equipo biomedico</h1>
-      <p>${escapeHtml(equipo.codigo_interno)} - ${escapeHtml(equipo.nombre)}</p>
-      <h2>Datos generales</h2>
-      <div class="grid">
-        ${[
-          ["Equipo", equipo.nombre],
-          ["Marca / Modelo", `${texto(equipo.marca)} ${texto(equipo.modelo)}`],
-          ["Serie", equipo.serie],
-          ["Registro INVIMA", equipo.registro_invima],
-          ["Area / Servicio", `${texto(equipo.area)} / ${texto(equipo.servicio)}`],
-          ["Ubicacion", equipo.ubicacion_actual],
-          ["Estado", estadoLabel(equipo.estado)],
-          ["Requiere calibracion", boolEquipo(equipo.requiere_calibracion) ? "Si" : "No"],
-        ]
-          .map(([label, value]) => `<div class="item"><span>${escapeHtml(label)}</span><strong>${escapeHtml(value)}</strong></div>`)
-          .join("")}
-      </div>
-      <h2>Adquisicion</h2>${tablaDetalle(hojaVida.adquisicion || {})}
-      <h2>Datos tecnicos</h2>${tablaDetalle(hojaVida.datos_tecnicos || {})}
-      <h2>Apoyo tecnico</h2>${tablaDetalle(hojaVida.apoyo_tecnico || {})}
-      <h2>Mantenimientos</h2>${tablaFilas(["Tipo","Fecha","Proxima","Responsable","Descripcion"], hojaVida.mantenimientos.map((m) => [m.tipo, formatearFecha(m.fecha_mantenimiento), formatearFecha(m.proxima_fecha), m.responsable, m.descripcion]))}
-      <h2>Calibraciones</h2>${tablaFilas(["Fecha","Proxima","Entidad","Resultado"], hojaVida.calibraciones.map((c) => [formatearFecha(c.fecha_calibracion), formatearFecha(c.proxima_calibracion), c.entidad_calibradora, c.resultado]))}
-      </body></html>`);
+      </style></head><body><main class="print-page">
+      <header class="pdf-header">
+        <div>
+          <h1>Hoja de vida del equipo biomedico</h1>
+          <p>VIVE IPS - Modulo de Tecnovigilancia</p>
+        </div>
+        <div class="pdf-meta"><strong>${escapeHtml(equipo.codigo_interno)}</strong>${escapeHtml(fechaImpresion)}</div>
+      </header>
+      <section class="hero">
+        <div class="hero-icon">HV</div>
+        <div>
+          <h2>${escapeHtml(equipo.nombre || "Equipo biomedico")}</h2>
+          <p>${escapeHtml(equipo.marca)} - ${escapeHtml(equipo.modelo)} - Serie: ${escapeHtml(equipo.serie)}</p>
+          <p>Codigo: ${escapeHtml(equipo.codigo_interno)} - Estado: ${escapeHtml(estadoLabel(equipo.estado))}</p>
+        </div>
+      </section>
+      <section class="photo-strip">
+        <div class="photo-box">${fotoSrc ? `<img src="${escapeHtml(fotoSrc)}" alt="Foto del equipo">` : `<div class="photo-empty">Sin foto cargada</div>`}</div>
+        <div class="photo-title">
+          <span>Foto del equipo</span>
+          <strong>${escapeHtml(equipo.nombre)}</strong>
+          <p>${escapeHtml(equipo.codigo_interno)} - ${escapeHtml(equipo.marca)} ${escapeHtml(equipo.modelo)}</p>
+        </div>
+      </section>
+      ${seccionTarjetas("Datos generales", [
+        ["Equipo", equipo.nombre],
+        ["Codigo", equipo.codigo_interno],
+        ["Marca", equipo.marca],
+        ["Modelo", equipo.modelo],
+        ["Serie", equipo.serie],
+        ["Registro INVIMA", equipo.registro_invima],
+        ["Area", equipo.area],
+        ["Servicio", equipo.servicio],
+        ["Ubicacion actual", equipo.ubicacion_actual],
+        ["Estado", estadoLabel(equipo.estado)],
+        ["Requiere calibracion", boolEquipo(equipo.requiere_calibracion) ? "Si" : "No"],
+        ["Observaciones", equipo.observaciones, true],
+        ["Foto", equipo.foto_equipo ? "Cargada" : "Sin cargar"],
+        ["Manual usuario", equipo.manual_usuario ? "Cargado" : "Sin cargar"],
+        ["Manual tecnico", equipo.manual_tecnico ? "Cargado" : "Sin cargar"],
+      ])}
+      ${seccionObjeto("Adquisicion, proveedor y garantia", hojaVida.adquisicion || {})}
+      ${seccionObjeto("Registro tecnico de instalacion", hojaVida.datos_tecnicos || {})}
+      ${seccionObjeto("Apoyo tecnico y clasificacion", hojaVida.apoyo_tecnico || {})}
+      ${seccionDocumentos(documentos)}
+      ${seccionTabla("Mantenimientos", ["Tipo","Reporte","Fecha","Proxima","Responsable","Costo repuesto","Costo total","Descripcion"], hojaVida.mantenimientos.map((m) => [m.tipo, m.numero_reporte, formatearFecha(m.fecha_mantenimiento), formatearFecha(m.proxima_fecha), m.responsable, formatearMoneda(m.costo_repuesto), formatearMoneda(m.costo), m.descripcion]))}
+      ${seccionTabla("Calibraciones", ["Fecha","Proxima","Certificado","Entidad","Resultado","Observaciones"], hojaVida.calibraciones.map((c) => [formatearFecha(c.fecha_calibracion), formatearFecha(c.proxima_calibracion), c.certificado, c.entidad_calibradora, c.resultado, c.observaciones]))}
+      ${seccionTabla("Movimientos", ["Fecha","Tipo","Descripcion","Ubicacion"], hojaVida.movimientos.map((m) => [formatearFecha(m.created_at), m.tipo_movimiento, m.descripcion, m.ubicacion_texto]))}
+      ${seccionAsignacion(hojaVida.asignacion_activa)}
+      </main></body></html>`);
     win.document.close();
     win.focus();
     win.setTimeout(() => win.print(), 400);
+  }
+
+  function labelCampo(key: string) {
+    return key.replaceAll("_", " ");
+  }
+
+  function valorCampo(value: unknown) {
+    if (typeof value === "boolean" || value === 1 || value === 0) return boolEquipo(value) ? "Si" : "No";
+    return value as string | number | null | undefined;
+  }
+
+  function seccionTarjetas(titulo: string, items: Array<[string, unknown, boolean?]>) {
+    const contenido = items
+      .filter(([, value]) => value !== undefined && value !== null && value !== "")
+      .map(([label, value, wide]) => `<div class="field-card ${wide ? "wide" : ""}"><span>${escapeHtml(label)}</span><strong>${escapeHtml(valorCampo(value) as string)}</strong></div>`)
+      .join("");
+    return `<section class="section"><h3>${escapeHtml(titulo)}</h3><div class="card-grid">${contenido || `<div class="field-card wide"><strong>Sin informacion registrada.</strong></div>`}</div></section>`;
+  }
+
+  function seccionObjeto(titulo: string, obj: Record<string, unknown>) {
+    const entries = Object.entries(obj)
+      .filter(([key]) => !["id", "equipo_id", "created_at", "updated_at"].includes(key))
+      .map(([key, value]) => [labelCampo(key), valorCampo(value)] as [string, unknown]);
+    return seccionTarjetas(titulo, entries);
+  }
+
+  function estadoAnexoPdf(doc: EquipoDocumento) {
+    if (doc.estado_anexo === "anexo") return "anexo";
+    if (doc.estado_anexo === "no_aplica") return "no_aplica";
+    return "no_anexo";
+  }
+
+  function seccionDocumentos(documentos: EquipoDocumento[]) {
+    if (!documentos.length) return `<section class="section"><h3>Documentos anexos</h3><div class="empty-box">No hay documentos anexos registrados.</div></section>`;
+    return `<section class="section"><h3>Documentos anexos</h3><table><thead><tr><th>N</th><th>Documento</th><th>Anexo</th><th>No anexo</th><th>No aplica</th></tr></thead><tbody>${documentos
+      .map((doc, index) => {
+        const estado = estadoAnexoPdf(doc);
+        return `<tr><td>${index + 1}</td><td>${escapeHtml(nombreAnexo(doc))}</td><td>${estado === "anexo" ? "X" : ""}</td><td>${estado === "no_anexo" ? "X" : ""}</td><td>${estado === "no_aplica" ? "X" : ""}</td></tr>`;
+      })
+      .join("")}</tbody></table></section>`;
+  }
+
+  function seccionTabla(titulo: string, headers: string[], rows: Array<Array<string | number | null | undefined>>) {
+    if (!rows.length) return `<section class="section"><h3>${escapeHtml(titulo)}</h3><div class="empty-box">Sin registros.</div></section>`;
+    return `<section class="section"><h3>${escapeHtml(titulo)}</h3>${tablaFilas(headers, rows)}</section>`;
+  }
+
+  function seccionAsignacion(asignacion: EquipoAsignacion | null) {
+    if (!asignacion) return `<section class="section"><h3>Asignacion activa / responsable actual</h3><div class="assignment"><strong>Sin asignacion activa</strong> Este equipo no esta asignado actualmente.</div></section>`;
+    return `${seccionTarjetas("Asignacion activa / responsable actual", [
+      ["Responsable", asignacion.responsable_nombre],
+      ["Documento", asignacion.responsable_documento],
+      ["Telefono", asignacion.responsable_telefono],
+      ["Email", asignacion.responsable_email],
+      ["Fecha entrega", formatearFecha(asignacion.fecha_entrega)],
+      ["Fecha estimada devolucion", formatearFecha(asignacion.fecha_estimada_devolucion)],
+      ["Direccion entrega", asignacion.direccion_entrega, true],
+      ["Estado entrega", asignacion.estado_entrega],
+      ["Observaciones", asignacion.observaciones, true],
+    ])}`;
   }
 
   function tablaDetalle(obj: Record<string, unknown>) {
