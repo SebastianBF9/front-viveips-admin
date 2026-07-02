@@ -2743,7 +2743,7 @@ td small { display: block; color: var(--muted); margin-top: 4px; }
 }
 .training-option-row {
   display: grid;
-  grid-template-columns: auto minmax(0, 1fr);
+  grid-template-columns: auto minmax(0, 1fr) auto;
   align-items: center;
   gap: 9px;
 }
@@ -2751,6 +2751,27 @@ td small { display: block; color: var(--muted); margin-top: 4px; }
   width: 18px;
   height: 18px;
   accent-color: var(--teal);
+}
+.training-option-remove-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 38px;
+  height: 38px;
+  border: 1px solid #fecaca;
+  border-radius: 12px;
+  background: #fff;
+  color: #ef4444;
+  cursor: pointer;
+}
+.training-option-remove-btn:disabled {
+  cursor: not-allowed;
+  opacity: .45;
+}
+.training-question-actions-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
 }
 .compact-action {
   width: max-content;
