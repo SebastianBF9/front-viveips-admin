@@ -2508,6 +2508,13 @@ td small { display: block; color: var(--muted); margin-top: 4px; }
   justify-content: space-between;
   gap: 16px;
 }
+.training-heading-actions {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 10px;
+}
 .padded-toolbar {
   padding: 16px 18px;
   border-bottom: 1px solid var(--border);

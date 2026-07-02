@@ -501,6 +501,13 @@ export async function toggleCapacitacionAdmin(id: number) {
   return apiCall<{ success: boolean; activo: number }>("POST", `/capacitaciones/admin/toggle/${id}`);
 }
 
+export async function enviarRecordatoriosCapacitacionesPendientes() {
+  return apiCall<{ success: boolean; profesionales_notificados: number; capacitaciones_pendientes: number }>(
+    "POST",
+    "/capacitaciones/admin/recordatorios-pendientes",
+  );
+}
+
 export async function eliminarCapacitacionAdmin(id: number) {
   return apiCall<{ success: boolean }>("DELETE", `/capacitaciones/admin/eliminar/${id}`);
 }

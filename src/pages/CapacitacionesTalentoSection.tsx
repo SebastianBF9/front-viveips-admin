@@ -7,6 +7,7 @@ import {
   FileUp,
   FileQuestion,
   FileText,
+  Mail,
   Paperclip,
   Pencil,
   Plus,
@@ -21,6 +22,7 @@ import {
   eliminarArchivoCapacitacionAdmin,
   eliminarCapacitacionAdmin,
   eliminarPreguntaCapacitacionAdmin,
+  enviarRecordatoriosCapacitacionesPendientes,
   guardarCapacitacionAdmin,
   guardarPreguntaCapacitacionAdmin,
   listarCapacitacionesAdmin,
@@ -269,6 +271,29 @@ export function CapacitacionesTalentoSection() {
       await cargar();
     } catch (err) {
       setError(err instanceof Error ? err.message : "No fue posible cambiar el estado");
+    } finally {
+      setAccionLoading("");
+    }
+  }
+
+  async function recordarPendientes() {
+    const confirmar = window.confirm("Enviar recordatorio por correo a los profesionales activos con capacitaciones pendientes por presentar?");
+    if (!confirmar) return;
+
+    setAccionLoading("recordar-pendientes");
+    setError("");
+    setSuccess("");
+    try {
+      const data = await enviarRecordatoriosCapacitacionesPendientes();
+      if (data.profesionales_notificados > 0) {
+        setSuccess(
+          `Recordatorios programados para ${data.profesionales_notificados} profesional(es), con ${data.capacitaciones_pendientes} capacitacion(es) pendiente(s).`,
+        );
+      } else {
+        setSuccess("No hay profesionales con capacitaciones pendientes por presentar.");
+      }
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "No fue posible enviar los recordatorios");
     } finally {
       setAccionLoading("");
     }
@@ -597,10 +622,21 @@ export function CapacitacionesTalentoSection() {
             <h2>Capacitaciones internas</h2>
             <p>Cursos, vigencias, materiales y preguntas disponibles para el equipo.</p>
           </div>
-          <button className="brand-action-btn" type="button" onClick={abrirNuevaCapacitacion}>
-            <Plus size={17} />
-            Nueva capacitacion
-          </button>
+          <div className="training-heading-actions">
+            <button
+              className="secondary-btn"
+              type="button"
+              onClick={recordarPendientes}
+              disabled={accionLoading === "recordar-pendientes"}
+            >
+              <Mail size={16} />
+              Recordar pendientes
+            </button>
+            <button className="brand-action-btn" type="button" onClick={abrirNuevaCapacitacion}>
+              <Plus size={17} />
+              Nueva capacitacion
+            </button>
+          </div>
         </div>
 
         <div className="toolbar padded-toolbar">
