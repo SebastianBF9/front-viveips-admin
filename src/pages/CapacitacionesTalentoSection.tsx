@@ -120,7 +120,7 @@ function opcionesEditables(opciones?: CapacitacionOpcion[]) {
   while (completas.length < 4) {
     completas.push({ opcion: "", es_correcta: false });
   }
-  return completas.slice(0, 4);
+  return completas;
 }
 
 export function CapacitacionesTalentoSection() {
@@ -425,6 +425,50 @@ export function CapacitacionesTalentoSection() {
         })),
       };
     }));
+  }
+
+  function agregarOpcionPregunta(id: number) {
+    setPreguntas((actuales) => actuales.map((pregunta) => (
+      pregunta.id === id
+        ? { ...pregunta, opciones: [...opcionesEditables(pregunta.opciones), { opcion: "", es_correcta: false }] }
+        : pregunta
+    )));
+  }
+
+  function eliminarOpcionPregunta(id: number, index: number) {
+    setPreguntas((actuales) => actuales.map((pregunta) => {
+      if (pregunta.id !== id) return pregunta;
+      const opciones = opcionesEditables(pregunta.opciones);
+      if (opciones.length <= 2) return pregunta;
+      const removidaEraCorrecta = Boolean(opciones[index]?.es_correcta);
+      const restantes = opciones.filter((_, i) => i !== index);
+      return {
+        ...pregunta,
+        opciones: removidaEraCorrecta
+          ? restantes.map((opcion, i) => ({ ...opcion, es_correcta: i === 0 }))
+          : restantes,
+      };
+    }));
+  }
+
+  function actualizarNuevaOpcion(index: number, valor: string) {
+    setNuevasOpciones((actuales) => actuales.map((item, i) => i === index ? valor : item));
+  }
+
+  function agregarNuevaOpcion() {
+    setNuevasOpciones((actuales) => [...actuales, ""]);
+  }
+
+  function eliminarNuevaOpcion(index: number) {
+    setNuevasOpciones((actuales) => {
+      if (actuales.length <= 2) return actuales;
+      return actuales.filter((_, i) => i !== index);
+    });
+    setNuevaCorrecta((actual) => {
+      if (actual === index) return 0;
+      if (actual > index) return actual - 1;
+      return actual;
+    });
   }
 
   function validarPregunta(pregunta: string, opciones: Array<{ opcion: string; es_correcta: boolean | number }>) {
@@ -941,7 +985,7 @@ export function CapacitacionesTalentoSection() {
 
                     <div className="training-option-list">
                       {opcionesEditables(pregunta.opciones).map((opcion, opcionIndex) => (
-                        <label className="training-option-row" key={`${pregunta.id}-${opcionIndex}`}>
+                        <div className="training-option-row" key={`${pregunta.id}-${opcionIndex}`}>
                           <input
                             type="radio"
                             name={`correcta-${pregunta.id}`}
@@ -949,22 +993,38 @@ export function CapacitacionesTalentoSection() {
                             onChange={() => marcarOpcionCorrecta(pregunta.id, opcionIndex)}
                           />
                           <input
+                            type="text"
                             value={opcion.opcion}
                             onChange={(event) => actualizarOpcionPregunta(pregunta.id, opcionIndex, event.target.value)}
                             placeholder={`Opcion ${opcionIndex + 1}`}
                           />
-                        </label>
+                          <button
+                            type="button"
+                            className="training-option-remove-btn"
+                            onClick={() => eliminarOpcionPregunta(pregunta.id, opcionIndex)}
+                            disabled={opcionesEditables(pregunta.opciones).length <= 2}
+                            title="Quitar opcion"
+                            aria-label={`Quitar opcion ${opcionIndex + 1}`}
+                          >
+                            <X size={14} />
+                          </button>
+                        </div>
                       ))}
                     </div>
 
-                    <button
-                      type="button"
-                      className="primary-btn gradient-btn compact-action"
-                      onClick={() => guardarPreguntaExistente(pregunta)}
-                      disabled={accionLoading === `guardar-pregunta-${pregunta.id}`}
-                    >
-                      Guardar
-                    </button>
+                    <div className="training-question-actions-row">
+                      <button type="button" className="secondary-btn compact-action" onClick={() => agregarOpcionPregunta(pregunta.id)}>
+                        <Plus size={14} /> Agregar opcion
+                      </button>
+                      <button
+                        type="button"
+                        className="primary-btn gradient-btn compact-action"
+                        onClick={() => guardarPreguntaExistente(pregunta)}
+                        disabled={accionLoading === `guardar-pregunta-${pregunta.id}`}
+                      >
+                        Guardar
+                      </button>
+                    </div>
                   </article>
                 ))}
 
@@ -980,7 +1040,7 @@ export function CapacitacionesTalentoSection() {
 
                   <div className="training-option-list">
                     {nuevasOpciones.map((opcion, index) => (
-                      <label className="training-option-row" key={index}>
+                      <div className="training-option-row" key={index}>
                         <input
                           type="radio"
                           name="nueva-correcta"
@@ -988,22 +1048,38 @@ export function CapacitacionesTalentoSection() {
                           onChange={() => setNuevaCorrecta(index)}
                         />
                         <input
+                          type="text"
                           value={opcion}
-                          onChange={(event) => setNuevasOpciones((actuales) => actuales.map((item, i) => i === index ? event.target.value : item))}
+                          onChange={(event) => actualizarNuevaOpcion(index, event.target.value)}
                           placeholder={`Opcion ${index + 1}`}
                         />
-                      </label>
+                        <button
+                          type="button"
+                          className="training-option-remove-btn"
+                          onClick={() => eliminarNuevaOpcion(index)}
+                          disabled={nuevasOpciones.length <= 2}
+                          title="Quitar opcion"
+                          aria-label={`Quitar opcion ${index + 1}`}
+                        >
+                          <X size={14} />
+                        </button>
+                      </div>
                     ))}
                   </div>
 
-                  <button
-                    type="button"
-                    className="primary-btn gradient-btn compact-action"
-                    onClick={guardarNuevaPregunta}
-                    disabled={accionLoading === "guardar-nueva-pregunta"}
-                  >
-                    Agregar pregunta
-                  </button>
+                  <div className="training-question-actions-row">
+                    <button type="button" className="secondary-btn compact-action" onClick={agregarNuevaOpcion}>
+                      <Plus size={14} /> Agregar opcion
+                    </button>
+                    <button
+                      type="button"
+                      className="primary-btn gradient-btn compact-action"
+                      onClick={guardarNuevaPregunta}
+                      disabled={accionLoading === "guardar-nueva-pregunta"}
+                    >
+                      Agregar pregunta
+                    </button>
+                  </div>
                 </article>
 
                 {preguntas.length === 0 && <div className="empty-state compact-empty">Aun no hay preguntas guardadas para esta capacitacion.</div>}
