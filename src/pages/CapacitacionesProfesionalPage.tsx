@@ -18,6 +18,7 @@ import {
   clearSession,
   downloadBlob,
   enviarExamenCapacitacion,
+  getToken,
   listarMisCapacitaciones,
   obtenerArchivosCapacitacionProfesional,
   obtenerExamenCapacitacion,
@@ -85,6 +86,10 @@ export function CapacitacionesProfesionalPage() {
   const [examenModal, setExamenModal] = useState<ExamenModal | null>(null);
 
   async function cargar() {
+    if (!getToken()) {
+      navigate(`/login?next=${encodeURIComponent("/portal-profesional/capacitaciones")}`, { replace: true });
+      return;
+    }
     setLoading(true);
     setError("");
     try {
@@ -95,7 +100,12 @@ export function CapacitacionesProfesionalPage() {
       setPerfil(perfilData.perfil);
       setCursos(cursosData.cursos || []);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "No fue posible cargar tus capacitaciones");
+      const message = err instanceof Error ? err.message : "No fue posible cargar tus capacitaciones";
+      if (message.toLowerCase().includes("not authenticated") || message.toLowerCase().includes("unauthorized")) {
+        navigate(`/login?next=${encodeURIComponent("/portal-profesional/capacitaciones")}`, { replace: true });
+        return;
+      }
+      setError(message);
     } finally {
       setLoading(false);
     }
