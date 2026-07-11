@@ -52,7 +52,6 @@ const especialidades = [
   "Terapeuta Fisico",
   "Terapeuta Ocupacional",
   "Terapeuta de Lenguaje",
-  "Terapeuta Integral",
   "Terapeuta Respiratorio",
   "Nutricionista",
   "Trabajo Social",
