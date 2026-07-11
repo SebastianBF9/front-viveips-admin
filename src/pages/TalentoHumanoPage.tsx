@@ -7,8 +7,6 @@ import {
   downloadUrl,
   listarProfesionales,
   obtenerMiAcceso,
-  obtenerFormacionProfesional,
-  obtenerProfesional,
   obtenerServiciosProfesional,
   openAuthenticatedWindow,
 } from "../api";
@@ -422,30 +420,8 @@ export function TalentoHumanoPage() {
     setLoading(true);
     setError("");
     try {
-      const data = await listarProfesionales();
-      const base = (data.profesionales || []) as ProfesionalAdmin[];
-      const enriquecidos = await Promise.all(
-        base.map(async (profesional) => {
-          try {
-            const [detalle, formacion, servicios] = await Promise.all([
-              obtenerProfesional(profesional.id),
-              obtenerFormacionProfesional(profesional.id),
-              obtenerServiciosProfesional(profesional.id),
-            ]);
-            return {
-              ...profesional,
-              ...detalle.perfil,
-              documentos: (detalle.documentos || []) as DocumentoProfesional[],
-              formaciones: (formacion.formaciones || []) as FormacionAcademica[],
-              servicios: (servicios.servicios || []) as ServicioProfesionalAsignado[],
-            };
-          } catch {
-            return { ...profesional, documentos: [], formaciones: [], servicios: [] };
-          }
-        }),
-      );
-      setProfesionales(enriquecidos);
-      const permisos = await obtenerMiAcceso();
+      const [data, permisos] = await Promise.all([listarProfesionales(), obtenerMiAcceso()]);
+      setProfesionales((data.profesionales || []) as ProfesionalAdmin[]);
       setAcceso(permisos);
     } catch (err) {
       setError(err instanceof Error ? err.message : "No fue posible cargar talento humano");
