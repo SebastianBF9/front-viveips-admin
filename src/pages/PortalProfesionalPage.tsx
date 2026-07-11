@@ -139,7 +139,6 @@ const CARGOS = [
   "Terapeuta Físico",
   "Terapeuta Ocupacional",
   "Terapeuta de Lenguaje",
-  "Terapeuta Integral",
   "Terapeuta Respiratorio",
   "Nutricionista",
   "Trabajo Social",
