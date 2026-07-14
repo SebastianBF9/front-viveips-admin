@@ -1,7 +1,8 @@
-import { AlertTriangle, BadgeCheck, CheckCircle2, Clock3, CreditCard, Download, Eye, FileText, Plus, Search, UserCheck, UserRound, X } from "lucide-react";
+import { AlertTriangle, BadgeCheck, CheckCircle2, Clock3, CreditCard, Download, Eye, FileText, Pencil, Plus, Search, UserCheck, UserRound, X } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import {
   apiCall,
+  actualizarProfesional,
   crearProfesional,
   downloadBlob,
   downloadUrl,
@@ -399,6 +400,7 @@ export function TalentoHumanoPage() {
   const [tab, setTab] = useState<"listado" | "crear" | "capacitaciones">("listado");
   const [acceso, setAcceso] = useState<PermisosAcceso | null>(null);
   const [seleccionado, setSeleccionado] = useState<ProfesionalAdmin | null>(null);
+  const [profesionalEditando, setProfesionalEditando] = useState<ProfesionalAdmin | null>(null);
   const [serviciosSeleccionado, setServiciosSeleccionado] = useState<ServicioProfesionalAsignado[]>([]);
   const [serviciosLoading, setServiciosLoading] = useState(false);
   const [contratoProfesional, setContratoProfesional] = useState<ProfesionalAdmin | null>(null);
@@ -422,6 +424,13 @@ export function TalentoHumanoPage() {
     especialidad: "",
     cargo_complementario: "",
     password: "",
+  });
+  const [edicionProfesional, setEdicionProfesional] = useState({
+    nombre: "",
+    email: "",
+    telefono: "",
+    especialidad: "",
+    cargo_complementario: "",
   });
 
   async function cargar() {
@@ -551,6 +560,43 @@ export function TalentoHumanoPage() {
     } finally {
       setServiciosLoading(false);
     }
+  }
+
+  function abrirEdicionProfesional(profesional: ProfesionalAdmin) {
+    setProfesionalEditando(profesional);
+    setEdicionProfesional({
+      nombre: profesional.nombre || "",
+      email: profesional.email || "",
+      telefono: profesional.telefono || "",
+      especialidad: profesional.especialidad || "",
+      cargo_complementario: profesional.cargo_complementario || "",
+    });
+  }
+
+  function actualizarEdicionProfesional(campo: keyof typeof edicionProfesional, valor: string) {
+    setEdicionProfesional((actual) => ({ ...actual, [campo]: valor }));
+  }
+
+  async function guardarEdicionProfesional() {
+    if (!profesionalEditando) return;
+    const payload = {
+      nombre: edicionProfesional.nombre.trim(),
+      email: edicionProfesional.email.trim(),
+      telefono: edicionProfesional.telefono.trim(),
+      especialidad: edicionProfesional.especialidad.trim(),
+      cargo_complementario: edicionProfesional.cargo_complementario.trim(),
+    };
+    if (!payload.nombre || !payload.email || !payload.especialidad) {
+      setError("Completa nombre, correo y cargo antes de guardar.");
+      return;
+    }
+
+    await ejecutarAccion(`editar-profesional-${profesionalEditando.id}`, async () => {
+      const data = await actualizarProfesional(profesionalEditando.id, payload);
+      setSuccess(data.mensaje || "Profesional actualizado correctamente.");
+      setProfesionalEditando(null);
+      await cargar();
+    });
   }
 
   function actualizarNuevoUsuario(campo: keyof typeof nuevoUsuario, valor: string) {
@@ -797,6 +843,7 @@ export function TalentoHumanoPage() {
                   <td>
                     <div className="table-actions">
                       <button type="button" onClick={() => abrirDetalleProfesional(profesional)}><Eye size={15} /> Ver</button>
+                      {puedeCrearProfesionales && <button type="button" onClick={() => abrirEdicionProfesional(profesional)}><Pencil size={15} /> Editar</button>}
                       <button type="button" onClick={() => descargarHojaVida(profesional)} disabled={accionLoading === `pdf-${profesional.id}`}>
                         <Download size={15} /> PDF
                       </button>
@@ -1055,6 +1102,77 @@ export function TalentoHumanoPage() {
                 Descargar hoja de vida
               </button>
               <button className="primary-btn close-detail-btn" type="button" onClick={() => setSeleccionado(null)}>Cerrar</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {profesionalEditando && (
+        <div className="modal-backdrop" onMouseDown={() => setProfesionalEditando(null)}>
+          <div className="modal wide-modal" onMouseDown={(event) => event.stopPropagation()}>
+            <div className="professional-detail-title">
+              <h2><Pencil size={22} /> Editar profesional</h2>
+              <button type="button" onClick={() => setProfesionalEditando(null)} aria-label="Cerrar modal">
+                <X size={22} />
+              </button>
+            </div>
+
+            <div className="create-user-form">
+              <label>
+                Nombre completo <span>*</span>
+                <input value={edicionProfesional.nombre} onChange={(event) => actualizarEdicionProfesional("nombre", event.target.value)} />
+              </label>
+              <label>
+                Correo electrónico <span>*</span>
+                <input type="email" value={edicionProfesional.email} onChange={(event) => actualizarEdicionProfesional("email", event.target.value)} />
+              </label>
+              <label>
+                Teléfono / WhatsApp
+                <input value={edicionProfesional.telefono} onChange={(event) => actualizarEdicionProfesional("telefono", event.target.value)} />
+              </label>
+              <label>
+                Especialidad / Cargo <span>*</span>
+                <select
+                  value={edicionProfesional.especialidad}
+                  onChange={(event) => {
+                    const especialidad = event.target.value;
+                    const opciones = opcionesCargoComplementario(especialidad);
+                    setEdicionProfesional((actual) => ({
+                      ...actual,
+                      especialidad,
+                      cargo_complementario: opciones.includes(actual.cargo_complementario) ? actual.cargo_complementario : "",
+                    }));
+                  }}
+                >
+                  <option value="">Seleccionar...</option>
+                  {especialidades.map((especialidad) => <option key={especialidad} value={especialidad}>{especialidad}</option>)}
+                </select>
+              </label>
+              {opcionesCargoComplementario(edicionProfesional.especialidad).length > 0 && (
+                <label className="cargo-complementario-toggle">
+                  <input
+                    type="checkbox"
+                    checked={Boolean(edicionProfesional.cargo_complementario)}
+                    onChange={(event) => actualizarEdicionProfesional("cargo_complementario", event.target.checked ? opcionesCargoComplementario(edicionProfesional.especialidad)[0] : "")}
+                  />
+                  <span>Agregar cargo complementario</span>
+                </label>
+              )}
+              {edicionProfesional.cargo_complementario && (
+                <label>
+                  Cargo complementario <span>*</span>
+                  <select value={edicionProfesional.cargo_complementario} onChange={(event) => actualizarEdicionProfesional("cargo_complementario", event.target.value)}>
+                    {opcionesCargoComplementario(edicionProfesional.especialidad).map((cargo) => <option key={cargo} value={cargo}>{cargo}</option>)}
+                  </select>
+                </label>
+              )}
+            </div>
+
+            <div className="modal-actions professional-modal-actions">
+              <button className="secondary-btn pill-btn" type="button" onClick={() => setProfesionalEditando(null)}>Cancelar</button>
+              <button className="brand-action-btn" type="button" onClick={guardarEdicionProfesional} disabled={accionLoading === `editar-profesional-${profesionalEditando.id}`}>
+                <Pencil size={16} /> Guardar cambios
+              </button>
             </div>
           </div>
         </div>
