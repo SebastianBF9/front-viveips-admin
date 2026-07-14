@@ -408,6 +408,7 @@ export function TalentoHumanoPage() {
   const [valorMensual, setValorMensual] = useState("");
   const [fechaInicio, setFechaInicio] = useState(() => new Date().toISOString().slice(0, 10));
   const [query, setQuery] = useState("");
+  const [vistaEstado, setVistaEstado] = useState<"activos" | "inactivos">("activos");
   const [estado, setEstado] = useState("todos");
   const [loading, setLoading] = useState(true);
   const [accionLoading, setAccionLoading] = useState("");
@@ -457,15 +458,14 @@ export function TalentoHumanoPage() {
         (profesional.servicios || []).some((servicio) =>
           normalizar(`${servicio.codigo} ${servicio.nombre} ${servicio.rol_en_servicio || ""}`).includes(texto),
         );
+      const matchVista = vistaEstado === "activos" ? Boolean(profesional.activo) : !profesional.activo;
       const matchEstado =
         estado === "todos" ||
-        (estado === "activos" && Boolean(profesional.activo)) ||
-        (estado === "inactivos" && !profesional.activo) ||
         (estado === "pendientes" && resumen.pendientes > 0) ||
         (estado === "vencidos" && resumen.vencidos > 0);
-      return matchTexto && matchEstado;
+      return matchTexto && matchVista && matchEstado;
     });
-  }, [estado, profesionales, query]);
+  }, [estado, profesionales, query, vistaEstado]);
 
   const kpis = useMemo(() => {
     const activos = profesionales.filter((profesional) => Boolean(profesional.activo)).length;
@@ -480,7 +480,7 @@ export function TalentoHumanoPage() {
       },
       { vigentes: 0, porVencerIncompletos: 0, vencidos: 0, faltantes: 0 },
     );
-    return { activos, ...documentos };
+    return { activos, inactivos: profesionales.length - activos, ...documentos };
   }, [profesionales]);
 
   async function ejecutarAccion(clave: string, accion: () => Promise<void>) {
@@ -710,10 +710,12 @@ export function TalentoHumanoPage() {
               <Search size={18} />
               <input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Buscar por nombre, cedula, correo o cargo" />
             </label>
+            <div className="professional-status-tabs" role="tablist" aria-label="Estado de profesionales">
+              <button className={vistaEstado === "activos" ? "active" : ""} type="button" onClick={() => setVistaEstado("activos")}>Activos ({kpis.activos})</button>
+              <button className={vistaEstado === "inactivos" ? "active" : ""} type="button" onClick={() => setVistaEstado("inactivos")}>Inactivos ({kpis.inactivos})</button>
+            </div>
             <select value={estado} onChange={(event) => setEstado(event.target.value)}>
-              <option value="todos">Todos</option>
-              <option value="activos">Activos</option>
-              <option value="inactivos">Inactivos</option>
+              <option value="todos">Todos los documentos</option>
               <option value="pendientes">Con pendientes</option>
               <option value="vencidos">Con vencidos</option>
             </select>
@@ -721,8 +723,8 @@ export function TalentoHumanoPage() {
 
           <section className="table-card">
         <div className="section-heading">
-          <h2>Listado de profesionales</h2>
-          <p>Replica el flujo actual: ver detalle, PDF, contrato y carnet.</p>
+          <h2>Profesionales {vistaEstado}</h2>
+          <p>{vistaEstado === "activos" ? "Profesionales disponibles para la operación actual." : "Usuarios retirados de la operación, conservados para consulta administrativa."}</p>
         </div>
         <table className="professionals-table">
           <thead>
@@ -806,7 +808,7 @@ export function TalentoHumanoPage() {
             })}
           </tbody>
         </table>
-        {filtrados.length === 0 && <div className="empty-state">No hay profesionales para el filtro seleccionado.</div>}
+        {filtrados.length === 0 && <div className="empty-state">No hay profesionales {vistaEstado} para el filtro seleccionado.</div>}
       </section>
         </>
       )}

@@ -8150,3 +8150,30 @@ td small { display: block; color: var(--muted); margin-top: 4px; }
   height: 16px;
   accent-color: #0f8f9d;
 }
+
+.professional-status-tabs {
+  display: inline-flex;
+  flex: 0 0 auto;
+  border: 1px solid #d8e0eb;
+  border-radius: 8px;
+  padding: 3px;
+  background: #fff;
+}
+
+.professional-status-tabs button {
+  min-height: 36px;
+  border: 0;
+  border-radius: 5px;
+  padding: 0 12px;
+  background: transparent;
+  color: #52657f;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.professional-status-tabs button.active {
+  background: #e0f7f6;
+  color: #087f8c;
+}
