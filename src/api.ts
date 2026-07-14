@@ -285,10 +285,12 @@ export async function crearProfesional(payload: {
 
 export async function actualizarProfesional(profesionalId: number, payload: {
   nombre: string;
+  cedula: string;
   email: string;
   telefono?: string;
   especialidad?: string;
   cargo_complementario?: string;
+  password?: string;
 }) {
   return apiCall<{ success: boolean; mensaje: string }>("PUT", `/profesionales/${profesionalId}`, payload);
 }
