@@ -8125,3 +8125,19 @@ td small { display: block; color: var(--muted); margin-top: 4px; }
     padding: 16px 18px 4px;
   }
 }
+.cargo-complementario-toggle,
+.portal-complement-toggle {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 42px;
+  color: var(--text, #1f2937);
+  font-weight: 600;
+}
+
+.cargo-complementario-toggle input,
+.portal-complement-toggle input {
+  width: 16px;
+  height: 16px;
+  accent-color: #0f8f9d;
+}

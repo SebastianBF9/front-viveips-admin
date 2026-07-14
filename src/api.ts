@@ -277,6 +277,7 @@ export async function crearProfesional(payload: {
   email: string;
   telefono?: string;
   especialidad: string;
+  cargo_complementario?: string;
   password: string;
 }) {
   return apiCall<{ success: boolean; mensaje: string }>("POST", "/profesionales/crear", payload);
