@@ -445,9 +445,19 @@ export function TalentoHumanoPage() {
   const puedeCrearProfesionales = Boolean(acceso?.permiso_ver_todo || acceso?.permiso_crear_profesionales);
   const puedeVerCapacitaciones = Boolean(acceso?.permiso_ver_todo || acceso?.permiso_ver_capacitaciones);
 
+  const conteosEstado = useMemo(() => {
+    const activos = profesionales.filter((profesional) => Boolean(profesional.activo)).length;
+    return { activos, inactivos: profesionales.length - activos };
+  }, [profesionales]);
+
+  const profesionalesVista = useMemo(
+    () => profesionales.filter((profesional) => vistaEstado === "activos" ? Boolean(profesional.activo) : !profesional.activo),
+    [profesionales, vistaEstado],
+  );
+
   const filtrados = useMemo(() => {
     const texto = normalizar(query);
-    return profesionales.filter((profesional) => {
+    return profesionalesVista.filter((profesional) => {
       const resumen = resumenDocumental(profesional);
       const matchTexto =
         !texto ||
@@ -458,18 +468,16 @@ export function TalentoHumanoPage() {
         (profesional.servicios || []).some((servicio) =>
           normalizar(`${servicio.codigo} ${servicio.nombre} ${servicio.rol_en_servicio || ""}`).includes(texto),
         );
-      const matchVista = vistaEstado === "activos" ? Boolean(profesional.activo) : !profesional.activo;
       const matchEstado =
         estado === "todos" ||
         (estado === "pendientes" && resumen.pendientes > 0) ||
         (estado === "vencidos" && resumen.vencidos > 0);
-      return matchTexto && matchVista && matchEstado;
+      return matchTexto && matchEstado;
     });
-  }, [estado, profesionales, query, vistaEstado]);
+  }, [estado, profesionalesVista, query]);
 
   const kpis = useMemo(() => {
-    const activos = profesionales.filter((profesional) => Boolean(profesional.activo)).length;
-    const documentos = profesionales.reduce(
+    const documentos = profesionalesVista.reduce(
       (acumulado, profesional) => {
         const resumen = resumenDocumental(profesional);
         acumulado.vigentes += resumen.cumplidos;
@@ -480,8 +488,8 @@ export function TalentoHumanoPage() {
       },
       { vigentes: 0, porVencerIncompletos: 0, vencidos: 0, faltantes: 0 },
     );
-    return { activos, inactivos: profesionales.length - activos, ...documentos };
-  }, [profesionales]);
+    return { total: profesionalesVista.length, ...documentos };
+  }, [profesionalesVista]);
 
   async function ejecutarAccion(clave: string, accion: () => Promise<void>) {
     setAccionLoading(clave);
@@ -668,8 +676,8 @@ export function TalentoHumanoPage() {
       <div className="kpi-grid five talent-kpis">
         <article className="kpi-card compact success">
           <div className="kpi-icon"><UserCheck size={18} /></div>
-          <strong>{kpis.activos}</strong>
-          <span>Profesionales activos</span>
+          <strong>{kpis.total}</strong>
+          <span>Profesionales {vistaEstado}</span>
         </article>
         <article className="kpi-card compact success">
           <div className="kpi-icon"><CheckCircle2 size={18} /></div>
@@ -711,8 +719,8 @@ export function TalentoHumanoPage() {
               <input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Buscar por nombre, cedula, correo o cargo" />
             </label>
             <div className="professional-status-tabs" role="tablist" aria-label="Estado de profesionales">
-              <button className={vistaEstado === "activos" ? "active" : ""} type="button" onClick={() => setVistaEstado("activos")}>Activos ({kpis.activos})</button>
-              <button className={vistaEstado === "inactivos" ? "active" : ""} type="button" onClick={() => setVistaEstado("inactivos")}>Inactivos ({kpis.inactivos})</button>
+              <button className={vistaEstado === "activos" ? "active" : ""} type="button" onClick={() => setVistaEstado("activos")}>Activos ({conteosEstado.activos})</button>
+              <button className={vistaEstado === "inactivos" ? "active" : ""} type="button" onClick={() => setVistaEstado("inactivos")}>Inactivos ({conteosEstado.inactivos})</button>
             </div>
             <select value={estado} onChange={(event) => setEstado(event.target.value)}>
               <option value="todos">Todos los documentos</option>
