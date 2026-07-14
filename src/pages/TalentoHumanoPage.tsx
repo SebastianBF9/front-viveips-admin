@@ -855,15 +855,16 @@ export function TalentoHumanoPage() {
                 ))}
               </select>
             </label>
-            <label className="cargo-complementario-toggle">
-              <input
-                type="checkbox"
-                checked={Boolean(nuevoUsuario.cargo_complementario)}
-                disabled={!opcionesCargoComplementario(nuevoUsuario.especialidad).length}
-                onChange={(event) => actualizarNuevoUsuario("cargo_complementario", event.target.checked ? opcionesCargoComplementario(nuevoUsuario.especialidad)[0] : "")}
-              />
-              <span>Agregar cargo complementario</span>
-            </label>
+            {opcionesCargoComplementario(nuevoUsuario.especialidad).length > 0 && (
+              <label className="cargo-complementario-toggle">
+                <input
+                  type="checkbox"
+                  checked={Boolean(nuevoUsuario.cargo_complementario)}
+                  onChange={(event) => actualizarNuevoUsuario("cargo_complementario", event.target.checked ? opcionesCargoComplementario(nuevoUsuario.especialidad)[0] : "")}
+                />
+                <span>Agregar cargo complementario</span>
+              </label>
+            )}
             {nuevoUsuario.cargo_complementario && (
               <label>
                 Cargo complementario <span>*</span>
