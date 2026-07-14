@@ -397,7 +397,7 @@ function generarPasswordTemporal() {
 
 export function TalentoHumanoPage() {
   const [profesionales, setProfesionales] = useState<ProfesionalAdmin[]>([]);
-  const [tab, setTab] = useState<"listado" | "crear" | "capacitaciones">("listado");
+  const [tab, setTab] = useState<"listado" | "usuarios" | "capacitaciones">("listado");
   const [acceso, setAcceso] = useState<PermisosAcceso | null>(null);
   const [seleccionado, setSeleccionado] = useState<ProfesionalAdmin | null>(null);
   const [profesionalEditando, setProfesionalEditando] = useState<ProfesionalAdmin | null>(null);
@@ -427,10 +427,12 @@ export function TalentoHumanoPage() {
   });
   const [edicionProfesional, setEdicionProfesional] = useState({
     nombre: "",
+    cedula: "",
     email: "",
     telefono: "",
     especialidad: "",
     cargo_complementario: "",
+    password: "",
   });
 
   async function cargar() {
@@ -566,10 +568,12 @@ export function TalentoHumanoPage() {
     setProfesionalEditando(profesional);
     setEdicionProfesional({
       nombre: profesional.nombre || "",
+      cedula: profesional.cedula || "",
       email: profesional.email || "",
       telefono: profesional.telefono || "",
       especialidad: profesional.especialidad || "",
       cargo_complementario: profesional.cargo_complementario || "",
+      password: "",
     });
   }
 
@@ -581,13 +585,19 @@ export function TalentoHumanoPage() {
     if (!profesionalEditando) return;
     const payload = {
       nombre: edicionProfesional.nombre.trim(),
+      cedula: edicionProfesional.cedula.trim(),
       email: edicionProfesional.email.trim(),
       telefono: edicionProfesional.telefono.trim(),
       especialidad: edicionProfesional.especialidad.trim(),
       cargo_complementario: edicionProfesional.cargo_complementario.trim(),
+      password: edicionProfesional.password.trim() || undefined,
     };
-    if (!payload.nombre || !payload.email || !payload.especialidad) {
-      setError("Completa nombre, correo y cargo antes de guardar.");
+    if (!payload.nombre || !payload.cedula || !payload.email || !payload.especialidad) {
+      setError("Completa nombre, cédula, correo y cargo antes de guardar.");
+      return;
+    }
+    if (payload.password && payload.password.length < 8) {
+      setError("La nueva contraseña debe tener mínimo 8 caracteres.");
       return;
     }
 
@@ -750,7 +760,7 @@ export function TalentoHumanoPage() {
       <div className="subtabs">
         <button className={tab === "listado" ? "active" : ""} type="button" onClick={() => setTab("listado")}>Listado</button>
         {puedeCrearProfesionales && (
-          <button className={tab === "crear" ? "active" : ""} type="button" onClick={() => setTab("crear")}>Crear usuario</button>
+          <button className={tab === "usuarios" ? "active" : ""} type="button" onClick={() => setTab("usuarios")}>Usuarios</button>
         )}
         {puedeVerCapacitaciones && (
           <button className={tab === "capacitaciones" ? "active" : ""} type="button" onClick={() => setTab("capacitaciones")}>Capacitaciones</button>
@@ -843,7 +853,6 @@ export function TalentoHumanoPage() {
                   <td>
                     <div className="table-actions">
                       <button type="button" onClick={() => abrirDetalleProfesional(profesional)}><Eye size={15} /> Ver</button>
-                      {puedeCrearProfesionales && <button type="button" onClick={() => abrirEdicionProfesional(profesional)}><Pencil size={15} /> Editar</button>}
                       <button type="button" onClick={() => descargarHojaVida(profesional)} disabled={accionLoading === `pdf-${profesional.id}`}>
                         <Download size={15} /> PDF
                       </button>
@@ -868,7 +877,8 @@ export function TalentoHumanoPage() {
         </>
       )}
 
-      {tab === "crear" && puedeCrearProfesionales && (
+      {tab === "usuarios" && puedeCrearProfesionales && (
+        <>
         <section className="table-card create-user-card">
           <div className="section-heading">
             <h2>Crear nuevo profesional</h2>
@@ -947,6 +957,37 @@ export function TalentoHumanoPage() {
             </button>
           </div>
         </section>
+        <section className="table-card user-management-card">
+          <div className="section-heading">
+            <h2>Administrar usuarios</h2>
+            <p>Edita datos de acceso, información de contacto, cargos y contraseña.</p>
+          </div>
+          <div className="user-management-toolbar">
+            <label className="search-field">
+              <Search size={18} />
+              <input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Buscar usuario por nombre, cédula, correo o cargo" />
+            </label>
+          </div>
+          <table className="professionals-table">
+            <thead><tr><th>Usuario</th><th>Cargo</th><th>Contacto</th><th>Estado</th><th>Acción</th></tr></thead>
+            <tbody>
+              {profesionales.filter((profesional) => {
+                const texto = normalizar(query);
+                return !texto || [profesional.nombre, profesional.cedula, profesional.email, profesional.especialidad]
+                  .some((valor) => normalizar(valor).includes(texto));
+              }).map((profesional) => (
+                <tr key={profesional.id}>
+                  <td><div className="prof-info"><div className="prof-avatar">{iniciales(profesional.nombre)}</div><div><div className="prof-nombre">{profesional.nombre}</div><div className="prof-cedula">CC: {profesional.cedula || "Sin cédula"}</div></div></div></td>
+                  <td>{profesional.especialidad || "Sin cargo"}</td>
+                  <td><div className="contact-cell"><span>{profesional.email || "Sin correo"}</span><small>{profesional.telefono || "Sin teléfono"}</small></div></td>
+                  <td><span className={`pill ${profesional.activo ? "activo" : "inactivo"}`}>{profesional.activo ? "Activo" : "Inactivo"}</span></td>
+                  <td><button type="button" className="user-edit-btn" onClick={() => abrirEdicionProfesional(profesional)}><Pencil size={15} /> Editar</button></td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </section>
+        </>
       )}
 
       {tab === "capacitaciones" && puedeVerCapacitaciones && <CapacitacionesTalentoSection />}
@@ -1111,7 +1152,7 @@ export function TalentoHumanoPage() {
         <div className="modal-backdrop" onMouseDown={() => setProfesionalEditando(null)}>
           <div className="modal wide-modal" onMouseDown={(event) => event.stopPropagation()}>
             <div className="professional-detail-title">
-              <h2><Pencil size={22} /> Editar profesional</h2>
+              <h2><Pencil size={22} /> Editar usuario</h2>
               <button type="button" onClick={() => setProfesionalEditando(null)} aria-label="Cerrar modal">
                 <X size={22} />
               </button>
@@ -1121,6 +1162,10 @@ export function TalentoHumanoPage() {
               <label>
                 Nombre completo <span>*</span>
                 <input value={edicionProfesional.nombre} onChange={(event) => actualizarEdicionProfesional("nombre", event.target.value)} />
+              </label>
+              <label>
+                Número de cédula <span>*</span>
+                <input value={edicionProfesional.cedula} onChange={(event) => actualizarEdicionProfesional("cedula", event.target.value)} />
               </label>
               <label>
                 Correo electrónico <span>*</span>
@@ -1166,6 +1211,13 @@ export function TalentoHumanoPage() {
                   </select>
                 </label>
               )}
+              <label>
+                Nueva contraseña
+                <div className="password-row">
+                  <input type="password" value={edicionProfesional.password} onChange={(event) => actualizarEdicionProfesional("password", event.target.value)} placeholder="Déjala vacía para conservarla" />
+                  <button type="button" onClick={() => actualizarEdicionProfesional("password", generarPasswordTemporal())}>Generar</button>
+                </div>
+              </label>
             </div>
 
             <div className="modal-actions professional-modal-actions">

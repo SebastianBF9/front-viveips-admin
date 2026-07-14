@@ -2238,6 +2238,22 @@ td small { display: block; color: var(--muted); margin-top: 4px; }
   color: #fff;
 }
 .create-user-card { overflow: visible; }
+.user-management-card { margin-top: 20px; }
+.user-management-toolbar { padding: 0 20px 16px; }
+.user-management-toolbar .search-field { width: min(100%, 720px); }
+.user-edit-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  min-height: 38px;
+  border: 1px solid #cbd5e1;
+  border-radius: 8px;
+  background: #fff;
+  color: var(--navy);
+  padding: 7px 12px;
+  font-weight: 800;
+  cursor: pointer;
+}
 .create-user-form {
   padding: 20px;
   display: grid;
