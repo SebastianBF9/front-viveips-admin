@@ -1072,15 +1072,16 @@ export function PortalProfesionalPage() {
             <Field label="Correo electrónico" required type="email" value={form.email} onChange={(value) => actualizar("email", value)} />
             <Field label="Teléfono / WhatsApp" required value={form.telefono || ""} onChange={(value) => actualizar("telefono", value)} />
             <SelectField label="Especialidad / Cargo" required value={form.especialidad || ""} onChange={actualizarEspecialidad} options={CARGOS} />
-            <label className="portal-complement-toggle">
-              <input
-                type="checkbox"
-                checked={Boolean(form.cargo_complementario)}
-                disabled={!opcionesCargoComplementario(form.especialidad).length}
-                onChange={(event) => actualizar("cargo_complementario", event.target.checked ? opcionesCargoComplementario(form.especialidad)[0] : "")}
-              />
-              <span>Agregar cargo complementario</span>
-            </label>
+            {opcionesCargoComplementario(form.especialidad).length > 0 && (
+              <label className="portal-complement-toggle">
+                <input
+                  type="checkbox"
+                  checked={Boolean(form.cargo_complementario)}
+                  onChange={(event) => actualizar("cargo_complementario", event.target.checked ? opcionesCargoComplementario(form.especialidad)[0] : "")}
+                />
+                <span>Agregar cargo complementario</span>
+              </label>
+            )}
             {form.cargo_complementario && (
               <SelectField
                 label="Cargo complementario"
