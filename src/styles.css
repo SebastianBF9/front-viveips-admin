@@ -8125,8 +8125,7 @@ td small { display: block; color: var(--muted); margin-top: 4px; }
     padding: 16px 18px 4px;
   }
 }
-.cargo-complementario-toggle,
-.portal-complement-toggle {
+.create-user-form .cargo-complementario-toggle {
   display: flex;
   align-items: center;
   gap: 8px;
@@ -8135,21 +8134,18 @@ td small { display: block; color: var(--muted); margin-top: 4px; }
   font-weight: 600;
 }
 
-.create-user-form .cargo-complementario-toggle,
-.portal-form-grid .portal-complement-toggle {
+.create-user-form .cargo-complementario-toggle {
   display: inline-flex;
   align-self: end;
   gap: 10px;
   color: var(--navy);
 }
 
-.create-user-form .cargo-complementario-toggle span,
-.portal-form-grid .portal-complement-toggle span {
+.create-user-form .cargo-complementario-toggle span {
   color: inherit;
 }
 
-.cargo-complementario-toggle input,
-.portal-complement-toggle input {
+.create-user-form .cargo-complementario-toggle input {
   width: 16px;
   height: 16px;
   accent-color: #0f8f9d;
