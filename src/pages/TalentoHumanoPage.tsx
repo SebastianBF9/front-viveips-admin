@@ -61,6 +61,13 @@ const especialidades = [
   "Otro",
 ];
 
+function opcionesCargoComplementario(especialidad?: string | null) {
+  const cargo = normalizar(especialidad);
+  if (cargo === "terapeuta fisico") return ["Terapeuta Respiratorio"];
+  if (cargo === "terapeuta respiratorio") return ["Terapeuta Fisico"];
+  return [];
+}
+
 const nombresDocumentos: Record<string, string> = {
   cedula: "Copia de Cedula",
   hoja_vida: "Hoja de Vida",
@@ -412,6 +419,7 @@ export function TalentoHumanoPage() {
     email: "",
     telefono: "",
     especialidad: "",
+    cargo_complementario: "",
     password: "",
   });
 
@@ -553,6 +561,7 @@ export function TalentoHumanoPage() {
       email: nuevoUsuario.email.trim(),
       telefono: nuevoUsuario.telefono.trim(),
       especialidad: nuevoUsuario.especialidad.trim(),
+      cargo_complementario: nuevoUsuario.cargo_complementario.trim(),
       password: nuevoUsuario.password.trim(),
     };
 
@@ -568,7 +577,7 @@ export function TalentoHumanoPage() {
     await ejecutarAccion("crear-usuario", async () => {
       const data = await crearProfesional(payload);
       setSuccess(data.mensaje || `Usuario ${payload.nombre} creado correctamente`);
-      setNuevoUsuario({ nombre: "", cedula: "", email: "", telefono: "", especialidad: "", password: "" });
+      setNuevoUsuario({ nombre: "", cedula: "", email: "", telefono: "", especialidad: "", cargo_complementario: "", password: "" });
       await cargar();
       setTab("listado");
     });
@@ -745,6 +754,7 @@ export function TalentoHumanoPage() {
                   <td>
                     <div className="specialty-cell">
                       <span>{profesional.especialidad || "Sin especialidad"}</span>
+                      {profesional.cargo_complementario && <small>Cargo complementario: {profesional.cargo_complementario}</small>}
                       {servicios.visibles.length > 0 ? (
                         <div className="service-chip-list">
                           {servicios.visibles.map((servicio) => (
@@ -827,13 +837,41 @@ export function TalentoHumanoPage() {
             </label>
             <label>
               Especialidad / Cargo <span>*</span>
-              <select value={nuevoUsuario.especialidad} onChange={(event) => actualizarNuevoUsuario("especialidad", event.target.value)}>
+              <select
+                value={nuevoUsuario.especialidad}
+                onChange={(event) => {
+                  const especialidad = event.target.value;
+                  const opciones = opcionesCargoComplementario(especialidad);
+                  setNuevoUsuario((actual) => ({
+                    ...actual,
+                    especialidad,
+                    cargo_complementario: opciones.includes(actual.cargo_complementario) ? actual.cargo_complementario : "",
+                  }));
+                }}
+              >
                 <option value="">Seleccionar...</option>
                 {especialidades.map((especialidad) => (
                   <option key={especialidad} value={especialidad}>{especialidad}</option>
                 ))}
               </select>
             </label>
+            <label className="cargo-complementario-toggle">
+              <input
+                type="checkbox"
+                checked={Boolean(nuevoUsuario.cargo_complementario)}
+                disabled={!opcionesCargoComplementario(nuevoUsuario.especialidad).length}
+                onChange={(event) => actualizarNuevoUsuario("cargo_complementario", event.target.checked ? opcionesCargoComplementario(nuevoUsuario.especialidad)[0] : "")}
+              />
+              <span>Agregar cargo complementario</span>
+            </label>
+            {nuevoUsuario.cargo_complementario && (
+              <label>
+                Cargo complementario <span>*</span>
+                <select value={nuevoUsuario.cargo_complementario} onChange={(event) => actualizarNuevoUsuario("cargo_complementario", event.target.value)}>
+                  {opcionesCargoComplementario(nuevoUsuario.especialidad).map((cargo) => <option key={cargo} value={cargo}>{cargo}</option>)}
+                </select>
+              </label>
+            )}
             <label>
               Contrasena temporal <span>*</span>
               <div className="password-row">
@@ -869,7 +907,7 @@ export function TalentoHumanoPage() {
               <div className="avatar-circle">{iniciales(seleccionado.nombre)}</div>
               <div>
                 <h2>{seleccionado.nombre}</h2>
-                <p>{seleccionado.especialidad || "Sin cargo"}</p>
+                <p>{seleccionado.especialidad || "Sin cargo"}{seleccionado.cargo_complementario ? ` + ${seleccionado.cargo_complementario}` : ""}</p>
                 <p>CC: {seleccionado.cedula || "Sin cedula"} - {seleccionado.email || "Sin correo"} - {seleccionado.telefono || "Sin telefono"}</p>
               </div>
             </div>

@@ -119,6 +119,7 @@ const CAMPOS_INICIALES: ProfesionalPerfilPayload = {
   email: "",
   telefono: "",
   especialidad: "",
+  cargo_complementario: "",
   ciudad: "",
   direccion: "",
   banco: "",
@@ -150,6 +151,13 @@ const CARGOS = [
 
 function normalizar(valor?: string | null) {
   return (valor || "").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim();
+}
+
+function opcionesCargoComplementario(especialidad?: string | null) {
+  const cargo = normalizar(especialidad);
+  if (cargo === "terapeuta fisico") return ["Terapeuta Respiratorio"];
+  if (cargo === "terapeuta respiratorio") return ["Terapeuta Físico"];
+  return [];
 }
 
 function cursosPorCargo(especialidad?: string | null) {
@@ -375,6 +383,7 @@ export function PortalProfesionalPage() {
         email: p.email || "",
         telefono: p.telefono || "",
         especialidad: p.especialidad || "",
+        cargo_complementario: p.cargo_complementario || "",
         ciudad: p.ciudad || "",
         direccion: p.direccion || "",
         banco: p.banco || "",
@@ -464,6 +473,15 @@ export function PortalProfesionalPage() {
 
   function actualizar(campo: keyof ProfesionalPerfilPayload, valor: string) {
     setForm((actual) => ({ ...actual, [campo]: valor }));
+  }
+
+  function actualizarEspecialidad(valor: string) {
+    const opciones = opcionesCargoComplementario(valor);
+    setForm((actual) => ({
+      ...actual,
+      especialidad: valor,
+      cargo_complementario: opciones.includes(actual.cargo_complementario || "") ? actual.cargo_complementario : "",
+    }));
   }
 
   function abrirCamaraCedula() {
@@ -940,7 +958,7 @@ export function PortalProfesionalPage() {
         <div className={`professional-topbar-user ${mobileMenuOpen ? "open" : ""}`}>
           <div>
             <strong>{form.nombre || "Profesional"}</strong>
-            <span>{form.especialidad || "Profesional"}</span>
+            <span>{[form.especialidad, form.cargo_complementario].filter(Boolean).join(" + ") || "Profesional"}</span>
           </div>
           {puedeEntrarPanel && (
             <button className="topbar-soft-btn topbar-admin-btn topbar-mobile-admin" type="button" onClick={() => { setMobileMenuOpen(false); navigate(adminTarget); }}>
@@ -1053,7 +1071,25 @@ export function PortalProfesionalPage() {
             <SelectField label="RH" value={form.rh || ""} onChange={(value) => actualizar("rh", value)} options={["A+", "A-", "B+", "B-", "O+", "O-", "AB+", "AB-"]} />
             <Field label="Correo electrónico" required type="email" value={form.email} onChange={(value) => actualizar("email", value)} />
             <Field label="Teléfono / WhatsApp" required value={form.telefono || ""} onChange={(value) => actualizar("telefono", value)} />
-            <SelectField label="Especialidad / Cargo" required value={form.especialidad || ""} onChange={(value) => actualizar("especialidad", value)} options={CARGOS} />
+            <SelectField label="Especialidad / Cargo" required value={form.especialidad || ""} onChange={actualizarEspecialidad} options={CARGOS} />
+            <label className="portal-complement-toggle">
+              <input
+                type="checkbox"
+                checked={Boolean(form.cargo_complementario)}
+                disabled={!opcionesCargoComplementario(form.especialidad).length}
+                onChange={(event) => actualizar("cargo_complementario", event.target.checked ? opcionesCargoComplementario(form.especialidad)[0] : "")}
+              />
+              <span>Agregar cargo complementario</span>
+            </label>
+            {form.cargo_complementario && (
+              <SelectField
+                label="Cargo complementario"
+                required
+                value={form.cargo_complementario}
+                onChange={(value) => actualizar("cargo_complementario", value)}
+                options={opcionesCargoComplementario(form.especialidad)}
+              />
+            )}
             <ObjectSelectField
               label="Departamento"
               value={form.departamento || ""}
