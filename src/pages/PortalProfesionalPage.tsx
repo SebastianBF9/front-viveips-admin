@@ -131,33 +131,8 @@ const CAMPOS_INICIALES: ProfesionalPerfilPayload = {
   departamento: "",
 };
 
-const CARGOS = [
-  "Médico General",
-  "Médico Especialista",
-  "Auxiliar de Enfermería",
-  "Jefe de Enfermería",
-  "Psicólogo",
-  "Terapeuta Físico",
-  "Terapeuta Ocupacional",
-  "Terapeuta de Lenguaje",
-  "Terapeuta Respiratorio",
-  "Nutricionista",
-  "Trabajo Social",
-  "Cuidador",
-  "Biomédico",
-  "Personal Administrativo",
-  "Otro",
-];
-
 function normalizar(valor?: string | null) {
   return (valor || "").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim();
-}
-
-function opcionesCargoComplementario(especialidad?: string | null) {
-  const cargo = normalizar(especialidad);
-  if (cargo === "terapeuta fisico") return ["Terapeuta Respiratorio"];
-  if (cargo === "terapeuta respiratorio") return ["Terapeuta Físico"];
-  return [];
 }
 
 function cursosPorCargo(especialidad?: string | null) {
@@ -473,15 +448,6 @@ export function PortalProfesionalPage() {
 
   function actualizar(campo: keyof ProfesionalPerfilPayload, valor: string) {
     setForm((actual) => ({ ...actual, [campo]: valor }));
-  }
-
-  function actualizarEspecialidad(valor: string) {
-    const opciones = opcionesCargoComplementario(valor);
-    setForm((actual) => ({
-      ...actual,
-      especialidad: valor,
-      cargo_complementario: opciones.includes(actual.cargo_complementario || "") ? actual.cargo_complementario : "",
-    }));
   }
 
   function abrirCamaraCedula() {
@@ -1071,26 +1037,7 @@ export function PortalProfesionalPage() {
             <SelectField label="RH" value={form.rh || ""} onChange={(value) => actualizar("rh", value)} options={["A+", "A-", "B+", "B-", "O+", "O-", "AB+", "AB-"]} />
             <Field label="Correo electrónico" required type="email" value={form.email} onChange={(value) => actualizar("email", value)} />
             <Field label="Teléfono / WhatsApp" required value={form.telefono || ""} onChange={(value) => actualizar("telefono", value)} />
-            <SelectField label="Especialidad / Cargo" required value={form.especialidad || ""} onChange={actualizarEspecialidad} options={CARGOS} />
-            {opcionesCargoComplementario(form.especialidad).length > 0 && (
-              <label className="portal-complement-toggle">
-                <input
-                  type="checkbox"
-                  checked={Boolean(form.cargo_complementario)}
-                  onChange={(event) => actualizar("cargo_complementario", event.target.checked ? opcionesCargoComplementario(form.especialidad)[0] : "")}
-                />
-                <span>Agregar cargo complementario</span>
-              </label>
-            )}
-            {form.cargo_complementario && (
-              <SelectField
-                label="Cargo complementario"
-                required
-                value={form.cargo_complementario}
-                onChange={(value) => actualizar("cargo_complementario", value)}
-                options={opcionesCargoComplementario(form.especialidad)}
-              />
-            )}
+            <Field label="Especialidad / Cargo" value={[form.especialidad, form.cargo_complementario].filter(Boolean).join(" + ")} disabled />
             <ObjectSelectField
               label="Departamento"
               value={form.departamento || ""}
