@@ -176,6 +176,7 @@ export interface ProfesionalBasico {
   telefono: string | null;
   especialidad: string | null;
   cargo_complementario?: string | null;
+  zona?: string | null;
   usuario_activo: number;
 }
 
@@ -260,6 +261,7 @@ export interface ProfesionalAdmin {
   telefono: string | null;
   especialidad: string | null;
   cargo_complementario?: string | null;
+  zona?: string | null;
   ciudad?: string | null;
   banco?: string | null;
   num_cuenta?: string | null;
@@ -286,6 +288,7 @@ export interface ProfesionalPerfil {
   telefono: string | null;
   especialidad: string | null;
   cargo_complementario?: string | null;
+  zona?: string | null;
   ciudad: string | null;
   direccion: string | null;
   banco: string | null;

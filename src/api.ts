@@ -278,6 +278,7 @@ export async function crearProfesional(payload: {
   telefono?: string;
   especialidad: string;
   cargo_complementario?: string;
+  zona: string;
   password: string;
 }) {
   return apiCall<{ success: boolean; mensaje: string }>("POST", "/profesionales/crear", payload);
@@ -290,6 +291,7 @@ export async function actualizarProfesional(profesionalId: number, payload: {
   telefono?: string;
   especialidad?: string;
   cargo_complementario?: string;
+  zona?: string;
   password?: string;
 }) {
   return apiCall<{ success: boolean; mensaje: string }>("PUT", `/profesionales/${profesionalId}`, payload);
