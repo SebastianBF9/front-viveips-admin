@@ -271,6 +271,13 @@ export async function listarProfesionales() {
   return apiCall<{ success: boolean; profesionales: any[] }>("GET", "/profesionales/");
 }
 
+export async function listarZonasProfesionales() {
+  return apiCall<{ success: boolean; zonas: Array<{ id: number; name: string; description?: string | null }> }>(
+    "GET",
+    "/integraciones/ips-healthcare/zonas-profesionales",
+  );
+}
+
 export async function crearProfesional(payload: {
   nombre: string;
   cedula: string;
@@ -278,7 +285,7 @@ export async function crearProfesional(payload: {
   telefono?: string;
   especialidad: string;
   cargo_complementario?: string;
-  zona: string;
+  zona_id: number;
   password: string;
 }) {
   return apiCall<{ success: boolean; mensaje: string }>("POST", "/profesionales/crear", payload);
@@ -291,7 +298,6 @@ export async function actualizarProfesional(profesionalId: number, payload: {
   telefono?: string;
   especialidad?: string;
   cargo_complementario?: string;
-  zona?: string;
   password?: string;
 }) {
   return apiCall<{ success: boolean; mensaje: string }>("PUT", `/profesionales/${profesionalId}`, payload);

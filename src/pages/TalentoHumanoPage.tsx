@@ -7,6 +7,7 @@ import {
   downloadBlob,
   downloadUrl,
   listarProfesionales,
+  listarZonasProfesionales,
   obtenerMiAcceso,
   obtenerServiciosProfesional,
   openAuthenticatedWindow,
@@ -423,7 +424,7 @@ export function TalentoHumanoPage() {
     telefono: "",
     especialidad: "",
     cargo_complementario: "",
-    zona: "",
+    zona_id: "",
     password: "",
   });
   const [edicionProfesional, setEdicionProfesional] = useState({
@@ -433,17 +434,22 @@ export function TalentoHumanoPage() {
     telefono: "",
     especialidad: "",
     cargo_complementario: "",
-    zona: "",
     password: "",
   });
+  const [zonasProfesionales, setZonasProfesionales] = useState<Array<{ id: number; name: string }>>([]);
 
   async function cargar() {
     setLoading(true);
     setError("");
     try {
-      const [data, permisos] = await Promise.all([listarProfesionales(), obtenerMiAcceso()]);
+      const [data, permisos, zonas] = await Promise.all([
+        listarProfesionales(),
+        obtenerMiAcceso(),
+        listarZonasProfesionales().catch(() => ({ zonas: [] })),
+      ]);
       setProfesionales((data.profesionales || []) as ProfesionalAdmin[]);
       setAcceso(permisos);
+      setZonasProfesionales(zonas.zonas || []);
     } catch (err) {
       setError(err instanceof Error ? err.message : "No fue posible cargar talento humano");
     } finally {
@@ -575,7 +581,6 @@ export function TalentoHumanoPage() {
       telefono: profesional.telefono || "",
       especialidad: profesional.especialidad || "",
       cargo_complementario: profesional.cargo_complementario || "",
-      zona: profesional.zona || "",
       password: "",
     });
   }
@@ -593,7 +598,6 @@ export function TalentoHumanoPage() {
       telefono: edicionProfesional.telefono.trim(),
       especialidad: edicionProfesional.especialidad.trim(),
       cargo_complementario: edicionProfesional.cargo_complementario.trim(),
-      zona: edicionProfesional.zona,
       password: edicionProfesional.password.trim() || undefined,
     };
     if (!payload.nombre || !payload.cedula || !payload.email || !payload.especialidad) {
@@ -630,11 +634,11 @@ export function TalentoHumanoPage() {
       telefono: nuevoUsuario.telefono.trim(),
       especialidad: nuevoUsuario.especialidad.trim(),
       cargo_complementario: nuevoUsuario.cargo_complementario.trim(),
-      zona: nuevoUsuario.zona,
+      zona_id: Number(nuevoUsuario.zona_id),
       password: nuevoUsuario.password.trim(),
     };
 
-    if (!payload.nombre || !payload.cedula || !payload.email || !payload.especialidad || !payload.zona || !payload.password) {
+    if (!payload.nombre || !payload.cedula || !payload.email || !payload.especialidad || !payload.zona_id || !payload.password) {
       setError("Completa nombre, cedula, correo, especialidad, zona y contrasena temporal.");
       return;
     }
@@ -646,7 +650,7 @@ export function TalentoHumanoPage() {
     await ejecutarAccion("crear-usuario", async () => {
       const data = await crearProfesional(payload);
       setSuccess(data.mensaje || `Usuario ${payload.nombre} creado correctamente`);
-      setNuevoUsuario({ nombre: "", cedula: "", email: "", telefono: "", especialidad: "", cargo_complementario: "", zona: "", password: "" });
+      setNuevoUsuario({ nombre: "", cedula: "", email: "", telefono: "", especialidad: "", cargo_complementario: "", zona_id: "", password: "" });
       await cargar();
       setTab("listado");
     });
@@ -929,11 +933,9 @@ export function TalentoHumanoPage() {
             </label>
             <label>
               Zona <span>*</span>
-              <select value={nuevoUsuario.zona} onChange={(event) => actualizarNuevoUsuario("zona", event.target.value)}>
+              <select value={nuevoUsuario.zona_id} onChange={(event) => actualizarNuevoUsuario("zona_id", event.target.value)}>
                 <option value="">Seleccionar...</option>
-                <option value="Norte">Norte</option>
-                <option value="Sur">Sur</option>
-                <option value="Sumapaz">Sumapaz</option>
+                {zonasProfesionales.map((zona) => <option key={zona.id} value={zona.id}>{zona.name}</option>)}
               </select>
             </label>
             {opcionesCargoComplementario(nuevoUsuario.especialidad).length > 0 && (
@@ -983,7 +985,7 @@ export function TalentoHumanoPage() {
             </label>
           </div>
           <table className="professionals-table">
-            <thead><tr><th>Usuario</th><th>Cargo</th><th>Zona</th><th>Contacto</th><th>Estado</th><th>Acción</th></tr></thead>
+            <thead><tr><th>Usuario</th><th>Cargo</th><th>Contacto</th><th>Estado</th><th>Acción</th></tr></thead>
             <tbody>
               {profesionales.filter((profesional) => {
                 const texto = normalizar(query);
@@ -993,7 +995,6 @@ export function TalentoHumanoPage() {
                 <tr key={profesional.id}>
                   <td><div className="prof-info"><div className="prof-avatar">{iniciales(profesional.nombre)}</div><div><div className="prof-nombre">{profesional.nombre}</div><div className="prof-cedula">CC: {profesional.cedula || "Sin cédula"}</div></div></div></td>
                   <td>{profesional.especialidad || "Sin cargo"}</td>
-                  <td>{profesional.zona || "Sin asignar"}</td>
                   <td><div className="contact-cell"><span>{profesional.email || "Sin correo"}</span><small>{profesional.telefono || "Sin teléfono"}</small></div></td>
                   <td><span className={`pill ${profesional.activo ? "activo" : "inactivo"}`}>{profesional.activo ? "Activo" : "Inactivo"}</span></td>
                   <td><button type="button" className="user-edit-btn" onClick={() => abrirEdicionProfesional(profesional)}><Pencil size={15} /> Editar</button></td>
@@ -1206,15 +1207,6 @@ export function TalentoHumanoPage() {
                 >
                   <option value="">Seleccionar...</option>
                   {especialidades.map((especialidad) => <option key={especialidad} value={especialidad}>{especialidad}</option>)}
-                </select>
-              </label>
-              <label>
-                Zona
-                <select value={edicionProfesional.zona} onChange={(event) => actualizarEdicionProfesional("zona", event.target.value)}>
-                  <option value="">Sin asignar</option>
-                  <option value="Norte">Norte</option>
-                  <option value="Sur">Sur</option>
-                  <option value="Sumapaz">Sumapaz</option>
                 </select>
               </label>
               {opcionesCargoComplementario(edicionProfesional.especialidad).length > 0 && (
