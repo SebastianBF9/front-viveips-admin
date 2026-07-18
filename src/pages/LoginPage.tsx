@@ -27,29 +27,49 @@ export function LoginPage() {
 
   return (
     <main className="login-page">
-      <form className="login-card" onSubmit={onSubmit}>
-        <img src="/logo_carnet.png" alt="Vive IPS" />
-        <h1>Admin Vive IPS</h1>
-        <p>Panel administrativo</p>
+      <section className="login-brand-panel" aria-label="Vive IPS Servicios Domiciliarios">
+        <div className="login-brand-content">
+          <div className="login-brand-logos">
+            <img src="/logo_carnet.png" alt="Vive IPS" />
+            <span aria-hidden="true" />
+            <img src="/logo_servicio_domiciliario.png" alt="Servicios Domiciliarios" />
+          </div>
+          <h1>Plataforma Administrativa</h1>
+          <p>Gestión integral de servicios domiciliarios</p>
+        </div>
+      </section>
 
-        <label>
-          Usuario
-          <input value={usuario} onChange={(event) => setUsuario(event.target.value)} autoComplete="username" />
-        </label>
-        <label>
-          Contraseña
-          <input
-            value={password}
-            onChange={(event) => setPassword(event.target.value)}
-            type="password"
-            autoComplete="current-password"
-          />
-        </label>
-        {error && <div className="error-box">{error}</div>}
-        <button className="primary-btn" type="submit" disabled={loading}>
-          {loading ? "Ingresando..." : "Ingresar"}
-        </button>
-      </form>
+      <section className="login-form-panel">
+        <div className="login-form-content">
+          <div className="login-form-brand" aria-label="Vive IPS Servicios Domiciliarios">
+            <img src="/logo_carnet.png" alt="Vive IPS" />
+            <span aria-hidden="true" />
+            <img src="/logo_servicio_domiciliario.png" alt="Servicios Domiciliarios" />
+          </div>
+          <p className="login-welcome">Ingresa con tus credenciales</p>
+
+          <form className="login-card" onSubmit={onSubmit}>
+            <h2>Iniciar sesión</h2>
+            <label>
+              Usuario
+              <input value={usuario} onChange={(event) => setUsuario(event.target.value)} autoComplete="username" />
+            </label>
+            <label>
+              Contraseña
+              <input
+                value={password}
+                onChange={(event) => setPassword(event.target.value)}
+                type="password"
+                autoComplete="current-password"
+              />
+            </label>
+            {error && <div className="error-box">{error}</div>}
+            <button className="primary-btn" type="submit" disabled={loading}>
+              {loading ? "Ingresando..." : "Ingresar"}
+            </button>
+          </form>
+        </div>
+      </section>
     </main>
   );
 }
