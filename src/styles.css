@@ -1744,23 +1744,150 @@ td small { display: block; color: var(--muted); margin-top: 4px; }
 .login-page {
   min-height: 100vh;
   display: grid;
-  place-items: center;
-  padding: 24px;
-  background: var(--bg);
+  grid-template-columns: 1fr 1fr;
+  background: #f3f8ff;
 }
-.login-card {
-  width: min(420px, 100%);
-  background: #fff;
-  border: 1px solid var(--border);
-  border-radius: 8px;
-  padding: 28px;
-  box-shadow: 0 18px 50px rgba(15, 23, 42, .10);
+
+.login-brand-panel {
   display: grid;
-  gap: 14px;
+  min-height: 100vh;
+  place-items: center;
+  overflow: hidden;
+  padding: 48px;
+  color: #fff;
+  background: linear-gradient(155deg, #087aa7 0%, #008cb7 49%, #2bc4c9 100%);
 }
-.login-card img { width: 74px; height: 74px; object-fit: contain; }
-.login-card h1 { margin: 0; }
-.login-card label, .modal label { display: grid; gap: 7px; color: #334155; font-size: 13px; font-weight: 800; }
+
+.login-brand-content {
+  width: min(430px, 100%);
+}
+
+.login-brand-logos,
+.login-form-brand {
+  display: flex;
+  align-items: center;
+}
+
+.login-brand-logos {
+  width: fit-content;
+  max-width: 100%;
+  margin-bottom: 48px;
+  padding: 20px 34px;
+  border-radius: 22px;
+  background: #fff;
+  box-shadow: 0 20px 36px rgba(0, 73, 105, .18);
+}
+
+.login-brand-logos img:first-child,
+.login-form-brand img:first-child { width: 151px; }
+.login-brand-logos img:last-child,
+.login-form-brand img:last-child { width: 160px; }
+.login-brand-logos img,
+.login-form-brand img { display: block; height: auto; object-fit: contain; }
+
+.login-brand-logos span,
+.login-form-brand span {
+  width: 1px;
+  height: 48px;
+  margin: 0 18px;
+  background: #d4d8dc;
+}
+
+.login-brand-content h1 {
+  margin: 0 0 16px;
+  font-size: clamp(25px, 2.1vw, 33px);
+  font-weight: 800;
+  line-height: 1.15;
+}
+
+.login-brand-content p {
+  max-width: 400px;
+  margin: 0;
+  color: rgba(255, 255, 255, .86);
+  font-size: clamp(20px, 1.7vw, 27px);
+  line-height: 1.18;
+}
+
+.login-form-panel {
+  display: grid;
+  place-items: center;
+  padding: 48px;
+}
+
+.login-form-content { width: min(600px, 100%); }
+
+.login-form-brand {
+  justify-content: center;
+  margin-bottom: 12px;
+}
+
+.login-form-brand img:first-child { width: 138px; }
+.login-form-brand img:last-child { width: 145px; }
+.login-form-brand span { height: 42px; margin: 0 15px; }
+
+.login-welcome {
+  margin: 0 0 30px;
+  color: #527197;
+  font-size: 21px;
+  text-align: center;
+}
+
+.login-card {
+  width: 100%;
+  background: #fff;
+  border: 0;
+  border-radius: 24px;
+  padding: 58px 48px 64px;
+  box-shadow: 0 20px 42px rgba(29, 64, 109, .16);
+  display: grid;
+  gap: 19px;
+}
+.login-card h2 { margin: 0 0 14px; color: #172033; font-size: 29px; line-height: 1; }
+.login-card label, .modal label { display: grid; gap: 7px; color: #527197; font-size: 16px; font-weight: 800; }
+.login-card input {
+  width: 100%;
+  min-height: 63px;
+  border: 2px solid #c9e2f8;
+  border-radius: 14px;
+  padding: 14px 20px;
+  color: #172033;
+  background: #eaf3ff;
+  outline: none;
+}
+.login-card input:focus { border-color: #008cb7; box-shadow: 0 0 0 3px rgba(0, 140, 183, .14); }
+.login-card .primary-btn {
+  min-height: 64px;
+  margin-top: 13px;
+  border-radius: 14px;
+  background: linear-gradient(90deg, #079ac4, #0078ad);
+  box-shadow: 0 8px 16px rgba(0, 112, 166, .24);
+  font-size: 19px;
+}
+
+@media (max-width: 850px) {
+  .login-page { grid-template-columns: 1fr; }
+  .login-brand-panel { min-height: 280px; padding: 44px 24px; }
+  .login-brand-logos { margin-bottom: 28px; padding: 16px 22px; }
+  .login-brand-logos img:first-child { width: 112px; }
+  .login-brand-logos img:last-child { width: 120px; }
+  .login-brand-logos span { height: 36px; margin: 0 13px; }
+  .login-brand-content { text-align: center; }
+  .login-brand-content p { margin: 0 auto; font-size: 19px; }
+  .login-form-panel { padding: 42px 24px; }
+}
+
+@media (max-width: 480px) {
+  .login-brand-panel { min-height: 235px; padding: 32px 20px; }
+  .login-brand-content h1 { font-size: 23px; }
+  .login-brand-content p { font-size: 17px; }
+  .login-form-brand img:first-child { width: 110px; }
+  .login-form-brand img:last-child { width: 115px; }
+  .login-form-brand span { height: 34px; margin: 0 11px; }
+  .login-welcome { margin-bottom: 22px; font-size: 18px; }
+  .login-form-panel { padding: 32px 16px; }
+  .login-card { padding: 37px 25px 42px; border-radius: 20px; }
+  .login-card h2 { font-size: 26px; }
+}
 
 .modal-backdrop {
   position: fixed;
