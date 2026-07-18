@@ -28,10 +28,10 @@ function iniciales(nombre: string) {
     .toUpperCase();
 }
 
-function portalPublicoBase() {
+function verificadorBase() {
   const host = window.location.hostname;
-  if (host.includes("admin-pruebas") || host.includes("localhost") || host.includes("127.0.0.1")) return "https://pruebas.portal.viveips.com.co";
-  return "https://portal.viveips.com.co";
+  if (host.includes("admin-pruebas") || host.includes("localhost") || host.includes("127.0.0.1")) return "https://admin-pruebas.portal.viveips.com.co";
+  return "https://admin.portal.viveips.com.co";
 }
 
 export function CarnetPage() {
@@ -48,7 +48,7 @@ export function CarnetPage() {
   const cedula = texto(perfil?.cedula, "-");
   const cargo = texto(perfil?.especialidad, "");
   const rh = texto(perfil?.rh, "No registra");
-  const qrUrl = useMemo(() => `${portalPublicoBase()}/verificar.html?cedula=${encodeURIComponent(cedula)}`, [cedula]);
+  const qrUrl = useMemo(() => `${verificadorBase()}/verificar.html?cedula=${encodeURIComponent(cedula)}`, [cedula]);
   const qrImg = `https://api.qrserver.com/v1/create-qr-code/?size=180x180&margin=2&color=1B3A6B&bgcolor=FFFFFF&data=${encodeURIComponent(qrUrl)}`;
 
   useEffect(() => {
