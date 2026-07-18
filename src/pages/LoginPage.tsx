@@ -34,8 +34,8 @@ export function LoginPage() {
             <span aria-hidden="true" />
             <img src="/logo_servicio_domiciliario.png" alt="Servicios Domiciliarios" />
           </div>
-          <h1>Plataforma Administrativa</h1>
-          <p>Gestión integral de servicios domiciliarios</p>
+          <h1>Calidad en cada atención</h1>
+          <p>Comprometidos con una atención segura, humana y oportuna</p>
         </div>
       </section>
 
