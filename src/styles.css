@@ -1796,18 +1796,22 @@ td small { display: block; color: var(--muted); margin-top: 4px; }
 .login-brand-content h1 {
   margin: 0 0 13px;
   color: #fff;
-  font-size: clamp(20px, 1.45vw, 24px);
-  font-weight: 800;
+  font-family: Arial, Helvetica, sans-serif;
+  font-size: clamp(18px, 1.25vw, 21px);
+  font-weight: 700;
   line-height: 1.15;
+  text-align: center;
 }
 
 .login-brand-content p {
   max-width: 300px;
   margin: 0;
   color: rgba(255, 255, 255, .9);
-  font-size: clamp(16px, 1.2vw, 20px);
+  font-family: Arial, Helvetica, sans-serif;
+  font-size: clamp(15px, 1.1vw, 18px);
   font-weight: 400;
   line-height: 1.18;
+  text-align: center;
 }
 
 .login-form-panel {
