@@ -19,6 +19,7 @@ import { RecursosAsistencialesPage } from "./pages/RecursosAsistencialesPage";
 import { ServicioDetallePage } from "./pages/ServicioDetallePage";
 import { ServiciosPage } from "./pages/ServiciosPage";
 import { TalentoHumanoPage } from "./pages/TalentoHumanoPage";
+import { SolicitudesPage } from "./pages/SolicitudesPage";
 import "./styles.css";
 
 const router = createBrowserRouter([
@@ -30,6 +31,7 @@ const router = createBrowserRouter([
   { path: "/entregas-recursos", element: <EntregasRecursosPage /> },
   { path: "/portal-profesional", element: <PortalProfesionalPage /> },
   { path: "/portal-profesional/capacitaciones", element: <CapacitacionesProfesionalPage /> },
+  { path: "/portal-profesional/solicitudes", element: <SolicitudesPage /> },
   {
     path: "/",
     element: <AppLayout />,
@@ -52,6 +54,7 @@ const router = createBrowserRouter([
       },
       { path: "gestion-documental", element: <GestionDocumentalPage /> },
       { path: "accesos", element: <AccesosPage /> },
+      { path: "solicitudes", element: <SolicitudesPage gestion /> },
     ],
   },
 ]);

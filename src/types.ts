@@ -415,6 +415,7 @@ export interface PermisosAcceso {
   permiso_modulo_procesos_prioritarios: boolean;
   permiso_modulo_historia_clinica: boolean;
   permiso_modulo_gestion_documental: boolean;
+  permiso_gestion_solicitudes: boolean;
   permiso_ver_profesionales: boolean;
   permiso_crear_profesionales: boolean;
   permiso_ver_capacitaciones: boolean;
@@ -446,6 +447,7 @@ export interface UsuarioPermisos {
   permiso_modulo_procesos_prioritarios: boolean;
   permiso_modulo_historia_clinica: boolean;
   permiso_modulo_gestion_documental: boolean;
+  permiso_gestion_solicitudes: boolean;
   permiso_ver_profesionales: boolean;
   permiso_crear_profesionales: boolean;
   permiso_ver_capacitaciones: boolean;
@@ -469,6 +471,7 @@ export type UsuarioPermisosPayload = Pick<
   | "permiso_modulo_procesos_prioritarios"
   | "permiso_modulo_historia_clinica"
   | "permiso_modulo_gestion_documental"
+  | "permiso_gestion_solicitudes"
   | "permiso_ver_profesionales"
   | "permiso_crear_profesionales"
   | "permiso_ver_capacitaciones"

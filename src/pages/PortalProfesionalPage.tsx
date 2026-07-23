@@ -13,6 +13,7 @@ import {
   LayoutDashboard,
   LogOut,
   Menu,
+  MessageCircle,
   PenLine,
   Plus,
   Save,
@@ -939,6 +940,7 @@ export function PortalProfesionalPage() {
             </button>
           )}
           <button className="topbar-soft-btn" type="button" onClick={() => { setMobileMenuOpen(false); navigate("/portal-profesional/capacitaciones"); }}>Capacitaciones</button>
+          <button className="topbar-soft-btn" type="button" onClick={() => { setMobileMenuOpen(false); navigate("/portal-profesional/solicitudes"); }}><MessageCircle size={15} /> Ayuda</button>
           <button className="topbar-soft-btn navy" type="button" onClick={() => { setMobileMenuOpen(false); abrirMiCarnet(); }}>Mi Carnet</button>
           <button className="topbar-logout" type="button" onClick={cerrarSesion}><LogOut size={16} /> Salir</button>
         </div>

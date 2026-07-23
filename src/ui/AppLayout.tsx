@@ -1,4 +1,4 @@
-import { Building2, ClipboardList, FileText, FolderKanban, LogOut, PackagePlus, ShieldCheck, Stethoscope, UsersRound } from "lucide-react";
+import { Building2, ClipboardList, FileText, FolderKanban, LogOut, MessageCircle, PackagePlus, ShieldCheck, Stethoscope, UsersRound } from "lucide-react";
 import { useEffect, useState } from "react";
 import { Navigate, NavLink, Outlet, useNavigate } from "react-router-dom";
 import { clearSession, getToken, obtenerMiAcceso } from "../api";
@@ -100,6 +100,11 @@ export function AppLayout() {
             <NavLink to="/gestion-documental" className={({ isActive }) => `nav-link ${isActive ? "active" : ""}`}>
               <FolderKanban size={18} />
               Gestión Documental
+            </NavLink>
+          )}
+          {Boolean(acceso?.permiso_ver_todo || acceso?.permiso_gestion_solicitudes) && (
+            <NavLink to="/solicitudes" className={({ isActive }) => `nav-link ${isActive ? "active" : ""}`}>
+              <MessageCircle size={18} /> Solicitudes
             </NavLink>
           )}
           {puedeVerAccesos && (

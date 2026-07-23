@@ -1,4 +1,4 @@
-import { Boxes, ClipboardList, FileText, FolderKanban, HeartPulse, Power, Search, ShieldCheck, Stethoscope, UsersRound } from "lucide-react";
+import { Boxes, ClipboardList, FileText, FolderKanban, HeartPulse, MessageCircle, Power, Search, ShieldCheck, Stethoscope, UsersRound } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { actualizarPermisosUsuario, alternarEstadoProfesional, listarUsuariosPermisos } from "../api";
 import type { UsuarioPermisos, UsuarioPermisosPayload } from "../types";
@@ -26,6 +26,12 @@ const permisoTotal: PermissionItem = {
 };
 
 const gruposPermisos: PermissionGroup[] = [
+  {
+    modulo: { campo: "permiso_gestion_solicitudes", label: "Solicitudes", ayuda: "Permite gestionar solicitudes y tickets del portal profesional" },
+    descripcion: "Bandeja de soporte para responder, priorizar y cerrar solicitudes.",
+    icon: MessageCircle,
+    permisos: [],
+  },
   {
     modulo: { campo: "permiso_modulo_servicios", label: "Servicios", ayuda: "Permite entrar al módulo de servicios habilitados" },
     descripcion: "Servicios IPS, cumplimiento y relaciones por estándar.",
@@ -104,6 +110,7 @@ function payloadDesdeUsuario(usuario: UsuarioPermisos): UsuarioPermisosPayload {
     permiso_modulo_procesos_prioritarios: usuario.permiso_modulo_procesos_prioritarios,
     permiso_modulo_historia_clinica: usuario.permiso_modulo_historia_clinica,
     permiso_modulo_gestion_documental: usuario.permiso_modulo_gestion_documental,
+    permiso_gestion_solicitudes: usuario.permiso_gestion_solicitudes,
     permiso_ver_profesionales: usuario.permiso_ver_profesionales,
     permiso_crear_profesionales: usuario.permiso_crear_profesionales,
     permiso_ver_capacitaciones: usuario.permiso_ver_capacitaciones,

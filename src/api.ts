@@ -198,6 +198,39 @@ export async function apiFormCall<T>(method: string, endpoint: string, form: For
   return data as T;
 }
 
+export async function listarMisSolicitudes() {
+  return apiCall<{ success: boolean; solicitudes: any[] }>("GET", "/solicitudes/mis");
+}
+
+export async function listarSolicitudesGestion(estado = "") {
+  const query = estado ? `?estado=${encodeURIComponent(estado)}` : "";
+  return apiCall<{ success: boolean; solicitudes: any[] }>("GET", `/solicitudes${query}`);
+}
+
+export async function obtenerSolicitud(id: number) {
+  return apiCall<{ success: boolean; solicitud: any }>("GET", `/solicitudes/${id}`);
+}
+
+export async function crearSolicitud(payload: { asunto: string; categoria: string; descripcion: string; archivos: File[] }) {
+  const form = new FormData();
+  form.append("asunto", payload.asunto);
+  form.append("categoria", payload.categoria);
+  form.append("descripcion", payload.descripcion);
+  payload.archivos.forEach((archivo) => form.append("archivos", archivo));
+  return apiFormCall<{ success: boolean; id: number; mensaje: string }>("POST", "/solicitudes", form);
+}
+
+export async function responderSolicitud(id: number, mensaje: string, archivos: File[]) {
+  const form = new FormData();
+  form.append("mensaje", mensaje);
+  archivos.forEach((archivo) => form.append("archivos", archivo));
+  return apiFormCall<{ success: boolean; mensaje: string }>("POST", `/solicitudes/${id}/mensajes`, form);
+}
+
+export async function actualizarGestionSolicitud(id: number, payload: { estado: string; prioridad: string; responsable: string }) {
+  return apiCall<{ success: boolean; mensaje: string }>("PATCH", `/solicitudes/${id}/gestion`, payload);
+}
+
 export async function login(usuario: string, password: string) {
   const data = await apiCall<{
     access_token: string;
