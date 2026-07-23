@@ -1742,6 +1742,9 @@ td small { display: block; color: var(--muted); margin-top: 4px; }
 .solicitudes-list { display: grid; gap: 9px; }
 .solicitud-row { width: 100%; border: 1px solid #dce7f0; border-radius: 14px; background: #fff; padding: 13px 15px; display: grid; grid-template-columns: auto 1fr auto; gap: 12px; align-items: center; text-align: left; color: #143652; cursor: pointer; }
 .solicitud-row:hover { border-color: #35b9c4; box-shadow: 0 8px 20px rgba(21, 78, 116, .08); }
+.solicitud-row.cerrada, .solicitud-row:disabled { cursor: not-allowed; opacity: .72; }
+.solicitud-row.cerrada:hover, .solicitud-row:disabled:hover { border-color: #dce7f0; box-shadow: none; }
+.solicitud-closed-note { color: #8a5a16 !important; font-size: 12px !important; font-weight: 800; }
 .solicitud-row div { min-width: 0; display: grid; gap: 3px; }.solicitud-row span:not(.solicitud-status) { color: #6b8298; font-size: 13px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .solicitud-status { display: inline-flex; width: max-content; border-radius: 999px; padding: 4px 8px; font-size: 11px; font-weight: 800; background: #e5eff8; color: #365570; }.solicitud-status.en_progreso { background: #dff4f6; color: #057681; }.solicitud-status.resuelto, .solicitud-status.cerrado { background: #e3f5e8; color: #247241; }.solicitud-status.abierto { background: #fff0da; color: #a25b00; }
 .priority { text-transform: capitalize; font-weight: 800; color: #58718a; }.priority.urgente { color: #c12e46; }.priority.alta { color: #bc6614; }
