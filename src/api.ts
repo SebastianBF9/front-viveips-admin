@@ -228,7 +228,7 @@ export async function responderSolicitud(id: number, mensaje: string, archivos: 
 }
 
 export async function actualizarGestionSolicitud(id: number, payload: { estado: string; prioridad: string; responsable: string }) {
-  return apiCall<{ success: boolean; mensaje: string; solicitud: any }>("PATCH", `/solicitudes/${id}/gestion`, payload);
+  return apiCall<{ success: boolean; mensaje: string; solicitud: any }>("POST", `/solicitudes/${id}/gestion`, payload);
 }
 
 export async function login(usuario: string, password: string) {
