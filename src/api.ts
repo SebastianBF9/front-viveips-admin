@@ -207,6 +207,10 @@ export async function listarSolicitudesGestion(estado = "") {
   return apiCall<{ success: boolean; solicitudes: any[] }>("GET", `/solicitudes${query}`);
 }
 
+export async function listarGestoresSolicitudes() {
+  return apiCall<{ success: boolean; gestores: any[] }>("GET", "/solicitudes/gestores");
+}
+
 export async function obtenerSolicitud(id: number) {
   return apiCall<{ success: boolean; solicitud: any }>("GET", `/solicitudes/${id}`);
 }
