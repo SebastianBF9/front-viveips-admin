@@ -1730,6 +1730,12 @@ td small { display: block; color: var(--muted); margin-top: 4px; }
 
 /* Solicitudes internas */
 .solicitudes-actions, .gestion-form, .solicitudes-filter { display: flex; gap: 10px; align-items: end; flex-wrap: wrap; }
+.solicitudes-portal-page { min-height: 100vh; background: #f3f7fb; }
+.solicitudes-portal-page .professional-portal-content { max-width: 1180px; }
+.solicitudes-welcome { margin-bottom: 18px; align-items: center; }
+.solicitudes-portal-page .solicitudes-list { padding: 16px; border: 1px solid #e0e9f1; border-radius: 18px; background: #fff; box-shadow: 0 10px 28px rgba(18, 61, 94, .05); }
+.solicitudes-portal-page .solicitud-row { box-shadow: none; background: #fbfdff; }
+.solicitudes-portal-page .solicitud-row:hover { background: #f2fbfc; }
 .solicitudes-filter { margin: 0 0 16px; }
 .solicitudes-filter label, .gestion-form label { display: grid; gap: 5px; color: #527197; font-size: 12px; font-weight: 800; }
 .solicitudes-filter select, .gestion-form input, .gestion-form select { border: 1px solid #cdd9e6; border-radius: 10px; padding: 9px 10px; color: #183b59; background: #fff; }
